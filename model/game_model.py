@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from fight_sim import Fight
 
 # ── Simulation constants ──
-SHOP_TRAVEL_TIME = 10  # seconds, one way
+SHOP_TRAVEL_TIME = 5  # seconds, one way
 CAST_WAIT_TIME = 5     # seconds per cast
 DATA_DIR = os.path.join("/Users/lasialo/Documents/Workspace/Fishin2Model/prototype/public/data")
 def load_fish_data(csv_path: str) -> list[dict]:
