@@ -174,10 +174,14 @@ When the player navigates to the Shop (clicks the Shop tab), all fish in invento
 2. Clicking any button opens a Radix `Dialog` modal with placeholder text ("Fishing minigame coming soon...") and an X close button
 3. Push an event log message when the modal opens (e.g. "Cast line into the shallow end...")
 
-### Phase 7: Cleanup
-1. Remove or comment out unused stores from the old prototype (resourceStore, vectorStore, produceStore, etc.) that are no longer referenced
-2. Remove old App.jsx game logic (tile buying, pack pulling, etc.)
-3. Verify the app runs cleanly with `npm run dev` and `npm run build`
+### Phase 7: Cleanup + Debug Panel
+1. Deleted all unused old stores (`resourceStore`, `vectorStore`, `produceStore`, `upgradeStore`, `actionStore`, `cooldownStore`, `fuelStore`, `FieldStore`, `delivererStore`, `ventureStore`, `workerStore`) and old components (`ResourceView`, `StoryLog`, `produceView`, `homeView`, `yardView`, `FieldView`, `HoverButton`, `UpgradeView`, `Venture`, `WorkerView`, `world`, `nodePrototype`, `menuSection`, `unlocks`, `DescriptionView`, `HoverPopover`, `Deliverer`, `Canvas`, `upgradeButton`, `Menu`, `GameLoop`, `Story`, `StoryRepo`, `OneShotVector`, `TransferVector`, `Costs`, `Ease`, `util/util`)
+2. Rewrote `debug.tsx` as a fishing-game debug panel with three sections:
+   - **Money** — text input + button to call `addMoney()` from `playerStore`
+   - **Inventory** — button per fish type from `fishStore` to call `addFish()`, plus "Clear Inventory"
+   - **Shop Upgrades** — force-buy button per upgrade (bypasses cost check), shows current level
+   - **StoreView** — raw JSON display of `playerStore` and `shopStore` state
+3. Wired the debug panel into `App.jsx`, toggled by pressing the backtick key (`` ` ``). Renders as a fixed overlay pinned to the bottom of the viewport (max 80vh, scrollable)
 
 ### Test Plan
 
