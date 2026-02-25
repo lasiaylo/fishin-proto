@@ -121,7 +121,7 @@ def plot(sim: Fight):
 
 
 if __name__ == "__main__":
-    sim = Fight(fish_speed=10, fish_strength=5, reel_str=10, drag=1, line_hp=20)
+    sim = Fight(fish_speed=10, fish_strength=1, reel_str=10, drag=1, line_hp=20)
     result = sim.run()[0]
     print(f"{result} at {sim.time:.2f}s  "
           f"(tension {sim.tension:.2f}/{sim.line_hp})")

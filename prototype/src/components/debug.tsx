@@ -1,100 +1,152 @@
-import React from "react";
-import { UpgradeT, useUpgrade } from "../stores/upgradeStore";
-import { Flex, Separator, Text } from "@radix-ui/themes";
-import { RT, useResource } from "../stores/resourceStore";
-import { useDelivererStat, useSpeed } from "../stores/delivererStore";
-import { useVector, VectorT } from "../stores/vectorStore";
-
-function Form({
-  storeFn,
-  title,
-  labels,
-}: {
-  storeFn: any;
-  title: string;
-  labels: string[];
-}) {
-  function setState(e: React.SyntheticEvent) {
-    e.preventDefault();
-    // @ts-ignore
-    storeFn.setState((s) => {
-      // @ts-ignore
-      labels.forEach((type) => {
-        // @ts-ignore
-        if (e.target[type].value === "") {
-          return;
-        }
-
-        // @ts-ignore
-        const num = Number(e.target[type].value);
-        if (num) s[type].amount = num;
-      });
-      return { ...s };
-    });
-  }
-  return (
-    <form onSubmit={setState}>
-      <Flex direction={"column"} gap={"2"}>
-        <Text>{title}</Text>
-        <Separator size={"4"} />
-        {labels.map((type) => (
-          <label key={type}>
-            {type}
-            <input type="text" name={type} />
-          </label>
-        ))}
-      </Flex>
-      <button type="submit">Submit</button>
-    </form>
-  );
-}
+import React, { useState } from "react";
+import { Flex, Separator, Text, Button } from "@radix-ui/themes";
+import { addMoney, usePlayer } from "../stores/playerStore";
+import { addFish, clearInventory } from "../stores/inventoryStore";
+import { useFish } from "../stores/fishStore";
+import { useShop, buyUpgrade, getUpgradePrice } from "../stores/shopStore";
 
 export function Debug() {
   return (
-    <>
-      <Flex direction={"row"} gap={"4"}>
-        <Form
-          storeFn={useResource}
-          title={"Resources"}
-          labels={Object.values(RT)}
-        />
-        {/*<Form*/}
-        {/*  storeFn={useUpgrade}*/}
-        {/*  title={"Upgrades"}*/}
-        {/*  labels={[UpgradeT.Town]}*/}
-        {/*/>*/}
-        <Form
-          storeFn={useVector}
-          title={"Vector"}
-          labels={Object.values(VectorT)}
-        />
-        <StoreView />
+    <Flex direction="row" gap="4" p="4" wrap="wrap">
+      <MoneySection />
+      <InventorySection />
+      <ShopUpgradeSection />
+      <StoreView />
+    </Flex>
+  );
+}
+
+function MoneySection() {
+  const [value, setValue] = useState("");
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const num = Number(value);
+    if (!isNaN(num) && num !== 0) {
+      addMoney(num);
+      setValue("");
+    }
+  }
+
+  return (
+    <Flex direction="column" gap="2">
+      <Text weight="bold">Money</Text>
+      <Separator size="4" />
+      <form onSubmit={handleSubmit}>
+        <Flex gap="2" align="center">
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="Amount"
+            style={{ width: "80px" }}
+          />
+          <Button type="submit" size="1">
+            Add Money
+          </Button>
+        </Flex>
+      </form>
+    </Flex>
+  );
+}
+
+function InventorySection() {
+  const allFish = useFish((s) => s.allFish);
+
+  return (
+    <Flex direction="column" gap="2">
+      <Text weight="bold">Inventory</Text>
+      <Separator size="4" />
+      <Flex gap="2" wrap="wrap">
+        {allFish.map((fish) => (
+          <Button
+            key={fish.id}
+            size="1"
+            variant="soft"
+            onClick={() => addFish({ name: fish.name, basePrice: fish.basePrice })}
+          >
+            Add {fish.name}
+          </Button>
+        ))}
+        <Button size="1" color="red" variant="soft" onClick={clearInventory}>
+          Clear Inventory
+        </Button>
       </Flex>
-    </>
+    </Flex>
+  );
+}
+
+function ShopUpgradeSection() {
+  const upgrades = useShop((s) => s.upgrades);
+
+  function forceBuy(id: string) {
+    const state = useShop.getState();
+    const idx = state.upgrades.findIndex((u) => u.id === id);
+    if (idx === -1) return;
+
+    const upgrade = state.upgrades[idx];
+    const price = getUpgradePrice(upgrade);
+    if (price === null) return;
+
+    // Force-buy: give enough money, then buy normally
+    const wallet = usePlayer.getState().wallet;
+    if (wallet < price) {
+      addMoney(price - wallet);
+    }
+    buyUpgrade(id);
+  }
+
+  return (
+    <Flex direction="column" gap="2">
+      <Text weight="bold">Shop Upgrades</Text>
+      <Separator size="4" />
+      <Flex gap="2" wrap="wrap" direction="column">
+        {upgrades.map((u) => (
+          <Flex key={u.id} gap="2" align="center">
+            <Button
+              size="1"
+              variant="soft"
+              onClick={() => forceBuy(u.id)}
+              disabled={u.level >= u.prices.length}
+            >
+              {u.id}
+            </Button>
+            <Text size="1">
+              Lv {u.level}/{u.prices.length}
+            </Text>
+          </Flex>
+        ))}
+      </Flex>
+    </Flex>
   );
 }
 
 function StoreView() {
-  const width = "250px";
-  const views = {
-    // Resource: useResource(),
-    // Produce: useProduce(),
-    // Upgrade: useUpgrade(),
-    Vector: useVector(),
-    // Action: useAction(),
-    // Cooldown: useCooldown(),
-    Deliverer: useDelivererStat(),
-    // Speed: useSpeed(),
+  const player = usePlayer();
+  const shop = useShop();
+
+  // Convert Set to array for JSON display
+  const playerDisplay = {
+    ...player,
+    ownedLures: Array.from(player.ownedLures),
   };
+
   return (
-    <Flex>
-      {Object.entries(views).map(([text, obj]) => (
-        <Flex key={text} direction={"column"} width={width}>
-          <Text>{text}</Text>
-          <Separator size={"4"} />
-          <pre>{JSON.stringify(obj, null, 2)}</pre>
-        </Flex>
-      ))}
+    <Flex gap="4">
+      <Flex direction="column" width="250px">
+        <Text weight="bold">Player</Text>
+        <Separator size="4" />
+        <pre style={{ fontSize: "12px", overflow: "auto" }}>
+          {JSON.stringify(playerDisplay, null, 2)}
+        </pre>
+      </Flex>
+      <Flex direction="column" width="250px">
+        <Text weight="bold">Shop</Text>
+        <Separator size="4" />
+        <pre style={{ fontSize: "12px", overflow: "auto" }}>
+          {JSON.stringify(shop, null, 2)}
+        </pre>
+      </Flex>
     </Flex>
   );
 }
