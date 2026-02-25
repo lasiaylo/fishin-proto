@@ -3,6 +3,7 @@ import { Flex, Theme } from "@radix-ui/themes";
 import "@radix-ui/themes/styles.css";
 import { useEffect } from "react";
 import { EventLog } from "./components/EventLog";
+import { InventoryPanel } from "./components/InventoryPanel";
 import { initShop } from "./stores/shopStore";
 import { initFish } from "./stores/fishStore";
 import { pushEvent } from "./stores/eventLogStore";
@@ -31,10 +32,8 @@ function App() {
           Actions
         </Flex>
 
-        {/* Inventory — placeholder for Phase 3 */}
-        <Flex flexShrink="0" width="200px" direction="column">
-          Inventory
-        </Flex>
+        {/* Inventory */}
+        <InventoryPanel />
       </Flex>
     </Theme>
   );
