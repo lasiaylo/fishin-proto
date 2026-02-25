@@ -4,6 +4,7 @@ import "@radix-ui/themes/styles.css";
 import { useEffect } from "react";
 import { EventLog } from "./components/EventLog";
 import { InventoryPanel } from "./components/InventoryPanel";
+import { ActionsSection } from "./components/ActionsSection";
 import { initShop } from "./stores/shopStore";
 import { initFish } from "./stores/fishStore";
 import { pushEvent } from "./stores/eventLogStore";
@@ -27,10 +28,8 @@ function App() {
         {/* Event Log */}
         <EventLog />
 
-        {/* Actions Section — placeholder for Phase 4 */}
-        <Flex flexGrow="1" direction="column">
-          Actions
-        </Flex>
+        {/* Actions Section */}
+        <ActionsSection />
 
         {/* Inventory */}
         <InventoryPanel />
