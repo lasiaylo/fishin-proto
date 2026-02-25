@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Flex, Tabs, Text } from "@radix-ui/themes";
 import { ShopView } from "./ShopView";
+import { PondView } from "./PondView";
 import {
   clearInventory,
   getInventoryCount,
@@ -47,9 +48,7 @@ export function ActionsSection() {
         </Tabs.Content>
 
         <Tabs.Content value={Location.Pond}>
-          <Flex p="4">
-            <Text>Pond actions coming in Phase 6...</Text>
-          </Flex>
+          <PondView />
         </Tabs.Content>
       </Tabs.Root>
     </Flex>
