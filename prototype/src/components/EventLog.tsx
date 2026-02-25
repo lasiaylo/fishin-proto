@@ -1,5 +1,6 @@
 import { Flex, Heading, ScrollArea, Text } from "@radix-ui/themes";
 import { useEventLog } from "../stores/eventLogStore";
+import React from "react";
 
 export function EventLog() {
   const events = useEventLog((s) => s.events);

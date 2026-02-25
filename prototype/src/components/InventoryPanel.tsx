@@ -1,3 +1,4 @@
+import React from "react";
 import { Flex, Heading, Text } from "@radix-ui/themes";
 import { usePlayer } from "../stores/playerStore";
 import { useInventory } from "../stores/inventoryStore";
