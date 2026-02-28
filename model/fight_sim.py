@@ -18,8 +18,8 @@ class FrameRecord:
 
 SWEEP_PARAM = "both"  # "reel_str", "drag", "both", or "none"
 SWEEP_RANGE = range(1, 20)
-REEL_STR = 6
-DRAG = 6
+REEL_STR = 10
+DRAG = 10
 
 NUM_TRIALS = 500
 MAX_DISTANCE = 100
@@ -36,7 +36,7 @@ REEL_GROWTH = 1.1
 OUT_LEVELED_THRESHOLD = 4
 OUT_LEVELED = 1.5
 ATTACK_CHANCE = 0.1
-LINE_HP = 30
+LINE_HP = 100
 
 FISH_SPEED = 10
 FISH_STRENGTH = 10
@@ -267,71 +267,79 @@ def plot_sweep(sweep_data: dict[int, list[list[FrameRecord]]], param_name: str):
     plt.show()
 
 
-def plot_grid(grid_results: dict[tuple[int, int], list[tuple]], sweep_range):
+def _draw_heatmap(fig, ax, data, reel_vals, drag_vals, title, cmap,
+                  fmt, win_data=None, low_win_threshold=25,
+                  highlight_col=None, highlight_row=None, **imshow_kw):
+    im = ax.imshow(data, cmap=cmap, aspect="auto", origin="lower", **imshow_kw)
+    ax.set_xticks(range(len(reel_vals)))
+    ax.set_xticklabels(reel_vals)
+    ax.set_yticks(range(len(drag_vals)))
+    ax.set_yticklabels(drag_vals)
+    ax.set_xlabel("reel_str")
+    ax.set_ylabel("drag")
+    ax.set_title(title)
+    fig.colorbar(im, ax=ax)
+
+    for di in range(len(drag_vals)):
+        for ri in range(len(reel_vals)):
+            val = data[di, ri]
+            if win_data is None:
+                color = "black" if 30 < val < 70 else "white"
+            else:
+                color = "white"
+            ax.text(ri, di, f"{val:{fmt}}", ha="center", va="center",
+                    fontsize=7, color=color)
+            if win_data is not None and win_data[di, ri] < low_win_threshold:
+                ax.add_patch(plt.Rectangle(
+                    (ri - 0.5, di - 0.5), 1, 1,
+                    fill=False, edgecolor="red", linewidth=1.5, linestyle="--"))
+
+    if highlight_col is not None and highlight_col in reel_vals:
+        col = reel_vals.index(highlight_col)
+        ax.axvline(col - 0.5, color="white", linewidth=2, linestyle="--")
+        ax.axvline(col + 0.5, color="white", linewidth=2, linestyle="--")
+    if highlight_row is not None and highlight_row in drag_vals:
+        row = drag_vals.index(highlight_row)
+        ax.axhline(row - 0.5, color="white", linewidth=2, linestyle="--")
+        ax.axhline(row + 0.5, color="white", linewidth=2, linestyle="--")
+
+
+def plot_grid(grid_results: dict[tuple[int, int], list[tuple]]):
     reel_vals = sorted(set(r for r, _ in grid_results.keys()))
     drag_vals = sorted(set(d for _, d in grid_results.keys()))
 
     win_data = np.zeros((len(drag_vals), len(reel_vals)))
     time_data = np.zeros((len(drag_vals), len(reel_vals)))
+    p50_data = np.zeros((len(drag_vals), len(reel_vals)))
+    p99_data = np.zeros((len(drag_vals), len(reel_vals)))
 
     for di, drag in enumerate(drag_vals):
         for ri, reel in enumerate(reel_vals):
             rs = grid_results[(reel, drag)]
+            times = sorted(t for _, t in rs)
             wins = sum(1 for r, _ in rs if r == "WIN")
             win_data[di, ri] = wins * 100 / len(rs)
-            time_data[di, ri] = statistics.mean(t for _, t in rs)
+            time_data[di, ri] = statistics.mean(times)
+            if len(times) >= 2:
+                quantiles = statistics.quantiles(times, n=100)
+                p50_data[di, ri] = quantiles[49]
+                p99_data[di, ri] = quantiles[98]
+            else:
+                p50_data[di, ri] = times[0]
+                p99_data[di, ri] = times[0]
 
-    fig, (ax_win, ax_time) = plt.subplots(1, 2, figsize=(16, 7))
+    fig, ((ax_win, ax_time), (ax_p50, ax_p90)) = plt.subplots(2, 2, figsize=(16, 14))
+    heatmap_kw = dict(reel_vals=reel_vals, drag_vals=drag_vals,
+                      highlight_col=FISH_STRENGTH, highlight_row=FISH_SPEED)
 
-    # Win % heatmap
-    im_win = ax_win.imshow(win_data, cmap="RdYlGn", aspect="auto",
-                           vmin=0, vmax=100, origin="lower")
-    ax_win.set_xticks(range(len(reel_vals)))
-    ax_win.set_xticklabels(reel_vals)
-    ax_win.set_yticks(range(len(drag_vals)))
-    ax_win.set_yticklabels(drag_vals)
-    ax_win.set_xlabel("reel_str")
-    ax_win.set_ylabel("drag")
-    ax_win.set_title("Win %")
-    fig.colorbar(im_win, ax=ax_win)
-
-    for di in range(len(drag_vals)):
-        for ri in range(len(reel_vals)):
-            ax_win.text(ri, di, f"{win_data[di, ri]:.0f}",
-                        ha="center", va="center", fontsize=7,
-                        color="black" if 30 < win_data[di, ri] < 70 else "white")
-
-    # Avg Time heatmap
-    im_time = ax_time.imshow(time_data, cmap="viridis", aspect="auto",
-                             origin="lower")
-    ax_time.set_xticks(range(len(reel_vals)))
-    ax_time.set_xticklabels(reel_vals)
-    ax_time.set_yticks(range(len(drag_vals)))
-    ax_time.set_yticklabels(drag_vals)
-    ax_time.set_xlabel("reel_str")
-    ax_time.set_ylabel("drag")
-    ax_time.set_title("Avg Time (s)")
-    fig.colorbar(im_time, ax=ax_time)
-
-    for di in range(len(drag_vals)):
-        for ri in range(len(reel_vals)):
-            ax_time.text(ri, di, f"{time_data[di, ri]:.1f}",
-                         ha="center", va="center", fontsize=7, color="white")
-            if win_data[di, ri] < 25:
-                ax_time.add_patch(plt.Rectangle(
-                    (ri - 0.5, di - 0.5), 1, 1,
-                    fill=False, edgecolor="red", linewidth=1.5, linestyle="--"))
-
-    # ── outline fish_strength column and fish_speed row ──
-    for ax in (ax_win, ax_time):
-        if FISH_STRENGTH in reel_vals:
-            col = reel_vals.index(FISH_STRENGTH)
-            ax.axvline(col - 0.5, color="white", linewidth=2, linestyle="--")
-            ax.axvline(col + 0.5, color="white", linewidth=2, linestyle="--")
-        if FISH_SPEED in drag_vals:
-            row = drag_vals.index(FISH_SPEED)
-            ax.axhline(row - 0.5, color="white", linewidth=2, linestyle="--")
-            ax.axhline(row + 0.5, color="white", linewidth=2, linestyle="--")
+    _draw_heatmap(fig, ax_win, win_data, **heatmap_kw,
+                  title="Win %", cmap="RdYlGn", fmt=".0f", vmin=0, vmax=100)
+    _draw_heatmap(fig, ax_time, time_data, **heatmap_kw,
+                  title="Avg Time (s)", cmap="viridis", fmt=".1f", win_data=win_data)
+    _draw_heatmap(fig, ax_p50, p50_data, **heatmap_kw,
+                  title="P50 Time (s)", cmap="viridis", fmt=".1f", win_data=win_data)
+    _draw_heatmap(fig, ax_p90, p99_data, **heatmap_kw,
+                  title="P99 Time (s)", cmap="viridis", fmt=".1f", win_data=win_data)
 
     fig.suptitle(
         f"2D Sweep: reel_str vs drag  (fish_spd={FISH_SPEED}, fish_str={FISH_STRENGTH}, {NUM_TRIALS} trials)",
@@ -341,92 +349,69 @@ def plot_grid(grid_results: dict[tuple[int, int], list[tuple]], sweep_range):
     plt.show()
 
 
+def _run_trials(sim: Fight, n: int, keep_history=False):
+    histories = []
+    results = []
+    for _ in range(n):
+        result = sim.run()
+        if keep_history:
+            histories.append(list(sim.history))
+        results.append(result)
+        sim.reset()
+    return histories, results
+
+
+def _print_summary(results: list[tuple]):
+    times = sorted(t for _, t in results)
+    wins = sum(1 for r, _ in results if r == "WIN")
+    n = len(results)
+    print(f"\n{'Metric':<15} {'Value':>10}")
+    print(f"{'-'*15} {'-'*10}")
+    print(f"{'Win %':<15} {wins * 100 / n:>9.1f}%")
+    print(f"{'Avg Time':<15} {statistics.mean(times):>9.2f}s")
+    print(f"{'P1 Time':<15} {statistics.quantiles(times, n=100)[0]:>9.2f}s")
+    print(f"{'Median Time':<15} {statistics.median(times):>9.2f}s")
+    print(f"{'P99 Time':<15} {statistics.quantiles(times, n=100)[98]:>9.2f}s")
+
+
 if __name__ == "__main__":
     base_kwargs = dict(fish_speed=FISH_SPEED, fish_strength=FISH_STRENGTH,
                        reel_str=REEL_STR, drag=DRAG, line_hp=LINE_HP)
 
     if SWEEP_PARAM == "none":
         sim = Fight(**base_kwargs)
-        histories = []
-        results = []
-        for _ in range(NUM_TRIALS):
-            result = sim.run()
-            histories.append(list(sim.history))
-            results.append(result)
-            sim.reset()
-
-        # ── summary table ──
-        times = sorted(t for _, t in results)
-        wins = sum(1 for r, _ in results if r == "WIN")
-        n = len(results)
-        print(f"\n{'Metric':<15} {'Value':>10}")
-        print(f"{'-'*15} {'-'*10}")
-        print(f"{'Win %':<15} {wins * 100 / n:>9.1f}%")
-        print(f"{'Avg Time':<15} {statistics.mean(times):>9.2f}s")
-        print(f"{'P1 Time':<15} {statistics.quantiles(times, n=100)[0]:>9.2f}s")
-        print(f"{'Median Time':<15} {statistics.median(times):>9.2f}s")
-        print(f"{'P99 Time':<15} {statistics.quantiles(times, n=100)[98]:>9.2f}s")
-
+        histories, results = _run_trials(sim, NUM_TRIALS, keep_history=True)
+        _print_summary(results)
         plot(histories, results)
+
     elif SWEEP_PARAM == "both":
         grid_results: dict[tuple[int, int], list[tuple]] = {}
-
         for reel_val in SWEEP_RANGE:
             for drag_val in SWEEP_RANGE:
                 kwargs = {**base_kwargs, "reel_str": reel_val, "drag": drag_val}
                 sim = Fight(**kwargs)
-                results = []
-                for _ in range(NUM_TRIALS):
-                    result = sim.run()
-                    results.append(result)
-                    sim.reset()
+                _, results = _run_trials(sim, NUM_TRIALS)
                 grid_results[(reel_val, drag_val)] = results
 
-        # ── 2D console table ──
-        reel_vals = sorted(set(r for r, _ in grid_results.keys()))
-        drag_vals = sorted(set(d for _, d in grid_results.keys()))
-
-        plot_grid(grid_results, SWEEP_RANGE)
+        plot_grid(grid_results)
 
     else:
         sweep_data: dict[int, list[list[FrameRecord]]] = {}
         sweep_results: dict[int, list[tuple]] = {}
-        sweep_label = SWEEP_PARAM
 
         for val in SWEEP_RANGE:
             kwargs = {**base_kwargs, SWEEP_PARAM: val}
             sim = Fight(**kwargs)
-            histories = []
-            results = []
-            for _ in range(NUM_TRIALS):
-                result = sim.run()
-                histories.append(list(sim.history))
-                results.append(result)
-                sim.reset()
+            histories, results = _run_trials(sim, NUM_TRIALS, keep_history=True)
             sweep_data[val] = histories
             sweep_results[val] = results
 
         if len(SWEEP_RANGE) == 1:
             val = list(SWEEP_RANGE)[0]
-            histories = sweep_data[val]
-            results = sweep_results[val]
-
-            # ── summary table ──
-            times = sorted(t for _, t in results)
-            wins = sum(1 for r, _ in results if r == "WIN")
-            n = len(results)
-            print(f"\n{'Metric':<15} {'Value':>10}")
-            print(f"{'-'*15} {'-'*10}")
-            print(f"{'Win %':<15} {wins * 100 / n:>9.1f}%")
-            print(f"{'Avg Time':<15} {statistics.mean(times):>9.2f}s")
-            print(f"{'P1 Time':<15} {statistics.quantiles(times, n=100)[0]:>9.2f}s")
-            print(f"{'Median Time':<15} {statistics.median(times):>9.2f}s")
-            print(f"{'P99 Time':<15} {statistics.quantiles(times, n=100)[98]:>9.2f}s")
-
-            plot(histories, results)
+            _print_summary(sweep_results[val])
+            plot(sweep_data[val], sweep_results[val])
         else:
-            # ── summary table ──
-            print(f"\n{sweep_label:<15} {'Win %':>8} {'Avg Time':>10}")
+            print(f"\n{SWEEP_PARAM:<15} {'Win %':>8} {'Avg Time':>10}")
             print(f"{'-'*15} {'-'*8} {'-'*10}")
             for val in sorted(sweep_results):
                 rs = sweep_results[val]
@@ -434,4 +419,4 @@ if __name__ == "__main__":
                 avg_t = statistics.mean(t for _, t in rs)
                 print(f"{val:<15} {wins * 100 / len(rs):>7.0f}% {avg_t:>9.1f}s")
 
-            plot_sweep(sweep_data, sweep_label)
+            plot_sweep(sweep_data, SWEEP_PARAM)
