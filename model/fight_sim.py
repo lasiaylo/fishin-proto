@@ -2,6 +2,7 @@ import random
 import statistics
 from dataclasses import dataclass
 
+import numpy as np
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
@@ -15,33 +16,38 @@ class FrameRecord:
     phase: str          # "STRUGGLE" or "REST"
     super_attack: bool
 
-SWEEP_PARAM = "drag"  # "reel_str", "drag", "both", or "none"
+SWEEP_PARAM = "both"  # "reel_str", "drag", "both", or "none"
 SWEEP_RANGE = range(1, 20)
-REEL_STR = 10
-DRAG = 10
-LINE_HP = 0
+REEL_STR = 6
+DRAG = 6
 
-NUM_TRIALS = 1000
+NUM_TRIALS = 500
 MAX_DISTANCE = 100
-MAX_SIM_TIME = 60
+MAX_SIM_TIME = 120
 
-REST_TIME = (1, 6)
-FIGHT_TIME = (1, 6)
+REST_TIME = [2, 6]
+FIGHT_TIME = [1.0, 6.0]
 BASE_SPEED = 10
-MAX_SPEED = 40
+MIN_SPEED = -40
 BASE_REEL = 25
-DELTA_GROWTH = 1.05
-REEL_GROWTH = 1.05
-ATTACK_CHANCE = 0.0
+MAX_REEL = 25
+SPEED_GROWTH = 1.1
+REEL_GROWTH = 1.1
+OUT_LEVELED_THRESHOLD = 4
+OUT_LEVELED = 1.5
+ATTACK_CHANCE = 0.1
+LINE_HP = 30
 
 FISH_SPEED = 10
 FISH_STRENGTH = 10
+FISH_STAMINA = 30
+FISH_TIMEOUT = 20
 
 class Fight:
     def __init__(self, fish_speed: float, fish_strength: float,
                  reel_str: float, drag: float, line_hp: float):
         self.fish_speed = fish_speed
-        self.fish_strength = fish_strength
+        self.fish_str = fish_strength
         self.reel_str = reel_str
         self.drag = drag
         self.line_hp = line_hp
@@ -54,8 +60,8 @@ class Fight:
         self.phase: str = "STRUGGLE"
         self.phase_time: float = 0.0
         self.phase_duration: float = 0.0
-        self.setPhase("STRUGGLE")
         self.super_attack = False
+        self.setPhase("STRUGGLE")
         
     def reset(self):
         self.distance = MAX_DISTANCE / 2
@@ -67,17 +73,32 @@ class Fight:
         self.phase_duration = 0.0
         self.setPhase("STRUGGLE")
         self.super_attack = False
+    
+    def isOutLeveled(self):
+        speed_delta = self.fish_speed - self.drag
+        str_delta = self.fish_str - self.reel_str
+        return speed_delta > OUT_LEVELED_THRESHOLD or str_delta > OUT_LEVELED_THRESHOLD
 
     def setPhase(self, phase):
         self.phase_time = 0
         self.phase = phase
-        if self.phase == "STRUGGLE" and random.random() <= ATTACK_CHANCE:
-            self.super_attack = True
+        self.super_attack = False
+        if self.phase == "STRUGGLE":
+            next_time = list(FIGHT_TIME)
+            if self.time >= FISH_STAMINA + FISH_TIMEOUT:
+                if not self.isOutLeveled():
+                    next_time = [0, 0]
+            elif random.random() <= ATTACK_CHANCE:
+                self.super_attack = True
+            elif self.time < FISH_STAMINA and not self.isOutLeveled():
+                delta = (self.time - FISH_STAMINA)
+                penalty = delta / FISH_TIMEOUT * next_time[1]
+                next_time[1] = next_time[1] - penalty
         else:
             self.super_attack = False
-        next_time = FIGHT_TIME if self.phase == "STRUGGLE" else REST_TIME
+            next_time = REST_TIME
         self.phase_duration = random.uniform(next_time[0], next_time[1])
-        self.phase_duration = 4 if self.super_attack else self.phase_duration
+        self.phase_duration = 6 if self.super_attack else self.phase_duration
         
     def tryPhaseSwitch(self, dt):
         self.phase_time += dt
@@ -85,31 +106,35 @@ class Fight:
             phase = "REST" if self.phase == "STRUGGLE" else "STRUGGLE"
             self.setPhase(phase)
 
-
     def getDelta(self, bonus = 0):
         speed_delta = (self.fish_speed + bonus) - self.drag
-        speed = BASE_SPEED * pow(DELTA_GROWTH, speed_delta)
-        speed = min(MAX_SPEED, max(BASE_SPEED, speed))
+        growth = OUT_LEVELED if self.isOutLeveled() else SPEED_GROWTH
+        if self.isOutLeveled():
+            speed = 40
+        else:
+            speed = BASE_SPEED * pow(growth , speed_delta) 
+        speed = max(MIN_SPEED, speed)
 
-        reel_delta = self.reel_str - (self.fish_strength + bonus)
-        reel = BASE_REEL * pow(REEL_GROWTH, reel_delta)
+        reel_delta = self.reel_str - (self.fish_str + bonus)
+        reel = BASE_REEL * pow(growth, reel_delta)
+        if self.isOutLeveled():
+            reel = 20
         return speed, reel
     
-    
     def getStruggle(self, dt) -> float:
-        bonus = 100 if self.super_attack else 0
+        bonus = 10 if self.super_attack else 0
         (speed, reel) = self.getDelta(bonus)
         if self.tension < self.line_hp:
         # if False:
             distance = speed - reel
-            self.tension += (self.fish_strength + bonus) * dt
+            self.tension += (self.fish_str + bonus) * dt
         else:
             distance = speed
         return distance * dt
 
     def getRest(self, dt) -> float:
         (speed, reel) = self.getDelta()
-        return (speed - reel) * dt
+        return max(-MAX_REEL, speed - reel) * dt
 
     def run(self):
         dt = 0.5
@@ -242,6 +267,80 @@ def plot_sweep(sweep_data: dict[int, list[list[FrameRecord]]], param_name: str):
     plt.show()
 
 
+def plot_grid(grid_results: dict[tuple[int, int], list[tuple]], sweep_range):
+    reel_vals = sorted(set(r for r, _ in grid_results.keys()))
+    drag_vals = sorted(set(d for _, d in grid_results.keys()))
+
+    win_data = np.zeros((len(drag_vals), len(reel_vals)))
+    time_data = np.zeros((len(drag_vals), len(reel_vals)))
+
+    for di, drag in enumerate(drag_vals):
+        for ri, reel in enumerate(reel_vals):
+            rs = grid_results[(reel, drag)]
+            wins = sum(1 for r, _ in rs if r == "WIN")
+            win_data[di, ri] = wins * 100 / len(rs)
+            time_data[di, ri] = statistics.mean(t for _, t in rs)
+
+    fig, (ax_win, ax_time) = plt.subplots(1, 2, figsize=(16, 7))
+
+    # Win % heatmap
+    im_win = ax_win.imshow(win_data, cmap="RdYlGn", aspect="auto",
+                           vmin=0, vmax=100, origin="lower")
+    ax_win.set_xticks(range(len(reel_vals)))
+    ax_win.set_xticklabels(reel_vals)
+    ax_win.set_yticks(range(len(drag_vals)))
+    ax_win.set_yticklabels(drag_vals)
+    ax_win.set_xlabel("reel_str")
+    ax_win.set_ylabel("drag")
+    ax_win.set_title("Win %")
+    fig.colorbar(im_win, ax=ax_win)
+
+    for di in range(len(drag_vals)):
+        for ri in range(len(reel_vals)):
+            ax_win.text(ri, di, f"{win_data[di, ri]:.0f}",
+                        ha="center", va="center", fontsize=7,
+                        color="black" if 30 < win_data[di, ri] < 70 else "white")
+
+    # Avg Time heatmap
+    im_time = ax_time.imshow(time_data, cmap="viridis", aspect="auto",
+                             origin="lower")
+    ax_time.set_xticks(range(len(reel_vals)))
+    ax_time.set_xticklabels(reel_vals)
+    ax_time.set_yticks(range(len(drag_vals)))
+    ax_time.set_yticklabels(drag_vals)
+    ax_time.set_xlabel("reel_str")
+    ax_time.set_ylabel("drag")
+    ax_time.set_title("Avg Time (s)")
+    fig.colorbar(im_time, ax=ax_time)
+
+    for di in range(len(drag_vals)):
+        for ri in range(len(reel_vals)):
+            ax_time.text(ri, di, f"{time_data[di, ri]:.1f}",
+                         ha="center", va="center", fontsize=7, color="white")
+            if win_data[di, ri] < 25:
+                ax_time.add_patch(plt.Rectangle(
+                    (ri - 0.5, di - 0.5), 1, 1,
+                    fill=False, edgecolor="red", linewidth=1.5, linestyle="--"))
+
+    # ── outline fish_strength column and fish_speed row ──
+    for ax in (ax_win, ax_time):
+        if FISH_STRENGTH in reel_vals:
+            col = reel_vals.index(FISH_STRENGTH)
+            ax.axvline(col - 0.5, color="white", linewidth=2, linestyle="--")
+            ax.axvline(col + 0.5, color="white", linewidth=2, linestyle="--")
+        if FISH_SPEED in drag_vals:
+            row = drag_vals.index(FISH_SPEED)
+            ax.axhline(row - 0.5, color="white", linewidth=2, linestyle="--")
+            ax.axhline(row + 0.5, color="white", linewidth=2, linestyle="--")
+
+    fig.suptitle(
+        f"2D Sweep: reel_str vs drag  (fish_spd={FISH_SPEED}, fish_str={FISH_STRENGTH}, {NUM_TRIALS} trials)",
+        fontsize=13,
+    )
+    plt.tight_layout()
+    plt.show()
+
+
 if __name__ == "__main__":
     base_kwargs = dict(fish_speed=FISH_SPEED, fish_strength=FISH_STRENGTH,
                        reel_str=REEL_STR, drag=DRAG, line_hp=LINE_HP)
@@ -269,16 +368,33 @@ if __name__ == "__main__":
         print(f"{'P99 Time':<15} {statistics.quantiles(times, n=100)[98]:>9.2f}s")
 
         plot(histories, results)
+    elif SWEEP_PARAM == "both":
+        grid_results: dict[tuple[int, int], list[tuple]] = {}
+
+        for reel_val in SWEEP_RANGE:
+            for drag_val in SWEEP_RANGE:
+                kwargs = {**base_kwargs, "reel_str": reel_val, "drag": drag_val}
+                sim = Fight(**kwargs)
+                results = []
+                for _ in range(NUM_TRIALS):
+                    result = sim.run()
+                    results.append(result)
+                    sim.reset()
+                grid_results[(reel_val, drag_val)] = results
+
+        # ── 2D console table ──
+        reel_vals = sorted(set(r for r, _ in grid_results.keys()))
+        drag_vals = sorted(set(d for _, d in grid_results.keys()))
+
+        plot_grid(grid_results, SWEEP_RANGE)
+
     else:
         sweep_data: dict[int, list[list[FrameRecord]]] = {}
         sweep_results: dict[int, list[tuple]] = {}
-        sweep_label = "reel_str+drag" if SWEEP_PARAM == "both" else SWEEP_PARAM
+        sweep_label = SWEEP_PARAM
 
         for val in SWEEP_RANGE:
-            if SWEEP_PARAM == "both":
-                kwargs = {**base_kwargs, "reel_str": val, "drag": val}
-            else:
-                kwargs = {**base_kwargs, SWEEP_PARAM: val}
+            kwargs = {**base_kwargs, SWEEP_PARAM: val}
             sim = Fight(**kwargs)
             histories = []
             results = []
