@@ -15,25 +15,27 @@ class FrameRecord:
     phase: str          # "STRUGGLE" or "REST"
     super_attack: bool
 
-REEL_STR_RANGE = range(1, 2)
-NUM_TRIALS = 100
+SWEEP_PARAM = "drag"  # "reel_str", "drag", "both", or "none"
+SWEEP_RANGE = range(1, 20)
+REEL_STR = 10
+DRAG = 10
+LINE_HP = 0
+
+NUM_TRIALS = 1000
 MAX_DISTANCE = 100
 MAX_SIM_TIME = 60
 
 REST_TIME = (1, 6)
 FIGHT_TIME = (1, 6)
 BASE_SPEED = 10
-MAX_SPEED = 20
-BASE_REEL = 20
-DELTA_GROWTH = 1.25
-REEL_GROWTH = 1.25
+MAX_SPEED = 40
+BASE_REEL = 25
+DELTA_GROWTH = 1.05
+REEL_GROWTH = 1.05
 ATTACK_CHANCE = 0.0
 
 FISH_SPEED = 10
 FISH_STRENGTH = 10
-REEL_STR = 10
-DRAG = 10
-LINE_HP = 0
 
 class Fight:
     def __init__(self, fish_speed: float, fish_strength: float,
@@ -75,7 +77,7 @@ class Fight:
             self.super_attack = False
         next_time = FIGHT_TIME if self.phase == "STRUGGLE" else REST_TIME
         self.phase_duration = random.uniform(next_time[0], next_time[1])
-        self.phase_duration = 6 if self.super_attack else self.phase_duration
+        self.phase_duration = 4 if self.super_attack else self.phase_duration
         
     def tryPhaseSwitch(self, dt):
         self.phase_time += dt
@@ -99,7 +101,7 @@ class Fight:
         (speed, reel) = self.getDelta(bonus)
         if self.tension < self.line_hp:
         # if False:
-            distance= speed - reel
+            distance = speed - reel
             self.tension += (self.fish_strength + bonus) * dt
         else:
             distance = speed
@@ -182,7 +184,7 @@ def plot(histories: list[list[FrameRecord]], results: list[tuple]):
     else:
         wins = sum(1 for r, _ in results if r == "WIN")
         avg_time = sum(t for _, t in results) / len(results)
-        title = f"Win: {wins * 100 // len(results)}% | Avg Time: {avg_time:.1f}s"
+        title = f"Win: {wins * 100 // len(results)}% | Avg Time: {avg_time:.1f}s | Drag {DRAG} | STR {REEL_STR} "
     ax_dist.set_title(title, fontsize=14)
 
     # ── legend (single trial only) ──
@@ -206,20 +208,20 @@ def plot(histories: list[list[FrameRecord]], results: list[tuple]):
     plt.show()
 
 
-def plot_sweep(sweep_data: dict[int, list[list[FrameRecord]]]):
+def plot_sweep(sweep_data: dict[int, list[list[FrameRecord]]], param_name: str):
     fig, ax = plt.subplots(figsize=(14, 7))
 
-    reel_values = sorted(sweep_data.keys())
-    norm = mcolors.Normalize(vmin=min(reel_values), vmax=max(reel_values))
+    values = sorted(sweep_data.keys())
+    norm = mcolors.Normalize(vmin=min(values), vmax=max(values))
     cmap = cm.viridis
 
-    for reel_str in reel_values:
-        color = cmap(norm(reel_str))
-        for i, history in enumerate(sweep_data[reel_str]):
+    for val in values:
+        color = cmap(norm(val))
+        for i, history in enumerate(sweep_data[val]):
             times = [r.time for r in history]
             distances = [r.line_distance for r in history]
             ax.plot(times, distances, color=color, linewidth=0.8, alpha=0.35,
-                    label=f"reel={reel_str}" if i == 0 else None)
+                    label=f"{param_name}={val}" if i == 0 else None)
 
     ax.axhline(0, linestyle="--", color="green", alpha=0.5, linewidth=0.8)
     ax.axhline(MAX_DISTANCE, linestyle="--", color="red", alpha=0.5, linewidth=0.8)
@@ -227,26 +229,25 @@ def plot_sweep(sweep_data: dict[int, list[list[FrameRecord]]]):
     ax.set_xlabel("Time (s)")
     ax.set_ylim(0, MAX_DISTANCE + 0.1)
     ax.set_title(
-        f"Line Distance by Reel Str [{min(reel_values)}..{max(reel_values)}]  "
+        f"Line Distance by {param_name} [{min(values)}..{max(values)}]  "
         f"(fish_spd={FISH_SPEED}, fish_str={FISH_STRENGTH}, {NUM_TRIALS} trials each)",
         fontsize=13,
     )
 
     sm = cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
-    fig.colorbar(sm, ax=ax, label="Reel Strength")
+    fig.colorbar(sm, ax=ax, label=param_name)
 
     plt.tight_layout()
     plt.show()
 
 
 if __name__ == "__main__":
-    sweep_data: dict[int, list[list[FrameRecord]]] = {}
-    sweep_results: dict[int, list[tuple]] = {}
+    base_kwargs = dict(fish_speed=FISH_SPEED, fish_strength=FISH_STRENGTH,
+                       reel_str=REEL_STR, drag=DRAG, line_hp=LINE_HP)
 
-    for reel_str in REEL_STR_RANGE:
-        sim = Fight(fish_speed=FISH_SPEED, fish_strength=FISH_STRENGTH,
-                    reel_str=reel_str, drag=DRAG, line_hp=LINE_HP)
+    if SWEEP_PARAM == "none":
+        sim = Fight(**base_kwargs)
         histories = []
         results = []
         for _ in range(NUM_TRIALS):
@@ -254,13 +255,6 @@ if __name__ == "__main__":
             histories.append(list(sim.history))
             results.append(result)
             sim.reset()
-        sweep_data[reel_str] = histories
-        sweep_results[reel_str] = results
-
-    if len(REEL_STR_RANGE) == 1:
-        reel_str = list(REEL_STR_RANGE)[0]
-        histories = sweep_data[reel_str]
-        results = sweep_results[reel_str]
 
         # ── summary table ──
         times = sorted(t for _, t in results)
@@ -276,13 +270,52 @@ if __name__ == "__main__":
 
         plot(histories, results)
     else:
-        # ── summary table ──
-        print(f"\n{'Reel Str':<10} {'Win %':>8} {'Avg Time':>10}")
-        print(f"{'-'*10} {'-'*8} {'-'*10}")
-        for reel_str in sorted(sweep_results):
-            rs = sweep_results[reel_str]
-            wins = sum(1 for r, _ in rs if r == "WIN")
-            avg_t = statistics.mean(t for _, t in rs)
-            print(f"{reel_str:<10} {wins * 100 / len(rs):>7.0f}% {avg_t:>9.1f}s")
+        sweep_data: dict[int, list[list[FrameRecord]]] = {}
+        sweep_results: dict[int, list[tuple]] = {}
+        sweep_label = "reel_str+drag" if SWEEP_PARAM == "both" else SWEEP_PARAM
 
-        plot_sweep(sweep_data)
+        for val in SWEEP_RANGE:
+            if SWEEP_PARAM == "both":
+                kwargs = {**base_kwargs, "reel_str": val, "drag": val}
+            else:
+                kwargs = {**base_kwargs, SWEEP_PARAM: val}
+            sim = Fight(**kwargs)
+            histories = []
+            results = []
+            for _ in range(NUM_TRIALS):
+                result = sim.run()
+                histories.append(list(sim.history))
+                results.append(result)
+                sim.reset()
+            sweep_data[val] = histories
+            sweep_results[val] = results
+
+        if len(SWEEP_RANGE) == 1:
+            val = list(SWEEP_RANGE)[0]
+            histories = sweep_data[val]
+            results = sweep_results[val]
+
+            # ── summary table ──
+            times = sorted(t for _, t in results)
+            wins = sum(1 for r, _ in results if r == "WIN")
+            n = len(results)
+            print(f"\n{'Metric':<15} {'Value':>10}")
+            print(f"{'-'*15} {'-'*10}")
+            print(f"{'Win %':<15} {wins * 100 / n:>9.1f}%")
+            print(f"{'Avg Time':<15} {statistics.mean(times):>9.2f}s")
+            print(f"{'P1 Time':<15} {statistics.quantiles(times, n=100)[0]:>9.2f}s")
+            print(f"{'Median Time':<15} {statistics.median(times):>9.2f}s")
+            print(f"{'P99 Time':<15} {statistics.quantiles(times, n=100)[98]:>9.2f}s")
+
+            plot(histories, results)
+        else:
+            # ── summary table ──
+            print(f"\n{sweep_label:<15} {'Win %':>8} {'Avg Time':>10}")
+            print(f"{'-'*15} {'-'*8} {'-'*10}")
+            for val in sorted(sweep_results):
+                rs = sweep_results[val]
+                wins = sum(1 for r, _ in rs if r == "WIN")
+                avg_t = statistics.mean(t for _, t in rs)
+                print(f"{val:<15} {wins * 100 / len(rs):>7.0f}% {avg_t:>9.1f}s")
+
+            plot_sweep(sweep_data, sweep_label)
