@@ -175,14 +175,6 @@ Each spot filters `getAvailableFish()` further by a spot-specific lure/tier requ
 - Add spot-to-fish-pool mapping
 
 ### Phase 4: Polish
-- Visual feedback: line color shift with tension, phase transition animations, super attack flash
-- Sound cues (optional, stretch)
+- Visual feedback: line color shift with tension, phase transition animations, 
 - Water surface animation
 - Win/lose result screen before returning to pond
-
-### Test Plan
-
-1. **Fight engine unit tests**: Create a `FightEngine` instance with known stats, call `tick()` in a loop with `isReeling=true` always, and verify it produces similar win/lose distributions to `fight_sim.py` (since always-reeling = the original automatic behavior).
-2. **Hold-to-reel behavior**: Verify that not reeling during REST causes drift (distance increases slowly), and not reeling during STRUGGLE prevents tension buildup.
-3. **Integration smoke test**: Run the dev server, navigate to The Pond, click Shallow End, play through a fight, verify fish appears in inventory on win and event log updates.
-4. **Edge cases**: Test with out-leveled fish (stats way above player), verify inventory-full blocks casting.
