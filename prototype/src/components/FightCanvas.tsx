@@ -84,11 +84,17 @@ function FightScene({
   );
   const [state, setState] = useState<FightState>(engineRef.current.getState());
   const endedRef = useRef(false);
+  const prevDistRef = useRef(state.distance);
+  const fishDirRef = useRef(1); // 1 = moving right (away), -1 = moving left (toward player)
 
   useTick((_delta, ticker) => {
     if (endedRef.current) return;
     const dt = ticker.deltaMS / 1000;
     const next = engineRef.current.tick(dt, isReeling);
+    if (next.distance !== prevDistRef.current) {
+      fishDirRef.current = next.distance > prevDistRef.current ? 1 : -1;
+    }
+    prevDistRef.current = next.distance;
     setState(next);
 
     if (next.outcome !== null && !endedRef.current) {
@@ -99,6 +105,9 @@ function FightScene({
 
   const fx = fishX(state.distance);
   const lineColor = tensionColor(state.tension, lineHp);
+  // Fish faces left by default (head at -x, tail at +x).
+  // Moving right (away) → scaleX = -1 (flip). Moving left (toward player) → scaleX = 1.
+  const fishScaleX = fishDirRef.current === 1 ? -1 : 1;
 
   const drawWater = useCallback(
     (g: PixiGraphics) => {
@@ -118,25 +127,22 @@ function FightScene({
       g.clear();
       g.lineStyle(1, lineColor, 1);
       g.moveTo(ROD_X, ROD_Y);
-      g.lineTo(fx - 18, FISH_Y);
+      g.lineTo(fx - 18 * fishScaleX, FISH_Y);
     },
-    [lineColor, fx],
+    [lineColor, fx, fishScaleX],
   );
 
-  const drawFish = useCallback(
-    (g: PixiGraphics) => {
-      g.clear();
-      g.lineStyle(1, 0xffffff);
-      // body
-      g.drawEllipse(fx, FISH_Y, 18, 10);
-      // tail
-      g.moveTo(fx + 18, FISH_Y);
-      g.lineTo(fx + 28, FISH_Y - 8);
-      g.lineTo(fx + 28, FISH_Y + 8);
-      g.closePath();
-    },
-    [fx],
-  );
+  const drawFish = useCallback((g: PixiGraphics) => {
+    g.clear();
+    g.lineStyle(1, 0xffffff);
+    // body (drawn at origin)
+    g.drawEllipse(0, 0, 18, 10);
+    // tail
+    g.moveTo(18, 0);
+    g.lineTo(28, -8);
+    g.lineTo(28, 8);
+    g.closePath();
+  }, []);
 
   const outcomeText =
     state.outcome === "WIN"
@@ -149,7 +155,12 @@ function FightScene({
     <Container>
       <Graphics draw={drawWater} />
       <Graphics draw={drawLine} />
-      <Graphics draw={drawFish} />
+      <Graphics
+        draw={drawFish}
+        x={fx}
+        y={FISH_Y}
+        scale={{ x: fishScaleX, y: 1 }}
+      />
       {outcomeText !== null && (
         <Text
           text={outcomeText}

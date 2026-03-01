@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Button, Flex, Text } from "@radix-ui/themes";
 import { pushEvent } from "../stores/eventLogStore";
 import { usePlayer } from "../stores/playerStore";
 import { getAvailableFish } from "../stores/fishStore";
 import { addFish, isFull } from "../stores/inventoryStore";
 import { FightCanvas } from "./FightCanvas";
+import { LureCanvas, LureCanvasHandle } from "./LureCanvas";
 import { FishData } from "../util/csvLoader";
 
 // ── Spot definitions ──
@@ -31,8 +32,7 @@ function pickRandomFish(fish: FishData[]): FishData {
 
 type PondState =
   | { kind: "idle" }
-  | { kind: "casting"; spot: FishingSpot }
-  | { kind: "biting"; spot: FishingSpot; fish: FishData }
+  | { kind: "luring"; spot: FishingSpot; fish: FishData }
   | { kind: "fighting"; fish: FishData }
   | { kind: "result"; outcome: "WIN" | "LOSE"; fish: FishData };
 
@@ -41,6 +41,8 @@ type PondState =
 export function PondView() {
   const [state, setState] = useState<PondState>({ kind: "idle" });
   const [isReeling, setIsReeling] = useState(false);
+  const [isBiting, setIsBiting] = useState(false);
+  const lureRef = useRef<LureCanvasHandle>(null);
   const { reelStrength, drag, lineStrength } = usePlayer();
 
   function onCast(spot: FishingSpot) {
@@ -55,39 +57,10 @@ export function PondView() {
       return;
     }
 
+    const fish = pickRandomFish(pool);
     pushEvent(`Cast line into the ${spot.label.toLowerCase()}...`);
-    setState({ kind: "casting", spot });
-  }
-
-  // Casting wait → bite
-  useEffect(() => {
-    if (state.kind !== "casting") return;
-
-    const delay = 1000 + Math.random() * 2000;
-    const timeout = setTimeout(() => {
-      const fish = pickRandomFish(getFishForSpot(state.spot));
-      setState({ kind: "biting", spot: state.spot, fish });
-    }, delay);
-
-    return () => clearTimeout(timeout);
-  }, [state]);
-
-  // Biting → 2s window to hook
-  useEffect(() => {
-    if (state.kind !== "biting") return;
-
-    const timeout = setTimeout(() => {
-      pushEvent("Too slow! The fish got away...");
-      setState({ kind: "idle" });
-    }, 2000);
-
-    return () => clearTimeout(timeout);
-  }, [state]);
-
-  function onHook() {
-    if (state.kind !== "biting") return;
-    pushEvent(`A ${state.fish.name} is on the line!`);
-    setState({ kind: "fighting", fish: state.fish });
+    setIsBiting(false);
+    setState({ kind: "luring", spot, fish });
   }
 
   function onFightEnd(outcome: "WIN" | "LOSE") {
@@ -117,7 +90,15 @@ export function PondView() {
 
   // Shared action callbacks for button + spacebar
   function onActionDown() {
-    if (state.kind === "biting") onHook();
+    if (state.kind === "luring") {
+      const result = lureRef.current?.hookAttempt();
+      if (result === "bite") {
+        pushEvent(`A ${state.fish.name} is on the line!`);
+        setState({ kind: "fighting", fish: state.fish });
+      } else if (result === "nibble") {
+        pushEvent("Too early!");
+      }
+    }
     if (state.kind === "fighting") setIsReeling(true);
   }
 
@@ -146,10 +127,9 @@ export function PondView() {
 
   // ── Render ──
 
-  const actionDisabled =
-    state.kind === "idle" || state.kind === "casting" || state.kind === "result";
+  const actionDisabled = state.kind === "idle" || state.kind === "result";
   const actionLabel =
-    state.kind === "biting"
+    state.kind === "luring" && isBiting
       ? "Hook!"
       : state.kind === "fighting"
         ? "Reel!"
@@ -172,18 +152,8 @@ export function PondView() {
           </Flex>
         )}
 
-        {state.kind === "casting" && (
-          <Flex direction="column" gap="3" align="center">
-            <Text size="4">Waiting for a bite...</Text>
-          </Flex>
-        )}
-
-        {state.kind === "biting" && (
-          <Flex direction="column" gap="3" align="center">
-            <Text size="5" weight="bold">
-              Bite!
-            </Text>
-          </Flex>
+        {state.kind === "luring" && (
+          <LureCanvas ref={lureRef} onBiteChange={setIsBiting} />
         )}
 
         {state.kind === "result" && (
