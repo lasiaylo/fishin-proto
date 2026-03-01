@@ -83,26 +83,28 @@ DRIFT_SPEED = 3          ← NEW: drift rate when not reeling during REST
 - Win: `distance <= 0`
 - Lose: `distance >= MAX_DISTANCE`
 
-### Pixi.js Canvas Layout
+### Pixi.js Canvas — ASCII Style
 
-```
-┌──────────────────────────────────────────────────┐
-│                                                    │
-│  ~~~~~~~~ water surface ~~~~~~~~                   │
-│                                                    │
-│         │  ← line (white → yellow → red as        │
-│         │     tension builds)                      │
-│         🐟 ← fish sprite                          │
-│                                                    │
-│  [ HOLD TO REEL ]  (or touch/hold anywhere)        │
-└──────────────────────────────────────────────────┘
-```
+Both the lure and fight canvases use a minimal ASCII aesthetic: black background, white outlines only (no fills), with the exception of the tension-colored fishing line.
 
-**Visual elements:**
-- **Fish sprite**: Moves horizontally based on `distance`. At distance 0 = caught (near rod). At distance 100 = escaped (far edge).
-- **Line**: Connects to fish. Color shifts from white → yellow → red as tension builds toward line_hp, replacing the need for a separate tension indicator.
-- **Reel button**: Large button area at bottom. Alternatively, hold-anywhere-on-canvas to reel (more natural).
-- **Water surface**: Simple animated wave line to set the scene.
+**Fight canvas (`FightCanvas.tsx`):**
+- **Fish**: Outline ellipse + tail, drawn at origin and positioned via x/y/scale. Flips horizontally based on movement direction.
+- **Line**: Connects rod to fish nose. Color shifts white → yellow → red as tension builds toward line_hp.
+- **Water surface**: Animated wave line (sine wave scrolls with time).
+- **Outcome text**: "Caught it!" / "The fish got away..." shown on canvas at fight end.
+
+**Lure canvas (`LureCanvas.tsx`):**
+- **Hook**: V-shape hanging from a line at center-x, at fish depth.
+- **Fish**: Same outline style as fight canvas. Swims back and forth, approaches hook, nibbles or bites.
+- **Water surface**: Same animated wave line as fight canvas.
+
+### Persistent Action Button
+
+A single action button is always visible below the canvas. It serves dual purpose:
+- **Luring phase**: Shows "Hook!" during a real bite, "Action" otherwise. Click/tap to attempt hook.
+- **Fighting phase**: Shows "Reel!". Hold to reel, release to stop.
+- **Spacebar**: Mirrors the action button (keydown = press, keyup = release).
+- **Disabled** during idle and result states.
 
 ### Game Flow
 
@@ -110,36 +112,38 @@ DRIFT_SPEED = 3          ← NEW: drift rate when not reeling during REST
 PondView (spot selection)
     │
     ▼
-Cast → "Waiting for bite..." (1-3s random delay)
+Cast → Lure canvas (fish swims, approaches hook)
+    │
+    ├─ Nibble (fakeout) → fish resets, lure continues
+    ├─ Bite → "Hook!" button appears
+    │    ├─ Player hooks in time → Fight canvas opens
+    │    └─ Player misses → fish releases, lure continues
+    └─ Player hooks during nibble → "Too early!", fish resets
     │
     ▼
-Bite! → Fight canvas opens (Pixi.js stage replaces pond view)
+Fight canvas (hold Reel to catch)
     │
-    ├─ WIN  → Fish added to inventory → Event logged → Return to PondView
-    └─ LOSE → "The fish got away!" → Event logged → Return to PondView
+    ├─ WIN  → Result screen (2s) → Fish added to inventory → Return to PondView
+    └─ LOSE → Result screen (2s) → Event logged → Return to PondView
     │
     ▼
 PondView (cast again or go to Shop)
 ```
 
 **Cast-to-fight details:**
-1. Player clicks a fishing spot button.
-2. A random fish is selected from the spot's fish pool (weighted by availability / lure requirements).
-3. Brief cast animation / "Waiting for bite..." text (random 1-3 seconds).
-4. Fight canvas appears with the selected fish's stats fed into the fight engine.
-5. Fight runs in real-time using `requestAnimationFrame`, reading player stats from `playerStore`.
-6. On win: call `addFish()` with the caught fish, `pushEvent()` with catch details. If inventory is full, show a warning before casting.
-7. On lose: `pushEvent()` with failure message. No fish added.
+1. Player clicks a fishing spot button. If inventory is full, a warning is shown and casting is blocked.
+2. A random fish is selected from the available pool.
+3. Lure canvas appears: fish swims back and forth, periodically approaches the hook.
+4. Fish either nibbles (60% — fakeout, ~0.5s) or bites (40% — real, 2s window). Nibbles wiggle at the hook; bites hold steady.
+5. Player must press Hook (button or spacebar) only during a real bite. Hooking during a nibble resets the fish. Missing a bite causes the fish to release and swim again.
+6. On successful hook: fight canvas appears with the selected fish's stats fed into the fight engine.
+7. Fight runs in real-time via Pixi.js `useTick`, reading player stats from `playerStore`.
+8. On win: `addFish()` called, result screen shown for 2s, then return to idle.
+9. On lose: `pushEvent()` with failure message, result screen shown for 2s, then return to idle.
 
-### Fishing Spot Differentiation
+### Fishing Spots
 
-| Spot         | Fish Pool                        | Description                     |
-|--------------|----------------------------------|---------------------------------|
-| Shallow End  | Minnow (and other easy fish)     | Starter fish, no lure required  |
-| Deep End     | Trout (and mid-tier fish)        | Requires LURE_1 for best fish   |
-| Far End      | Future high-tier fish            | Requires advanced lures         |
-
-Each spot filters `getAvailableFish()` further by a spot-specific lure/tier requirement. If a spot has multiple available fish, one is selected randomly (uniform for now; can add weighted rarity later).
+Three spots are defined (Shallow End, Deep End, Far End) but currently all return the full available fish pool. Spot-based filtering (lure requirements, tier gating) is deferred for future work.
 
 ### Store Integration
 
@@ -155,26 +159,29 @@ Each spot filters `getAvailableFish()` further by a spot-specific lure/tier requ
 
 ## Implementation Plan
 
-### Phase 1: Fight Engine
-- Port `Fight` class from `fight_sim.py` to TypeScript (e.g. `prototype/src/game/FightEngine.ts`)
-- Add hold-to-reel modifier (isReeling boolean that controls which formula branch runs)
-- Add `DRIFT_SPEED` constant for not-reeling-during-rest behavior
-- Expose a `tick(dt, isReeling)` method that advances the simulation by `dt` seconds
-- Return fight state each tick: `{ distance, tension, phase, superAttack, time, outcome }`
+### Phase 1: Fight Engine ✅
+- Ported `Fight` class from `fight_sim.py` to `prototype/src/game/FightEngine.ts`
+- Added hold-to-reel modifier (`isReeling` boolean controls formula branch)
+- Added `DRIFT_SPEED` constant for not-reeling-during-rest behavior
+- Exposes `tick(dt, isReeling)` returning `FightState { distance, tension, phase, time, outcome }`
 
-### Phase 2: Pixi.js Canvas
-- Create `FightCanvas.tsx` component using `@pixi/react`
-- Render: fish sprite (simple shape/sprite), line, distance bar, tension bar, phase text
-- Wire up `requestAnimationFrame` loop → calls `FightEngine.tick()` → updates Pixi display objects
-- Handle mouse/touch input for hold-to-reel (mousedown/touchstart = reeling, mouseup/touchend = release)
+### Phase 2: Pixi.js Canvas ✅
+- Created `FightCanvas.tsx` using `@pixi/react` with ASCII-style rendering (black bg, white outlines)
+- Fish outline flips horizontally based on movement direction via scale.x
+- Line connects rod to fish nose, color shifts with tension (white → yellow → red)
+- Reeling controlled by external action button in PondView (not canvas mousedown)
 
-### Phase 3: Game Flow Integration
-- Update `PondView.tsx`: clicking a spot → selects fish → shows cast wait → transitions to `FightCanvas`
-- Wire up win/lose outcomes to `inventoryStore` and `eventLogStore`
-- Add inventory-full check before allowing cast
-- Add spot-to-fish-pool mapping
+### Phase 3: Game Flow Integration ✅
+- Created `LureCanvas.tsx` — lure phase with nibble/bite mechanic replacing text-based casting/biting
+- `PondView.tsx` state machine: idle → luring → fighting → result → idle
+- Persistent action button: "Hook!" during bite, "Reel!" during fight, spacebar support
+- Inventory-full check before casting
+- Win/lose outcomes wired to `inventoryStore` and `eventLogStore`
+- 2s result screen before returning to idle
 
-### Phase 4: Polish
-- Visual feedback: line color shift with tension, phase transition animations, 
-- Water surface animation
-- Win/lose result screen before returning to pond
+### Phase 4: Polish ✅
+- Line color shift with tension
+- Animated water surface (sine wave scrolls with time)
+- Win/lose result screen with 2s delay
+- Fish flips based on movement direction (both canvases)
+- Removed debug console.log
