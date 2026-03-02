@@ -1,14 +1,17 @@
 import csv
 import os
 
-import matplotlib.pyplot as plt
-
 from fight_sim import Fight
 
 # ── Simulation constants ──
 SHOP_TRAVEL_TIME = 5  # seconds, one way
 CAST_WAIT_TIME = 5     # seconds per cast
-DATA_DIR = os.path.join("/Users/lasialo/Documents/Workspace/Fishin2Model/prototype/public/data")
+DATA_DIR = os.path.join("/Users/lasialo/Documents/Workspace/Fishin2Model/data")
+ 
+INIT_STRENGTH = 1
+INIT_DRAG = 1
+INIT_HP = 20.0
+INIT_INVENTORY = 4
 def load_fish_data(csv_path: str) -> list[dict]:
     fish = []
     with open(csv_path) as f:
@@ -22,10 +25,9 @@ def load_fish_data(csv_path: str) -> list[dict]:
                 "id": parts[0],
                 "name": parts[1],
                 "basePrice": int(parts[2]),
-                "baseWeight": float(parts[3]),
-                "strength": float(parts[4]),
-                "speed": float(parts[5]),
-                "requiredLure": parts[6] if len(parts) > 6 and parts[6] else None,
+                "strength": float(parts[3]),
+                "speed": float(parts[4]),
+                "requiredLure": parts[5] if len(parts) > 5 and parts[5] else None,
             })
     return fish
 
@@ -53,38 +55,46 @@ def get_available_fish(fish_data: list[dict], owned_lures: set[str]) -> list[dic
             if f["requiredLure"] is None or f["requiredLure"] in owned_lures]
 
 
+EVAL_TRIALS = 1000  # trials per fish when picking the best target
+
 def simulate_fight(fish: dict, player: dict) -> tuple[str, float]:
     sim = Fight(
         fish_speed=fish["speed"],
         fish_strength=fish["strength"],
         reel_str=player["reelStrength"],
         drag=player["drag"],
-        line_hp=player["lineStrength"],
+        line_hp=player["lineHP"],
     )
     return sim.run()
 
 
 def best_fish(fish_data: list[dict], player: dict,
               owned_lures: set[str]) -> tuple[dict, float] | None:
-    """Pick the fish with the best income rate (price / fight_time).
-    Returns (fish, fight_duration) or None if no fish is winnable."""
+    """Pick the fish with the best income rate (price / avg fight_time).
+    Returns (fish, avg_fight_duration) or None if no fish is winnable."""
     available = get_available_fish(fish_data, owned_lures)
     best = None
     best_rate = -1
     best_duration = 0
     for f in available:
-        outcome, duration = simulate_fight(f, player)
-        if outcome != "WIN":
+        wins = 0
+        total_time = 0.0
+        for _ in range(EVAL_TRIALS):
+            outcome, duration = simulate_fight(f, player)
+            if outcome == "WIN":
+                wins += 1
+                total_time += duration
+        if wins == 0:
             continue
-        rate = f["basePrice"] / duration
+        avg_duration = total_time / wins
+        rate = f["basePrice"] / avg_duration
         if rate > best_rate:
             best_rate = rate
             best = f
-            best_duration = duration
+            best_duration = avg_duration
     if best is None:
         return None
     return best, best_duration
-
 
 def cheapest_upgrade(shop_data: list[dict], upgrade_levels: dict[str, int],
                      wallet: int) -> tuple[dict, int] | None:
@@ -120,10 +130,10 @@ def run_simulation():
     shop_data = load_shop_data(os.path.join(DATA_DIR, "ShopGameplay.csv"))
 
     player = {
-        "reelStrength": 10.0,
-        "drag": 1.0,
-        "lineStrength": 20.0,
-        "inventory": 4,
+        "reelStrength": INIT_STRENGTH,
+        "drag": INIT_DRAG,
+        "lineHP": INIT_HP,
+        "inventory": INIT_INVENTORY,
     }
     owned_lures: set[str] = set()
     upgrade_levels: dict[str, int] = {}
@@ -145,6 +155,7 @@ def run_simulation():
         round_time = 2 * SHOP_TRAVEL_TIME + inventory * (CAST_WAIT_TIME + fight_duration)
         cumulative_time += round_time
         wallet += income
+        wallet_snapshot = wallet
         rate = income / round_time
 
         # Buy upgrades
@@ -161,6 +172,9 @@ def run_simulation():
         records.append({
             "round": round_num,
             "time": cumulative_time,
+            "duration": round_time,
+            "income": income,
+            "wallet": wallet_snapshot,
             "rate": rate,
             "fish": fish["name"],
             "upgrades": ", ".join(upgrades_bought) if upgrades_bought else "-",
@@ -177,30 +191,9 @@ def run_simulation():
     return records
 
 
-def print_table(records: list[dict]):
-    header = f"{'Round':>5}  {'Time':>8}  {'$/sec':>8}  {'Fish':<10}  {'Upgrades'}"
-    print(header)
-    print("-" * len(header))
-    for r in records:
-        print(f"{r['round']:>5}  {r['time']:>8.1f}  "
-              f"{r['rate']:>8.4f}  {r['fish']:<10}  {r['upgrades']}")
-
-
-def plot_income(records: list[dict]):
-    times = [r["time"] for r in records]
-    rates = [r["rate"] for r in records]
-
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(times, rates, marker="o", color="dodgerblue", linewidth=1.5)
-    ax.set_xlabel("Cumulative Time (s)")
-    ax.set_ylabel("$/sec")
-    ax.set_title("Income Rate Over Time")
-    ax.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.show()
-
-
 if __name__ == "__main__":
+    from game_model_plot import print_table, plot_income
+
     records = run_simulation()
     print_table(records)
     plot_income(records)

@@ -112,6 +112,7 @@ class Fight:
         reel = BASE_REEL * pow(growth, reel_delta)
         if self.isOutLeveled():
             reel = 20
+        print(self.reel_str, self.fish_str, reel)
         return speed, reel
     
     def getStruggle(self, dt) -> float:
