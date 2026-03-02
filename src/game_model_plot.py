@@ -2,11 +2,11 @@ import matplotlib.pyplot as plt
 
 
 def print_table(records: list[dict]):
-    header = f"{'Round':>5}  {'Duration':>8}  {'Income':>8}  {'Wallet':>8}  {'$/sec':>8}  {'Fish':<10}  {'Upgrades'}"
+    header = f"{'Round':>5}  {'Duration':>8}  {'Fight':>8}  {'Income':>8}  {'Wallet':>8}  {'$/sec':>8}  {'Fish':<10}  {'Upgrades'}"
     print(header)
     print("-" * len(header))
     for r in records:
-        print(f"{r['round']:>5}  {r['duration']:>8.1f}  {r['income']:>8}  {r['wallet']:>8}  "
+        print(f"{r['round']:>5}  {r['duration']:>8.1f}  {r['fight_duration']:>8.1f}  {r['income']:>8}  {r['wallet']:>8}  "
               f"{r['rate']:>8.4f}  {r['fish']:<10}  {r['upgrades']}")
 
 
@@ -17,13 +17,31 @@ def plot_income(records: list[dict]):
     upgrade_times = [t for t, r in zip(times, records) if r["upgrades"] != "-"]
     upgrade_rates = [r["rate"] for r in records if r["upgrades"] != "-"]
 
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(times, rates, marker="o", color="dodgerblue", linewidth=1.5)
-    ax.scatter(upgrade_times, upgrade_rates, color="red", zorder=5, label="Upgrade")
-    ax.legend()
-    ax.set_xlabel("Cumulative Time (min)")
-    ax.set_ylabel("$/sec")
-    ax.set_title("Income Rate Over Time")
-    ax.grid(True, alpha=0.3)
+    # Collect all upgrade stat names across rounds
+    all_stats = sorted({k for r in records for k in r["upgrade_levels"]})
+
+    fig, (ax_rate, ax_lvl) = plt.subplots(
+        2, 1, sharex=True, figsize=(10, 8),
+        gridspec_kw={"height_ratios": [3, 1]},
+    )
+    fig.subplots_adjust(hspace=0.08)
+
+    # ── income rate subplot ──
+    ax_rate.plot(times, rates, marker="o", color="dodgerblue", linewidth=1.5)
+    ax_rate.scatter(upgrade_times, upgrade_rates, color="red", zorder=5, label="Upgrade")
+    ax_rate.legend()
+    ax_rate.set_ylabel("$/sec")
+    ax_rate.set_title("Income Rate Over Time")
+    ax_rate.grid(True, alpha=0.3)
+
+    # ── upgrade levels subplot ──
+    for stat in all_stats:
+        levels = [r["upgrade_levels"].get(stat, 0) for r in records]
+        ax_lvl.plot(times, levels, marker=".", linewidth=1.2, label=stat)
+    ax_lvl.legend(fontsize=8)
+    ax_lvl.set_xlabel("Cumulative Time (min)")
+    ax_lvl.set_ylabel("Level")
+    ax_lvl.grid(True, alpha=0.3)
+
     plt.tight_layout()
     plt.show()

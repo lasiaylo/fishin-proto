@@ -8,8 +8,8 @@ SHOP_TRAVEL_TIME = 5  # seconds, one way
 CAST_WAIT_TIME = 5     # seconds per cast
 DATA_DIR = os.path.join("/Users/lasialo/Documents/Workspace/Fishin2Model/data")
  
-INIT_STRENGTH = 1
-INIT_DRAG = 1
+INIT_STRENGTH = 3
+INIT_DRAG = 3
 INIT_HP = 20.0
 INIT_INVENTORY = 4
 def load_fish_data(csv_path: str) -> list[dict]:
@@ -68,15 +68,13 @@ def simulate_fight(fish: dict, player: dict) -> tuple[str, float]:
     return sim.run()
 
 
-def best_fish(fish_data: list[dict], player: dict,
-              owned_lures: set[str]) -> tuple[dict, float] | None:
-    """Pick the fish with the best income rate (price / avg fight_time).
+def most_valuable_fish(fish_data: list[dict], player: dict,
+                       owned_lures: set[str]) -> tuple[dict, float] | None:
+    """Pick the available fish with the highest base price.
     Returns (fish, avg_fight_duration) or None if no fish is winnable."""
     available = get_available_fish(fish_data, owned_lures)
-    best = None
-    best_rate = -1
-    best_duration = 0
-    for f in available:
+    candidates = sorted(available, key=lambda f: f["basePrice"], reverse=True)
+    for f in candidates:
         wins = 0
         total_time = 0.0
         for _ in range(EVAL_TRIALS):
@@ -84,17 +82,9 @@ def best_fish(fish_data: list[dict], player: dict,
             if outcome == "WIN":
                 wins += 1
                 total_time += duration
-        if wins == 0:
-            continue
-        avg_duration = total_time / wins
-        rate = f["basePrice"] / avg_duration
-        if rate > best_rate:
-            best_rate = rate
-            best = f
-            best_duration = avg_duration
-    if best is None:
-        return None
-    return best, best_duration
+        if wins > 0:
+            return f, total_time / wins
+    return None
 
 def cheapest_upgrade(shop_data: list[dict], upgrade_levels: dict[str, int],
                      wallet: int) -> tuple[dict, int] | None:
@@ -144,7 +134,7 @@ def run_simulation():
 
     max_rounds = 100
     for round_num in range(1, max_rounds + 1):
-        result = best_fish(fish_data, player, owned_lures)
+        result = most_valuable_fish(fish_data, player, owned_lures)
         if result is None:
             print("No fish can be caught with current stats. Stopping.")
             break
@@ -173,11 +163,13 @@ def run_simulation():
             "round": round_num,
             "time": cumulative_time,
             "duration": round_time,
+            "fight_duration": fight_duration,
             "income": income,
             "wallet": wallet_snapshot,
             "rate": rate,
             "fish": fish["name"],
             "upgrades": ", ".join(upgrades_bought) if upgrades_bought else "-",
+            "upgrade_levels": dict(upgrade_levels),
         })
 
         # Stop if all upgrades maxed

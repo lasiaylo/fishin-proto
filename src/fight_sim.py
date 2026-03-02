@@ -112,11 +112,10 @@ class Fight:
         reel = BASE_REEL * pow(growth, reel_delta)
         if self.isOutLeveled():
             reel = 20
-        print(self.reel_str, self.fish_str, reel)
         return speed, reel
     
     def getStruggle(self, dt) -> float:
-        bonus = 10 if self.super_attack else 0
+        bonus = 100 if self.super_attack else 0
         (speed, reel) = self.getDelta(bonus)
         if self.tension < self.line_hp:
         # if False:
