@@ -1,7 +1,7 @@
 ID, Price, Stat, ValuePerLevel
+LURE_1, 20, lure, 1
 REEL_STR, 25 25 25 25 25, reelStrength, 1
-DRAG, 20 20 20 20 20 20, drag, 1
+DRAG, 20 20 20 20 20 , drag, 1
 LINE_STR, 30, lineHP, 10
 INVENTORY, 50 , inventory, 1
-LURE_1, 10, lure, 1
 WIN, 200, win, 1

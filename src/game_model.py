@@ -139,6 +139,8 @@ def run_simulation():
             print("No fish can be caught with current stats. Stopping.")
             break
         fish, fight_duration = result
+        
+        print("fight", fight_duration, fish, player)
 
         inventory = int(player["inventory"])
         income = inventory * fish["basePrice"]
