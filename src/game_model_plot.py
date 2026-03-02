@@ -37,7 +37,7 @@ def plot_income(records: list[dict]):
     # ── upgrade levels subplot ──
     for stat in all_stats:
         levels = [r["upgrade_levels"].get(stat, 0) for r in records]
-        ax_lvl.plot(times, levels, marker=".", linewidth=1.2, label=stat)
+        ax_lvl.step(times, levels, where="post", linewidth=1.2, label=stat)
     ax_lvl.legend(fontsize=8)
     ax_lvl.set_xlabel("Cumulative Time (min)")
     ax_lvl.set_ylabel("Level")
