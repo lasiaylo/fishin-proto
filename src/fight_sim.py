@@ -9,10 +9,13 @@ class FrameRecord:
     phase: str          # "STRUGGLE" or "REST"
     super_attack: bool
 
-SWEEP_PARAM = "both"  # "reel_str", "drag", "both", or "none"
-SWEEP_RANGE = range(1, 20)
-REEL_STR = 10
-DRAG = 3
+
+FISH_SPEED = 6
+FISH_STRENGTH = 6
+FISH_STAMINA = 30
+FISH_TIMEOUT = 20
+OUT_LEVELED_THRESHOLD = 4
+
 
 NUM_TRIALS = 500
 MAX_DISTANCE = 100
@@ -24,16 +27,16 @@ BASE_SPEED = 10
 MIN_SPEED = -40
 BASE_REEL = 25
 MAX_REEL = 25
-SPEED_GROWTH = REEL_GROWTH = 1.05
-OUT_LEVELED_THRESHOLD = 4
+SPEED_GROWTH = REEL_GROWTH = 1.06
 OUT_LEVELED = 1.5
 ATTACK_CHANCE = 0.1
 LINE_HP = 20
 
-FISH_SPEED = 6
-FISH_STRENGTH = 6
-FISH_STAMINA = 30
-FISH_TIMEOUT = 20
+
+SWEEP_PARAM = "both"  # "reel_str", "drag", "both", or "none"
+SWEEP_RANGE = range(1, FISH_STRENGTH * 2)
+REEL_STR = 10
+DRAG = 3
 
 class Fight:
     def __init__(self, fish_speed: float, fish_strength: float,

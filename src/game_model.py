@@ -23,11 +23,10 @@ def load_fish_data(csv_path: str) -> list[dict]:
                 continue
             fish.append({
                 "id": parts[0],
-                "name": parts[1],
-                "basePrice": int(parts[2]),
-                "strength": float(parts[3]),
-                "speed": float(parts[4]),
-                "requiredLure": parts[5] if len(parts) > 5 and parts[5] else None,
+                "basePrice": int(parts[1]),
+                "strength": float(parts[2]),
+                "speed": float(parts[3]),
+                "requiredLure": parts[4] if len(parts) > 4 and parts[4] else None,
             })
     return fish
 
@@ -55,7 +54,7 @@ def get_available_fish(fish_data: list[dict], owned_lures: set[str]) -> list[dic
             if f["requiredLure"] is None or f["requiredLure"] in owned_lures]
 
 
-EVAL_TRIALS = 1000  # trials per fish when picking the best target
+EVAL_TRIALS = 500  # trials per fish when picking the best target
 
 def simulate_fight(fish: dict, player: dict) -> tuple[str, float]:
     sim = Fight(
@@ -70,7 +69,7 @@ def simulate_fight(fish: dict, player: dict) -> tuple[str, float]:
 
 def most_valuable_fish(fish_data: list[dict], player: dict,
                        owned_lures: set[str]) -> tuple[dict, float] | None:
-    """Pick the available fish with the highest base price.
+    """Pick the available fish with the highest base price that can be caught under 60s on average.
     Returns (fish, avg_fight_duration) or None if no fish is winnable."""
     available = get_available_fish(fish_data, owned_lures)
     candidates = sorted(available, key=lambda f: f["basePrice"], reverse=True)
@@ -83,7 +82,9 @@ def most_valuable_fish(fish_data: list[dict], player: dict,
                 wins += 1
                 total_time += duration
         if wins > 0:
-            return f, total_time / wins
+            avg_time = total_time / wins
+            if avg_time <= 30.0:
+                return f, avg_time
     return None
 
 def cheapest_upgrade(shop_data: list[dict], upgrade_levels: dict[str, int],
@@ -140,24 +141,25 @@ def run_simulation():
             break
         fish, fight_duration = result
         
-        print("fight", fight_duration, fish, player)
-
         inventory = int(player["inventory"])
         income = inventory * fish["basePrice"]
         round_time = 2 * SHOP_TRAVEL_TIME + inventory * (CAST_WAIT_TIME + fight_duration)
         cumulative_time += round_time
         wallet += income
         wallet_snapshot = wallet
-        rate = income / round_time
+        rate = round(income / round_time, 2)
 
         # Buy upgrades
         upgrades_bought = []
+        bought_lure = False
         while True:
             result = cheapest_upgrade(shop_data, upgrade_levels, wallet)
             if result is None:
                 break
             upgrade, price = result
             wallet -= price
+            if upgrade["stat"] == "lure":
+                bought_lure = True
             apply_upgrade(upgrade, player, owned_lures, upgrade_levels)
             upgrades_bought.append(f"{upgrade['id']} L{upgrade_levels[upgrade['id']]}")
 
@@ -169,9 +171,10 @@ def run_simulation():
             "income": income,
             "wallet": wallet_snapshot,
             "rate": rate,
-            "fish": fish["name"],
+            "fish": fish["id"],
             "upgrades": ", ".join(upgrades_bought) if upgrades_bought else "-",
             "upgrade_levels": dict(upgrade_levels),
+            "bought_lure": bought_lure,
         })
 
         # Stop if all upgrades maxed

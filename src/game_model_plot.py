@@ -7,7 +7,7 @@ def print_table(records: list[dict]):
     print("-" * len(header))
     for r in records:
         print(f"{r['round']:>5}  {r['duration']:>8.1f}  {r['fight_duration']:>8.1f}  {r['income']:>8}  {r['wallet']:>8}  "
-              f"{r['rate']:>8.4f}  {r['fish']:<10}  {r['upgrades']}")
+              f"{r['rate']:>8g}  {r['fish']:<10}  {r['upgrades']}")
 
 
 def plot_income(records: list[dict]):
@@ -29,13 +29,25 @@ def plot_income(records: list[dict]):
     # ── income rate subplot ──
     ax_rate.plot(times, rates, marker="o", color="dodgerblue", linewidth=1.5)
     ax_rate.scatter(upgrade_times, upgrade_rates, color="red", zorder=5, label="Upgrade")
-    ax_rate.legend()
+    for t, r in zip(times, records):
+        if r["bought_lure"]:
+            ax_rate.axvline(x=t, color="green", linestyle="--", alpha=0.7, label="Lure")
+            ax_lvl.axvline(x=t, color="green", linestyle="--", alpha=0.7)
+    # Deduplicate legend entries
+    handles, labels = ax_rate.get_legend_handles_labels()
+    seen = {}
+    for h, l in zip(handles, labels):
+        if l not in seen:
+            seen[l] = h
+    ax_rate.legend(seen.values(), seen.keys())
     ax_rate.set_ylabel("$/sec")
     ax_rate.set_title("Income Rate Over Time")
     ax_rate.grid(True, alpha=0.3)
 
     # ── upgrade levels subplot ──
     for stat in all_stats:
+        if stat.startswith("LURE_") or stat == "WIN":
+            continue
         levels = [r["upgrade_levels"].get(stat, 0) for r in records]
         ax_lvl.step(times, levels, where="post", linewidth=1.2, label=stat)
     ax_lvl.legend(fontsize=8)

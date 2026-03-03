@@ -1,3 +1,5 @@
-ID, Name, BasePrice, Strength, Speed, RequiredLure
-MINNOW, Minnow, 5, 1, 1,
-TROUT, Trout, 8, 6, 6, LURE_1
+ID, BasePrice, Strength, Speed, RequiredLure
+MINNOW, 5, 1, 1,
+TROUT_1, 6, 2, 2, LURE_1
+TROUT_2, 6, 4, 4, LURE_1
+TROUT_3, 10, 6, 4, LURE_2
