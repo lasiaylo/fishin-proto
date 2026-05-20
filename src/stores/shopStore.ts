@@ -58,8 +58,6 @@ export function buyUpgrade(id: string) {
   // Apply stat change
   if (upgrade.stat === "lure") {
     addLure(upgrade.id);
-  } else if (upgrade.stat === "inventory") {
-    addToStat("inventoryCapacity", upgrade.valuePerLevel);
   } else {
     addToStat(upgrade.stat, upgrade.valuePerLevel);
   }

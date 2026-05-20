@@ -6,7 +6,6 @@ interface PlayerState {
   reelStrength: number;
   drag: number;
   lineStrength: number;
-  inventoryCapacity: number;
   ownedLures: Set<string>;
 }
 
@@ -16,7 +15,6 @@ export const usePlayer = create(
     reelStrength: 10,
     drag: 1,
     lineStrength: 20,
-    inventoryCapacity: 4,
     ownedLures: new Set<string>(),
   })),
 );

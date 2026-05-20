@@ -1,15 +1,12 @@
 import React, { useState } from "react";
 import { Flex, Separator, Text, Button } from "@radix-ui/themes";
 import { addMoney, usePlayer } from "../stores/playerStore";
-import { addFish, clearInventory } from "../stores/inventoryStore";
-import { useFish } from "../stores/fishStore";
 import { useShop, buyUpgrade, getUpgradePrice } from "../stores/shopStore";
 
 export function Debug() {
   return (
     <Flex direction="row" gap="4" p="4" wrap="wrap">
       <MoneySection />
-      <InventorySection />
       <ShopUpgradeSection />
       <StoreView />
     </Flex>
@@ -50,31 +47,6 @@ function MoneySection() {
   );
 }
 
-function InventorySection() {
-  const allFish = useFish((s) => s.allFish);
-
-  return (
-    <Flex direction="column" gap="2">
-      <Text weight="bold">Inventory</Text>
-      <Separator size="4" />
-      <Flex gap="2" wrap="wrap">
-        {allFish.map((fish) => (
-          <Button
-            key={fish.id}
-            size="1"
-            variant="soft"
-            onClick={() => addFish({ name: fish.name, basePrice: fish.basePrice })}
-          >
-            Add {fish.name}
-          </Button>
-        ))}
-        <Button size="1" color="red" variant="soft" onClick={clearInventory}>
-          Clear Inventory
-        </Button>
-      </Flex>
-    </Flex>
-  );
-}
 
 function ShopUpgradeSection() {
   const upgrades = useShop((s) => s.upgrades);

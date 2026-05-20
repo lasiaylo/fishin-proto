@@ -3,7 +3,7 @@ import { Button, Flex, Text } from "@radix-ui/themes";
 import { pushEvent } from "../stores/eventLogStore";
 import { usePlayer } from "../stores/playerStore";
 import { getAvailableFish } from "../stores/fishStore";
-import { addFish, isFull } from "../stores/inventoryStore";
+import { addMoney } from "../stores/playerStore";
 import { FightCanvas } from "./FightCanvas";
 import { LureCanvas, LureCanvasHandle } from "./LureCanvas";
 import { FishData } from "../util/csvLoader";
@@ -46,11 +46,6 @@ export function PondView() {
   const { reelStrength, drag, lineStrength } = usePlayer();
 
   function onCast(spot: FishingSpot) {
-    if (isFull()) {
-      pushEvent("Inventory is full! Sell fish at the shop first.");
-      return;
-    }
-
     const pool = getFishForSpot(spot);
     if (pool.length === 0) {
       pushEvent(`No fish available at the ${spot.label}.`);
@@ -68,8 +63,8 @@ export function PondView() {
     const fish = state.fish;
 
     if (outcome === "WIN") {
-      addFish({ name: fish.name, basePrice: fish.basePrice });
-      pushEvent(`Caught a ${fish.name}!`);
+      addMoney(fish.basePrice);
+      pushEvent(`Caught a ${fish.name}! +$${fish.basePrice}`);
     } else {
       pushEvent(`The ${fish.name} got away...`);
     }
