@@ -174,8 +174,6 @@ function FightScene({
   );
 }
 
-// ── Main component (wraps Stage, handles input) ──
-
 export function FightCanvas(props: FightCanvasProps) {
   return (
     <div style={{ userSelect: "none", width: "fit-content" }}>

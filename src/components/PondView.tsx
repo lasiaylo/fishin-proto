@@ -40,7 +40,6 @@ type PondState =
 
 export function PondView() {
   const [state, setState] = useState<PondState>({ kind: "idle" });
-  const [isReeling, setIsReeling] = useState(false);
   const [isBiting, setIsBiting] = useState(false);
   const lureRef = useRef<LureCanvasHandle>(null);
   const { reelStrength, drag, lineStrength } = usePlayer();
@@ -83,52 +82,20 @@ export function PondView() {
     return () => clearTimeout(timeout);
   }, [state]);
 
-  // Shared action callbacks for button + spacebar
+  // Shared action callbacks for button
   function onActionDown() {
-    if (state.kind === "luring") {
-      const result = lureRef.current?.hookAttempt();
-      if (result === "bite") {
-        pushEvent(`A ${state.fish.name} is on the line!`);
-        setState({ kind: "fighting", fish: state.fish });
-      } else if (result === "nibble") {
-        pushEvent("Too early!");
-      }
+    if (state.kind !== "luring") return;
+    const result = lureRef.current?.hookAttempt();
+    if (result === "bite") {
+      pushEvent(`A ${state.fish.name} is on the line!`);
+      setState({ kind: "fighting", fish: state.fish });
+    } else if (result === "nibble") {
+      pushEvent("Too early!");
     }
-    if (state.kind === "fighting") setIsReeling(true);
   }
-
-  function onActionUp() {
-    if (state.kind === "fighting") setIsReeling(false);
-  }
-
-  // Spacebar mirrors the action button
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.code !== "Space" || e.repeat) return;
-      e.preventDefault();
-      onActionDown();
-    }
-    function onKeyUp(e: KeyboardEvent) {
-      if (e.code !== "Space") return;
-      onActionUp();
-    }
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("keyup", onKeyUp);
-    };
-  }, [state]);
-
-  // ── Render ──
 
   const actionDisabled = state.kind === "idle" || state.kind === "result";
-  const actionLabel =
-    state.kind === "luring" && isBiting
-      ? "Hook!"
-      : state.kind === "fighting"
-        ? "Reel!"
-        : "Action";
+  const actionLabel = state.kind === "luring" && isBiting ? "Hook!" : "Action";
 
   return (
     <Flex p="4" direction="column" gap="3">
@@ -169,20 +136,17 @@ export function PondView() {
               reelStr={reelStrength}
               drag={drag}
               lineHp={lineStrength}
-              isReeling={isReeling}
+              isReeling={true}
               onEnd={onFightEnd}
             />
           </>
         )}
       </div>
 
-      {/* Persistent action button */}
       <Button
         size="3"
         disabled={actionDisabled}
         onMouseDown={onActionDown}
-        onMouseUp={onActionUp}
-        onMouseLeave={onActionUp}
       >
         {actionLabel}
       </Button>
