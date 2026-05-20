@@ -1,7 +1,7 @@
 import React from "react";
-import { Flex, Heading, Text } from "@radix-ui/themes";
-import { usePlayer } from "../stores/playerStore";
-import { useInventory } from "../stores/inventoryStore";
+import {Flex, Text} from "@radix-ui/themes";
+import {usePlayer} from "../stores/playerStore";
+import {useInventory} from "../stores/inventoryStore";
 
 export function InventoryPanel() {
   const wallet = usePlayer((s) => s.wallet);
@@ -10,9 +10,6 @@ export function InventoryPanel() {
 
   return (
     <Flex direction="column" flexShrink="0" width="200px">
-      <Heading size="3" mb="3">
-        Inventory
-      </Heading>
       <Text size="2" weight="bold" mb="2">
         Money: ${wallet}
       </Text>

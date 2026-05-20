@@ -1,4 +1,5 @@
 ID, Price, Stat, ValuePerLevel
 LINE_STR, 1 2 3 4, lineStrength, 1
-INVENTORY, 10 20, inventory, 1
+ROD_STR, 25 25 25 25 25, reelStrength, 1
 LURE_1, 20, lure, 1
+WIN, 400, win, 1

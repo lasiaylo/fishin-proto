@@ -5,4 +5,3 @@ LURE_2, 50, lure, 1
 REEL_STR, 25 25 25 25 25, reelStrength, 1
 DRAG, 20 20 20 20 20 , drag, 1
 LINE_STR, 20 20 20 20 20, lineHP, 10
-INVENTORY, 50 , inventory, 1
