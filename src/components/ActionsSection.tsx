@@ -16,7 +16,7 @@ export function ActionsSection() {
   }
 
   return (
-    <Flex flexGrow="1" direction="column">
+    <Flex flexGrow="1" direction="column" maxWidth={"500px"}>
       <Tabs.Root value={location} onValueChange={onTabChange}>
         <Tabs.List>
           <Tabs.Trigger value={Location.Shop}>The Shop</Tabs.Trigger>

@@ -3,6 +3,7 @@ import { Flex, Theme } from "@radix-ui/themes";
 import "@radix-ui/themes/styles.css";
 import { useEffect, useState } from "react";
 import { EventLog } from "./components/EventLog";
+import { InventoryPanel } from "./components/InventoryPanel";
 import { ActionsSection } from "./components/ActionsSection";
 import { Debug } from "./components/debug";
 import { initShop } from "./stores/shopStore";
@@ -34,6 +35,9 @@ function App() {
 
         {/* Actions Section */}
         <ActionsSection />
+
+        {/* Inventory */}
+        <InventoryPanel />
       </Flex>
       {showDebug && (
         <div

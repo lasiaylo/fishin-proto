@@ -6,7 +6,7 @@ export function EventLog() {
   const events = useEventLog((s) => s.events);
 
   return (
-    <Flex mt="9" direction="column" flexShrink="0" width="200px">
+    <Flex mt="8" direction="column" flexShrink="0" width="200px">
       <ScrollArea style={{ height: "calc(100vh - 100px)" }}>
         <Flex pr="4" direction="column" gap="1">
           {events.map((event, i) => (
