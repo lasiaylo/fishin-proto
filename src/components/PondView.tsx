@@ -45,20 +45,6 @@ export function PondView() {
     };
   }, []);
 
-  useEffect(() => {
-    if (gameState !== GameState.Luring || !biteReady) return;
-
-    function handler(e: KeyboardEvent) {
-      if (e.code === "Space") {
-        e.preventDefault();
-        startFight();
-      }
-    }
-
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [gameState, biteReady]);
-
   function scheduleBite() {
     const delay = randomRange(BITE_DELAY[0], BITE_DELAY[1]) * 1000;
     biteTimerRef.current = setTimeout(() => {
