@@ -1,6 +1,7 @@
 import React from "react";
 import { Flex, Progress, Text } from "@radix-ui/themes";
 import { FightState } from "../game/FightEngine";
+import { progressPropDefs } from "@radix-ui/themes/props";
 
 function StatBar({
   label,
@@ -11,7 +12,7 @@ function StatBar({
   label: string;
   value: number;
   max: number;
-  color: "blue" | "red";
+  color: progressPropDefs.color;
 }) {
   const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
   return (
@@ -24,7 +25,7 @@ function StatBar({
           {value.toFixed(1)} / {max}
         </Text>
       </Flex>
-      <Progress value={pct} color={color} size="3" />
+      <Progress radius={"none"} value={pct} color={color} size="3" />
     </Flex>
   );
 }
@@ -46,7 +47,7 @@ export function FightView({ state, lineHp, fading = false }: FightViewProps) {
       p="4"
       style={{ opacity: fading ? 0 : 1, transition: "opacity 0.6s ease" }}
     >
-      <StatBar label="Fish Distance" value={distance} max={100} color="blue" />
+      <StatBar label="Lure Distance" value={distance} max={100} color="cyan" />
       <StatBar label="Line Tension" value={tension} max={lineHp} color="red" />
     </Flex>
   );
