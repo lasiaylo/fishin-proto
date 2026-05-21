@@ -13,7 +13,12 @@ export function MyButton({
 }) {
   return (
     <Box flexGrow={"0"}>
-      <Button disabled={disabled} variant="outline" onClick={onClick}>
+      <Button
+        radius={"none"}
+        disabled={disabled}
+        variant="outline"
+        onClick={onClick}
+      >
         <Text size={"1"}>{children}</Text>
       </Button>
     </Box>

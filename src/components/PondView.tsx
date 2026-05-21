@@ -140,14 +140,12 @@ export function PondView() {
   if (gameState === "idle") {
     return (
       <Flex direction="column" gap="3" p="4">
-        <Text>Choose a fishing spot</Text>
-        <Flex direction="column" gap="2">
-          {SPOTS.map((spot) => (
-            <MyButton key={spot} onClick={() => handleSpotClick(spot)}>
-              {spot}
-            </MyButton>
-          ))}
-        </Flex>
+        <Text size={"1"}>Choose a fishing spot</Text>
+        {SPOTS.map((spot) => (
+          <MyButton key={spot} onClick={() => handleSpotClick(spot)}>
+            {spot}
+          </MyButton>
+        ))}
       </Flex>
     );
   }
