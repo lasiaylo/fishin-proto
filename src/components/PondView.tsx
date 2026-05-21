@@ -3,7 +3,7 @@ import { Flex, Text } from "@radix-ui/themes";
 import { MyButton } from "./MyButton";
 import { FishData } from "../util/csvLoader";
 import { getAvailableFish } from "../stores/fishStore";
-import { usePlayer, addMoney } from "../stores/playerStore";
+import { addMoney, usePlayer } from "../stores/playerStore";
 import { pushEvent } from "../stores/eventLogStore";
 import { EventMsg } from "../util/eventMessages";
 import { FightEngine, FightState } from "../game/FightEngine";
@@ -138,8 +138,7 @@ export function PondView() {
       pushEvent(EventMsg.NO_FISH);
       return;
     }
-    const selected = fish[Math.floor(Math.random() * fish.length)];
-    caughtFishRef.current = selected;
+    caughtFishRef.current = fish[Math.floor(Math.random() * fish.length)];
     pushEvent(EventMsg.CASTING(spot));
     setGameState(GameState.Luring);
     setBiteReady(false);

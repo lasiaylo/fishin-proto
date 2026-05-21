@@ -28,6 +28,7 @@ export async function loadFishData(): Promise<FishData[]> {
   const text = await res.text();
   const rows = parseCSV(text);
   // Skip header row
+
   return rows.slice(1).map((row) => ({
     id: row[0],
     name: row[1],
