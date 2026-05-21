@@ -21,8 +21,8 @@ export function EventLog() {
       <Flex overflow="hidden">
         <Flex pr="4" direction="column" gap="3">
           {events.map((event, i) => (
-            <Text key={i} size="1" className="fade-in" color="gray">
-              {event}
+            <Text key={event.id} size="1" className={i === 0 ? "fade-in" : undefined} color="gray">
+              {event.msg}
             </Text>
           ))}
         </Flex>
