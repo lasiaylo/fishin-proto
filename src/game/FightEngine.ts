@@ -193,6 +193,9 @@ export class FightEngine {
     } else if (this.distance >= MAX_DISTANCE) {
       this.distance = MAX_DISTANCE;
       this.outcome = "LOSE";
+    } else if (this.tension >= this.lineHp) {
+      this.tension = this.lineHp;
+      this.outcome = "LOSE";
     }
 
     return this.getState();

@@ -28,7 +28,7 @@ function App() {
 
   return (
     <Theme appearance={"dark"} accentColor={"gray"} grayColor={"mauve"}>
-      <Flex direction="row" minHeight="100vh" px="5" py="5" gap="5">
+      <Flex direction="row" justify={"center"} minHeight="100vh" px="5" py="5" gap="5">
         <EventLog />
         <ActionsSection />
       </Flex>

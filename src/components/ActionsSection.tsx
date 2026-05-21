@@ -1,33 +1,20 @@
-import React, { useState } from "react";
-import { Flex, Tabs, Text } from "@radix-ui/themes";
+import React from "react";
+import { Flex, Tabs } from "@radix-ui/themes";
 import { ShopView } from "./ShopView";
 import { PondView } from "./PondView";
 
-enum Location {
-  Shop = "Shop",
-  Pond = "Pond",
-}
-
 export function ActionsSection() {
-  const [location, setLocation] = useState<Location>(Location.Shop);
-
-  function onTabChange(val: string) {
-    setLocation(val as Location);
-  }
-
   return (
     <Flex flexGrow="1" direction="column" maxWidth={"500px"}>
-      <Tabs.Root value={location} onValueChange={onTabChange}>
+      <Tabs.Root defaultValue="shop">
         <Tabs.List>
-          <Tabs.Trigger value={Location.Shop}>The Shop</Tabs.Trigger>
-          <Tabs.Trigger value={Location.Pond}>The Pond</Tabs.Trigger>
+          <Tabs.Trigger value="shop">Shop</Tabs.Trigger>
+          <Tabs.Trigger value="pond">Pond</Tabs.Trigger>
         </Tabs.List>
-
-        <Tabs.Content value={Location.Shop}>
+        <Tabs.Content value="shop">
           <ShopView />
         </Tabs.Content>
-
-        <Tabs.Content value={Location.Pond}>
+        <Tabs.Content value="pond">
           <PondView />
         </Tabs.Content>
       </Tabs.Root>
