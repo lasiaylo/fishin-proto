@@ -2,7 +2,6 @@ export interface FishData {
   id: string;
   name: string;
   basePrice: number;
-  baseWeight: number;
   strength: number;
   speed: number;
   requiredLure: string;
@@ -33,10 +32,9 @@ export async function loadFishData(): Promise<FishData[]> {
     id: row[0],
     name: row[1],
     basePrice: Number(row[2]),
-    baseWeight: Number(row[3]),
-    strength: Number(row[4]),
-    speed: Number(row[5]),
-    requiredLure: row[6] || "",
+    strength: Number(row[3]),
+    speed: Number(row[4]),
+    requiredLure: row[5] || "",
   }));
 }
 
@@ -51,7 +49,9 @@ export async function loadShopData(): Promise<ShopUpgradeData[]> {
   ];
 
   const displayById = new Map(
-    displayRows.slice(1).map((row) => [row[0], { name: row[1], description: row[2] }]),
+    displayRows
+      .slice(1)
+      .map((row) => [row[0], { name: row[1], description: row[2] }]),
   );
 
   return gameplayRows.slice(1).map((row) => {

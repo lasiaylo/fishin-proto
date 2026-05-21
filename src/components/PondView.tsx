@@ -18,7 +18,8 @@ enum GameState {
 }
 
 const SPOTS = ["Shallow End", "Deep End", "Far End"] as const;
-const BITE_DELAY: [number, number] = [2, 8];
+// const BITE_DELAY: [number, number] = [2, 8];
+const BITE_DELAY: [number, number] = [0, 0];
 const HOOK_WINDOW = 2;
 const RESULT_DURATION = 1000;
 
@@ -51,7 +52,6 @@ export function PondView() {
         id: "debug",
         name: "Debug Fish",
         basePrice: 0,
-        baseWeight: 1,
         strength: 5,
         speed: 5,
         requiredLure: "none",
@@ -84,6 +84,7 @@ export function PondView() {
     const { reelStrength, drag, lineStrength } = usePlayer.getState();
     const fish = caughtFishRef.current!;
     lineHpRef.current = lineStrength;
+    console.log("STARTING FIGHT", fish.name, fish.speed, fish.strength);
 
     fightRef.current = new FightEngine(
       fish.speed,

@@ -6,7 +6,7 @@ const MAX_DISTANCE = 100;
 const START_DISTANCE = MAX_DISTANCE / 2;
 
 const REST_TIME: [number, number] = [2, 6];
-const FIGHT_TIME: [number, number] = [1.0, 6.0];
+const FIGHT_TIME_RANGE: [number, number] = [1.0, 6.0];
 const BASE_SPEED = 10;
 const MIN_SPEED = -40;
 const BASE_REEL = 25;
@@ -103,21 +103,21 @@ export class FightEngine {
       return;
     }
 
-    const nextTime = [...FIGHT_TIME];
+    const nextTimeRange = [...FIGHT_TIME_RANGE];
     if (this.time >= FISH_STAMINA + FISH_TIMEOUT && !this.isOutLeveled()) {
-      nextTime[0] = 0;
-      nextTime[1] = 0;
+      nextTimeRange[0] = 0;
+      nextTimeRange[1] = 0;
     } else if (Math.random() <= ATTACK_CHANCE) {
       this.phase = Phase.SUPER_STRUGGLE;
     } else if (this.time < FISH_STAMINA && !this.isOutLeveled()) {
       const delta = this.time - FISH_STAMINA;
-      const penalty = (delta / FISH_TIMEOUT) * nextTime[1];
-      nextTime[1] = nextTime[1] - penalty;
+      const penalty = (delta / FISH_TIMEOUT) * nextTimeRange[1];
+      nextTimeRange[1] = nextTimeRange[1] - penalty;
     }
     this.phaseDuration =
       this.phase === Phase.SUPER_STRUGGLE
         ? 6
-        : randomRange(nextTime[0], nextTime[1]);
+        : randomRange(nextTimeRange[0], nextTimeRange[1]);
   }
 
   private tryPhaseSwitch(dt: number): void {
@@ -130,6 +130,8 @@ export class FightEngine {
 
   private getDelta(bonus: number = 0): number {
     const speedDelta = this.fishSpeed + bonus - this.drag;
+    // console.log("fishSpeed", this.fishSpeed, this.drag);
+
     const outLeveled = this.isOutLeveled();
 
     let speed = outLeveled
@@ -139,6 +141,7 @@ export class FightEngine {
 
     const reelDelta = this.reelStr - (this.fishStr + bonus);
     const reel = outLeveled ? 20 : BASE_REEL * Math.pow(REEL_GROWTH, reelDelta);
+    // console.log("REEL", BASE_REEL, reelDelta, reel, speed);
     return Math.max(-MAX_REEL, speed - reel);
   }
 
@@ -150,7 +153,7 @@ export class FightEngine {
     return delta;
   }
 
-  private rest(dt: number): number {
+  private rest(): number {
     return this.getDelta();
   }
 
@@ -161,8 +164,7 @@ export class FightEngine {
 
     this.tryPhaseSwitch(dt);
 
-    const delta = this.phase !== Phase.REST ? this.struggle(dt) : this.rest(dt);
-
+    const delta = this.phase !== Phase.REST ? this.struggle(dt) : this.rest();
     this.distance += Math.max(-15.0, Math.min(15.0, delta)) * dt;
     this.time += dt;
 
