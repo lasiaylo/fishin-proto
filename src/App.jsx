@@ -8,6 +8,7 @@ import { Debug } from "./components/debug";
 import { initShop } from "./stores/shopStore";
 import { initFish } from "./stores/fishStore";
 import { pushEvent } from "./stores/eventLogStore";
+import { EventMsg } from "./util/eventMessages";
 import { InventoryView } from "./components/InventoryView.tsx";
 
 function App() {
@@ -16,7 +17,7 @@ function App() {
   useEffect(() => {
     initShop();
     initFish();
-    pushEvent("Welcome to the fishing game!");
+    pushEvent(EventMsg.WELCOME);
   }, []);
 
   useEffect(() => {

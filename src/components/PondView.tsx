@@ -5,6 +5,7 @@ import { FishData } from "../util/csvLoader";
 import { getAvailableFish } from "../stores/fishStore";
 import { usePlayer, addMoney } from "../stores/playerStore";
 import { pushEvent } from "../stores/eventLogStore";
+import { EventMsg } from "../util/eventMessages";
 import { FightEngine, FightState } from "../game/FightEngine";
 import { randomRange } from "../util/random";
 import { FightView } from "./FightView";
@@ -57,10 +58,10 @@ export function PondView() {
     const delay = randomRange(BITE_DELAY[0], BITE_DELAY[1]) * 1000;
     biteTimerRef.current = setTimeout(() => {
       setBiteReady(true);
-      pushEvent("A fish is biting!");
+      pushEvent(EventMsg.BITING);
       hookWindowRef.current = setTimeout(() => {
         setBiteReady(false);
-        pushEvent("It got away...");
+        pushEvent(EventMsg.ESCAPED);
         setGameState("missed");
       }, HOOK_WINDOW * 1000);
     }, delay);
@@ -84,7 +85,7 @@ export function PondView() {
       lineStrength,
     );
 
-    pushEvent(`Hooked a ${fish.name}!`);
+    pushEvent(EventMsg.HOOKED(fish.name));
     lastTimeRef.current = null;
 
     function loop(timestamp: number) {
@@ -110,9 +111,9 @@ export function PondView() {
 
     if (result === "WIN") {
       addMoney(fish.basePrice);
-      pushEvent(`Caught a ${fish.name}! +$${fish.basePrice}`);
+      pushEvent(EventMsg.CAUGHT(fish.name, fish.basePrice));
     } else {
-      pushEvent(`The ${fish.name} got away...`);
+      pushEvent(EventMsg.GOT_AWAY(fish.name));
     }
 
     setFading(true);
@@ -125,13 +126,13 @@ export function PondView() {
   function handleSpotClick(spot: string) {
     const fish = getAvailableFish();
     if (fish.length === 0) {
-      pushEvent("No fish available to catch!");
+      pushEvent(EventMsg.NO_FISH);
       return;
     }
     const selected = fish[Math.floor(Math.random() * fish.length)];
     caughtFishRef.current = selected;
     setFishName(selected.name);
-    pushEvent(`Casting at ${spot}...`);
+    pushEvent(EventMsg.CASTING(spot));
     setGameState("luring");
     setBiteReady(false);
     scheduleBite();

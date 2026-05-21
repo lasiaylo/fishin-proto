@@ -3,6 +3,7 @@ import { subscribeWithSelector } from "zustand/middleware";
 import { ShopUpgradeData, loadShopData } from "../util/csvLoader";
 import { addLure, addToStat, deductMoney, getWallet } from "./playerStore";
 import { pushEvent } from "./eventLogStore";
+import { EventMsg } from "../util/eventMessages";
 
 interface ShopUpgrade extends ShopUpgradeData {
   level: number;
@@ -67,5 +68,5 @@ export function buyUpgrade(id: string) {
   newUpgrades[idx] = { ...upgrade, level: newLevel };
   useShop.setState({ upgrades: newUpgrades });
 
-  pushEvent(`Bought ${id} Level ${newLevel}`);
+  pushEvent(EventMsg.BOUGHT(id, newLevel));
 }
