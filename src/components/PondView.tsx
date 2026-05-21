@@ -10,7 +10,12 @@ import { FightEngine, FightState } from "../game/FightEngine";
 import { randomRange } from "../util/random";
 import { FightView } from "./FightView";
 
-type GameState = "idle" | "luring" | "missed" | "fighting";
+enum GameState {
+  Idle = "idle",
+  Luring = "luring",
+  Missed = "missed",
+  Fighting = "fighting",
+}
 
 const SPOTS = ["Shallow End", "Deep End", "Far End"] as const;
 const BITE_DELAY: [number, number] = [2, 8];
@@ -18,7 +23,7 @@ const HOOK_WINDOW = 2;
 const RESULT_DURATION = 1500;
 
 export function PondView() {
-  const [gameState, setGameState] = useState<GameState>("idle");
+  const [gameState, setGameState] = useState<GameState>(GameState.Idle);
   const [biteReady, setBiteReady] = useState(false);
   const [fishName, setFishName] = useState("");
   const [fading, setFading] = useState(false);
@@ -41,7 +46,7 @@ export function PondView() {
   }, []);
 
   useEffect(() => {
-    if (gameState !== "luring" || !biteReady) return;
+    if (gameState !== GameState.Luring || !biteReady) return;
 
     function handler(e: KeyboardEvent) {
       if (e.code === "Space") {
@@ -62,7 +67,7 @@ export function PondView() {
       hookWindowRef.current = setTimeout(() => {
         setBiteReady(false);
         pushEvent(EventMsg.ESCAPED);
-        setGameState("missed");
+        setGameState(GameState.Missed);
       }, HOOK_WINDOW * 1000);
     }, delay);
   }
@@ -71,7 +76,7 @@ export function PondView() {
     if (biteTimerRef.current !== null) clearTimeout(biteTimerRef.current);
     if (hookWindowRef.current !== null) clearTimeout(hookWindowRef.current);
     setBiteReady(false);
-    setGameState("fighting");
+    setGameState(GameState.Fighting);
 
     const { reelStrength, drag, lineStrength } = usePlayer.getState();
     const fish = caughtFishRef.current!;
@@ -118,7 +123,7 @@ export function PondView() {
 
     setFading(true);
     setTimeout(() => {
-      setGameState("idle");
+      setGameState(GameState.Idle);
       setFading(false);
     }, RESULT_DURATION);
   }
@@ -133,12 +138,12 @@ export function PondView() {
     caughtFishRef.current = selected;
     setFishName(selected.name);
     pushEvent(EventMsg.CASTING(spot));
-    setGameState("luring");
+    setGameState(GameState.Luring);
     setBiteReady(false);
     scheduleBite();
   }
 
-  if (gameState === "idle") {
+  if (gameState === GameState.Idle) {
     return (
       <Flex direction="column" gap="3" p="4">
         <Text size={"1"}>Choose a fishing spot</Text>
@@ -151,7 +156,7 @@ export function PondView() {
     );
   }
 
-  if (gameState === "fighting" && fightState !== null) {
+  if (gameState === GameState.Fighting && fightState !== null) {
     return (
       <FightView
         state={fightState}
@@ -165,8 +170,8 @@ export function PondView() {
   let message;
   let onClick;
 
-  if (gameState === "missed") {
-    onClick = () => setGameState("idle");
+  if (gameState === GameState.Missed) {
+    onClick = () => setGameState(GameState.Idle);
     message = "Return";
   } else {
     onClick = () => {
@@ -176,7 +181,7 @@ export function PondView() {
       }
       if (biteTimerRef.current !== null) clearTimeout(biteTimerRef.current);
       if (hookWindowRef.current !== null) clearTimeout(hookWindowRef.current);
-      setGameState("idle");
+      setGameState(GameState.Idle);
     };
     message = biteReady ? "Hook" : "Reel";
   }
