@@ -25,7 +25,6 @@ const RESULT_DURATION = 1000;
 export function PondView() {
   const [gameState, setGameState] = useState<GameState>(GameState.Idle);
   const [biteReady, setBiteReady] = useState(false);
-  const [fishName, setFishName] = useState("");
   const [fading, setFading] = useState(false);
   const [fightState, setFightState] = useState<FightState | null>(null);
 
@@ -57,7 +56,6 @@ export function PondView() {
         speed: 5,
         requiredLure: "none",
       };
-      setFishName("Debug Fish");
       startFight();
     }
     window.addEventListener("keydown", handleKey);
@@ -103,7 +101,7 @@ export function PondView() {
       const dt = Math.min((timestamp - lastTimeRef.current) / 1000, 0.1);
       lastTimeRef.current = timestamp;
 
-      const state = fightRef.current!.tick(dt, true);
+      const state = fightRef.current!.tick(dt);
       setFightState({ ...state });
       if (state.outcome !== null) {
         finishFight(state.outcome as "WIN" | "LOSE");
@@ -141,7 +139,6 @@ export function PondView() {
     }
     const selected = fish[Math.floor(Math.random() * fish.length)];
     caughtFishRef.current = selected;
-    setFishName(selected.name);
     pushEvent(EventMsg.CASTING(spot));
     setGameState(GameState.Luring);
     setBiteReady(false);

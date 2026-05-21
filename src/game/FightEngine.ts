@@ -20,8 +20,6 @@ const ATTACK_CHANCE = 0.1;
 const FISH_STAMINA = 30;
 const FISH_TIMEOUT = 20;
 
-const DRIFT_SPEED = 3;
-
 // ── Types ──
 
 export enum Phase {
@@ -130,7 +128,7 @@ export class FightEngine {
     }
   }
 
-  private getDelta(bonus: number = 0): { speed: number; reel: number } {
+  private getDelta(bonus: number = 0): number {
     const speedDelta = this.fishSpeed + bonus - this.drag;
     const outLeveled = this.isOutLeveled();
 
@@ -141,50 +139,31 @@ export class FightEngine {
 
     const reelDelta = this.reelStr - (this.fishStr + bonus);
     const reel = outLeveled ? 20 : BASE_REEL * Math.pow(REEL_GROWTH, reelDelta);
-    return { speed, reel };
+    return Math.max(-MAX_REEL, speed - reel);
   }
 
-  private getStruggle(dt: number, isReeling: boolean): number {
+  private struggle(dt: number): number {
     const bonus = this.phase === Phase.SUPER_STRUGGLE ? 10 : 0;
-    const { speed, reel } = this.getDelta(bonus);
+    const delta = this.getDelta(bonus);
 
-    if (!isReeling) {
-      return speed * dt;
-    }
-
-    let distance;
-    if (this.tension < this.lineHp) {
-      distance = speed - reel;
-      this.tension += (this.fishStr + bonus) * dt;
-    } else {
-      distance = speed;
-    }
-    return distance * dt;
+    this.tension += (this.fishStr + bonus) * dt;
+    return delta;
   }
 
-  private getRest(dt: number, isReeling: boolean): number {
-    if (!isReeling) {
-      return DRIFT_SPEED * dt;
-    }
-
-    const { speed, reel } = this.getDelta();
-    return Math.max(-MAX_REEL, speed - reel) * dt;
+  private rest(dt: number): number {
+    return this.getDelta();
   }
 
-  tick(dt: number, isReeling: boolean): FightState {
+  tick(dt: number): FightState {
     if (this.outcome !== null) {
       return this.getState();
     }
 
     this.tryPhaseSwitch(dt);
 
-    const distance =
-      this.phase !== Phase.REST
-        ? this.getStruggle(dt, isReeling)
-        : this.getRest(dt, isReeling);
+    const delta = this.phase !== Phase.REST ? this.struggle(dt) : this.rest(dt);
 
-    const clamped = Math.max(-15.0, Math.min(15.0, distance));
-    this.distance += clamped * dt;
+    this.distance += Math.max(-15.0, Math.min(15.0, delta)) * dt;
     this.time += dt;
 
     if (this.distance <= 0) {

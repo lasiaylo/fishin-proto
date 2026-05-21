@@ -1,6 +1,7 @@
 import React from "react";
 import { Flex, Progress, Text } from "@radix-ui/themes";
 import { FightState } from "../game/FightEngine";
+// @ts-ignore
 import { progressPropDefs } from "@radix-ui/themes/props";
 
 function StatBar({
@@ -37,7 +38,7 @@ interface FightViewProps {
 }
 
 export function FightView({ state, lineHp, fading = false }: FightViewProps) {
-  const { distance, tension } = state;
+  const { distance, tension, phase } = state;
 
   return (
     <Flex
@@ -47,6 +48,9 @@ export function FightView({ state, lineHp, fading = false }: FightViewProps) {
       p="4"
       style={{ opacity: fading ? 0 : 1, transition: "opacity 0.6s ease" }}
     >
+      <Text size="2" color="gray">
+        {phase}
+      </Text>
       <StatBar label="Lure Distance" value={distance} max={100} color="cyan" />
       <StatBar label="Line Tension" value={tension} max={lineHp} color="red" />
     </Flex>
