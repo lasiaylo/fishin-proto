@@ -1,4 +1,8 @@
-@import "@radix-ui/themes/styles.css";
+.radix-themes {
+  --default-font-family: "Libre Baskerville", serif;
+  --font-weight-regular: 400;
+  --default-font-style: normal;
+}
 
 @keyframes fadeIn {
   0% {

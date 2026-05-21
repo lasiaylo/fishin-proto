@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Button, Flex, Text } from "@radix-ui/themes";
+import { Flex, Text } from "@radix-ui/themes";
+import { MyButton } from "./MyButton";
 import { FishData } from "../util/csvLoader";
 import { getAvailableFish } from "../stores/fishStore";
 import { usePlayer, addMoney } from "../stores/playerStore";
@@ -139,18 +140,12 @@ export function PondView() {
   if (gameState === "idle") {
     return (
       <Flex direction="column" gap="3" p="4">
-        <Text size="3" weight="bold">
-          Choose a fishing spot
-        </Text>
+        <Text>Choose a fishing spot</Text>
         <Flex direction="column" gap="2">
           {SPOTS.map((spot) => (
-            <Button
-              key={spot}
-              variant="outline"
-              onClick={() => handleSpotClick(spot)}
-            >
+            <MyButton key={spot} onClick={() => handleSpotClick(spot)}>
               {spot}
-            </Button>
+            </MyButton>
           ))}
         </Flex>
       </Flex>
@@ -189,9 +184,7 @@ export function PondView() {
 
   return (
     <Flex direction="column" gap="4" p="4" justify="start">
-      <Button className={"button"} variant="outline" onClick={onClick}>
-        {message}
-      </Button>
+      <MyButton onClick={onClick}>{message}</MyButton>
     </Flex>
   );
 }

@@ -1,4 +1,4 @@
-import { Flex, Text } from "@radix-ui/themes";
+import { Code, Flex, Text } from "@radix-ui/themes";
 import React from "react";
 import { usePlayer } from "../stores/playerStore";
 
@@ -15,7 +15,7 @@ export function InventoryView() {
       width="200px"
       gap={"5"}
     >
-      <Text size="2">Money: ${wallet}</Text>
+      <Code size="2">Money: ${wallet}</Code>
     </Flex>
   );
 }

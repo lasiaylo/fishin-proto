@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Button, Flex, Tooltip } from "@radix-ui/themes";
+import { Box, Flex, Text, Tooltip } from "@radix-ui/themes";
 import {
   useShop,
   buyUpgrade,
@@ -7,6 +7,7 @@ import {
   isMaxed,
 } from "../stores/shopStore";
 import { usePlayer } from "../stores/playerStore";
+import { MyButton } from "./MyButton";
 
 export function ShopView() {
   const upgrades = useShop((s) => s.upgrades);
@@ -22,13 +23,12 @@ export function ShopView() {
         return (
           <Box key={upgrade.id} maxWidth={"300px"}>
             <Tooltip content={upgrade.description}>
-              <Button
+              <MyButton
                 disabled={disabled}
-                variant="outline"
                 onClick={() => buyUpgrade(upgrade.id)}
               >
                 {upgrade.name} ({maxed ? "MAX" : `$${price}`})
-              </Button>
+              </MyButton>
             </Tooltip>
           </Box>
         );

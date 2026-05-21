@@ -1,6 +1,6 @@
+import "@radix-ui/themes/styles.css";
 import "../global.css";
 import { Flex, Theme } from "@radix-ui/themes";
-import "@radix-ui/themes/styles.css";
 import { useEffect, useState } from "react";
 import { EventLog } from "./components/EventLog";
 import { ActionsSection } from "./components/ActionsSection";
