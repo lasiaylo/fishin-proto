@@ -12,10 +12,14 @@ export function ActionsSection() {
           <Tabs.Trigger value="pond">Pond</Tabs.Trigger>
         </Tabs.List>
         <Tabs.Content value="shop">
-          <ShopView />
+          <Flex className={"fade-in"}>
+            <ShopView />
+          </Flex>
         </Tabs.Content>
         <Tabs.Content value="pond">
-          <PondView />
+          <Flex className={"fade-in"}>
+            <PondView />
+          </Flex>
         </Tabs.Content>
       </Tabs.Root>
     </Flex>

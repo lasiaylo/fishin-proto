@@ -147,7 +147,6 @@ export function PondView() {
       <FightView
         state={fightState}
         lineHp={lineHpRef.current}
-        fishName={fishName}
         fading={fading}
       />
     );
