@@ -20,7 +20,7 @@ enum GameState {
 const SPOTS = ["Shallow End", "Deep End", "Far End"] as const;
 const BITE_DELAY: [number, number] = [2, 8];
 const HOOK_WINDOW = 2;
-const RESULT_DURATION = 1500;
+const RESULT_DURATION = 1000;
 
 export function PondView() {
   const [gameState, setGameState] = useState<GameState>(GameState.Idle);
@@ -43,6 +43,25 @@ export function PondView() {
       if (hookWindowRef.current !== null) clearTimeout(hookWindowRef.current);
       cancelAnimationFrame(rafRef.current);
     };
+  }, []);
+
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key !== "1") return;
+      caughtFishRef.current = {
+        id: "debug",
+        name: "Debug Fish",
+        basePrice: 0,
+        baseWeight: 1,
+        strength: 5,
+        speed: 5,
+        requiredLure: "none",
+      };
+      setFishName("Debug Fish");
+      startFight();
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
   }, []);
 
   function scheduleBite() {
@@ -131,7 +150,7 @@ export function PondView() {
 
   if (gameState === GameState.Idle) {
     return (
-      <Flex direction="column" gap="3" p="4">
+      <Flex className="fade-in" direction="column" gap="3" p="4">
         <Text size={"1"}>Choose a fishing spot</Text>
         {SPOTS.map((spot) => (
           <MyButton key={spot} onClick={() => handleSpotClick(spot)}>
