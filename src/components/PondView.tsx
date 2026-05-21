@@ -180,6 +180,8 @@ export function PondView() {
         startFight();
         return;
       }
+      if (biteTimerRef.current !== null) clearTimeout(biteTimerRef.current);
+      if (hookWindowRef.current !== null) clearTimeout(hookWindowRef.current);
       setGameState("idle");
     };
     message = biteReady ? "Hook" : "Reel";
