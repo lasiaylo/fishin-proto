@@ -2,11 +2,13 @@ import React, { useState } from "react";
 import { Flex, Separator, Text, Button } from "@radix-ui/themes";
 import { addMoney, usePlayer } from "../stores/playerStore";
 import { useShop, buyUpgrade, getUpgradePrice } from "../stores/shopStore";
+import { pushEvent } from "../stores/eventLogStore";
 
 export function Debug() {
   return (
     <Flex direction="row" gap="4" p="4" wrap="wrap">
       <MoneySection />
+      <EventLogSection />
       <ShopUpgradeSection />
       <StoreView />
     </Flex>
@@ -47,6 +49,38 @@ function MoneySection() {
   );
 }
 
+
+function EventLogSection() {
+  const [value, setValue] = useState("");
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (value.trim()) {
+      pushEvent(value.trim());
+    }
+  }
+
+  return (
+    <Flex direction="column" gap="2">
+      <Text weight="bold">Event Log</Text>
+      <Separator size="4" />
+      <form onSubmit={handleSubmit}>
+        <Flex gap="2" align="center">
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="Message"
+            style={{ width: "120px" }}
+          />
+          <Button type="submit" size="1">
+            Post
+          </Button>
+        </Flex>
+      </form>
+    </Flex>
+  );
+}
 
 function ShopUpgradeSection() {
   const upgrades = useShop((s) => s.upgrades);

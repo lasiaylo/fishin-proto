@@ -1,13 +1,13 @@
 import "../global.css";
-import {Flex, Theme} from "@radix-ui/themes";
+import { Flex, Theme } from "@radix-ui/themes";
 import "@radix-ui/themes/styles.css";
-import {useEffect, useState} from "react";
-import {EventLog} from "./components/EventLog";
-import {ActionsSection} from "./components/ActionsSection";
-import {Debug} from "./components/debug";
-import {initShop} from "./stores/shopStore";
-import {initFish} from "./stores/fishStore";
-import {pushEvent} from "./stores/eventLogStore";
+import { useEffect, useState } from "react";
+import { EventLog } from "./components/EventLog";
+import { ActionsSection } from "./components/ActionsSection";
+import { Debug } from "./components/debug";
+import { initShop } from "./stores/shopStore";
+import { initFish } from "./stores/fishStore";
+import { pushEvent } from "./stores/eventLogStore";
 
 function App() {
   const [showDebug, setShowDebug] = useState(false);
@@ -28,7 +28,14 @@ function App() {
 
   return (
     <Theme appearance={"dark"} accentColor={"gray"} grayColor={"mauve"}>
-      <Flex direction="row" justify={"center"} minHeight="100vh" px="5" py="5" gap="5">
+      <Flex
+        direction="row"
+        justify={"center"}
+        minHeight="100vh"
+        px="5"
+        py="5"
+        gap="5"
+      >
         <EventLog />
         <ActionsSection />
       </Flex>
@@ -39,7 +46,7 @@ function App() {
             bottom: 0,
             left: 0,
             right: 0,
-            maxHeight: "80vh",
+            maxHeight: "40vh",
             overflowY: "auto",
             background: "var(--color-background)",
             borderTop: "1px solid var(--gray-6)",

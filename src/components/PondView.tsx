@@ -13,7 +13,7 @@ type GameState = "idle" | "luring" | "missed" | "fighting";
 const SPOTS = ["Shallow End", "Deep End", "Far End"] as const;
 const BITE_DELAY: [number, number] = [2, 8];
 const HOOK_WINDOW = 2;
-const RESULT_DURATION = 2000;
+const RESULT_DURATION = 1500;
 
 export function PondView() {
   const [gameState, setGameState] = useState<GameState>("idle");

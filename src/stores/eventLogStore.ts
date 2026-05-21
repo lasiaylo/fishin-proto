@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 
-const MAX_EVENTS = 20;
+const MAX_EVENTS = 30;
 
 interface EventLogState {
   events: string[];
