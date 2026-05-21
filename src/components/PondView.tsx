@@ -8,10 +8,10 @@ import { FightEngine, FightState } from "../game/FightEngine";
 import { randomRange } from "../util/random";
 import { FightView } from "./FightView";
 
-type GameState = "idle" | "luring" | "fighting" | "result";
+type GameState = "idle" | "luring" | "missed" | "fighting";
 
 const SPOTS = ["Shallow End", "Deep End", "Far End"] as const;
-const BITE_DELAY: [number, number] = [3, 8];
+const BITE_DELAY: [number, number] = [2, 8];
 const HOOK_WINDOW = 2;
 const RESULT_DURATION = 2000;
 
@@ -19,8 +19,7 @@ export function PondView() {
   const [gameState, setGameState] = useState<GameState>("idle");
   const [biteReady, setBiteReady] = useState(false);
   const [fishName, setFishName] = useState("");
-  const [fishPrice, setFishPrice] = useState(0);
-  const [outcome, setOutcome] = useState<"WIN" | "LOSE" | null>(null);
+  const [fading, setFading] = useState(false);
   const [fightState, setFightState] = useState<FightState | null>(null);
 
   const caughtFishRef = useRef<FishData | null>(null);
@@ -41,12 +40,14 @@ export function PondView() {
 
   useEffect(() => {
     if (gameState !== "luring" || !biteReady) return;
+
     function handler(e: KeyboardEvent) {
       if (e.code === "Space") {
         e.preventDefault();
         startFight();
       }
     }
+
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [gameState, biteReady]);
@@ -55,9 +56,11 @@ export function PondView() {
     const delay = randomRange(BITE_DELAY[0], BITE_DELAY[1]) * 1000;
     biteTimerRef.current = setTimeout(() => {
       setBiteReady(true);
+      pushEvent("A fish is biting!");
       hookWindowRef.current = setTimeout(() => {
         setBiteReady(false);
-        scheduleBite();
+        pushEvent("It got away...");
+        setGameState("missed");
       }, HOOK_WINDOW * 1000);
     }, delay);
   }
@@ -96,14 +99,13 @@ export function PondView() {
       }
       rafRef.current = requestAnimationFrame(loop);
     }
+
     rafRef.current = requestAnimationFrame(loop);
   }
 
   function finishFight(result: "WIN" | "LOSE") {
     cancelAnimationFrame(rafRef.current);
     const fish = caughtFishRef.current!;
-    setOutcome(result);
-    setGameState("result");
 
     if (result === "WIN") {
       addMoney(fish.basePrice);
@@ -112,12 +114,11 @@ export function PondView() {
       pushEvent(`The ${fish.name} got away...`);
     }
 
-    if (result === "WIN") {
-      setTimeout(() => {
-        setGameState("idle");
-        setOutcome(null);
-      }, RESULT_DURATION);
-    }
+    setFading(true);
+    setTimeout(() => {
+      setGameState("idle");
+      setFading(false);
+    }, RESULT_DURATION);
   }
 
   function handleSpotClick(spot: string) {
@@ -129,7 +130,6 @@ export function PondView() {
     const selected = fish[Math.floor(Math.random() * fish.length)];
     caughtFishRef.current = selected;
     setFishName(selected.name);
-    setFishPrice(selected.basePrice);
     pushEvent(`Casting at ${spot}...`);
     setGameState("luring");
     setBiteReady(false);
@@ -139,31 +139,20 @@ export function PondView() {
   if (gameState === "idle") {
     return (
       <Flex direction="column" gap="3" p="4">
-        <Text size="3" weight="bold">Choose a fishing spot</Text>
+        <Text size="3" weight="bold">
+          Choose a fishing spot
+        </Text>
         <Flex direction="column" gap="2">
           {SPOTS.map((spot) => (
-            <Button key={spot} variant="outline" onClick={() => handleSpotClick(spot)}>
+            <Button
+              key={spot}
+              variant="outline"
+              onClick={() => handleSpotClick(spot)}
+            >
               {spot}
             </Button>
           ))}
         </Flex>
-      </Flex>
-    );
-  }
-
-  if (gameState === "result") {
-    return (
-      <Flex direction="column" gap="4" p="4" align="center" justify="center" style={{ minHeight: 120 }}>
-        <Text size="4" weight="bold" align="center">
-          {outcome === "WIN"
-            ? `Caught a ${fishName}! +$${fishPrice}`
-            : `The ${fishName} got away...`}
-        </Text>
-        {outcome === "LOSE" && (
-          <Button variant="outline" onClick={() => { setGameState("idle"); setOutcome(null); }}>
-            Return to Pond
-          </Button>
-        )}
       </Flex>
     );
   }
@@ -174,17 +163,32 @@ export function PondView() {
         state={fightState}
         lineHp={lineHpRef.current}
         fishName={fishName}
+        fading={fading}
       />
     );
   }
 
+  let message;
+  let onClick;
+
+  if (gameState === "missed") {
+    onClick = () => setGameState("idle");
+    message = "Return";
+  } else {
+    onClick = () => {
+      if (biteReady) {
+        startFight();
+        return;
+      }
+      setGameState("idle");
+    };
+    message = biteReady ? "Hook" : "Reel";
+  }
+
   return (
-    <Flex direction="column" gap="3" p="4" align="center" justify="center" style={{ minHeight: 120 }}>
-      <Text size="3" color="gray">
-        {biteReady ? "A fish is biting!" : "Waiting for a bite..."}
-      </Text>
-      <Button variant="outline" disabled={!biteReady} onClick={startFight}>
-        {biteReady ? "Hook!" : "Waiting..."}
+    <Flex direction="column" gap="4" p="4" justify="start">
+      <Button className={"button"} variant="outline" onClick={onClick}>
+        {message}
       </Button>
     </Flex>
   );
