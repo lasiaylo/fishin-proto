@@ -8,6 +8,7 @@ import { Debug } from "./components/debug";
 import { initShop } from "./stores/shopStore";
 import { initFish } from "./stores/fishStore";
 import { pushEvent } from "./stores/eventLogStore";
+import { InventoryView } from "./components/InventoryView.tsx";
 
 function App() {
   const [showDebug, setShowDebug] = useState(false);
@@ -30,14 +31,15 @@ function App() {
     <Theme appearance={"dark"} accentColor={"gray"} grayColor={"mauve"}>
       <Flex
         direction="row"
-        justify={"center"}
         minHeight="100vh"
         px="5"
         py="5"
         gap="5"
+        style={{ justifyContent: "center" }}
       >
         <EventLog />
         <ActionsSection />
+        <InventoryView />
       </Flex>
       {showDebug && (
         <div
