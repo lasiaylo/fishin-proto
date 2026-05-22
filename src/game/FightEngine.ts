@@ -1,12 +1,8 @@
 import { randomRange } from "../util/random";
 
-// ── Constants (match fight_sim.py) ──
-
 const MAX_DISTANCE = 100;
 const START_DISTANCE = MAX_DISTANCE / 2;
 const OUT_LEVELED_GROWTH = 1.5;
-
-// ── Fight Config ──
 
 export interface FightConfig {
   restTime: [number, number];
@@ -22,6 +18,7 @@ export interface FightConfig {
   fishStamina: number;
   fishTimeout: number;
   superStruggleDuration: number;
+  initStruggleDuration: number;
 }
 
 export const DEFAULT_FIGHT_CONFIG: FightConfig = {
@@ -38,20 +35,18 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   fishStamina: 30,
   fishTimeout: 20,
   superStruggleDuration: 6,
+  initStruggleDuration: 2,
 };
-
-// ── Simulation constants (runToCompletion only, not used in live tick) ──
 
 const MAX_SIM_TIME = 120;
 const SIM_DT = 0.5;
 const SIM_DISTANCE_CLAMP = 15;
 
-// ── Types ──
-
 export enum Phase {
   REST = "REST",
   STRUGGLE = "STRUGGLE",
   SUPER_STRUGGLE = "SUPER_STRUGGLE",
+  INIT_STRUGGLE = "INIT_STRUGGLE",
 }
 
 export type Outcome = "WIN" | "LOSE" | null;
@@ -71,25 +66,20 @@ export interface FightState {
   outcome: Outcome;
 }
 
-// ── Fight Engine ──
-
 export class FightEngine {
-  // Fish stats
   private fishSpeed: number;
   private fishStr: number;
 
-  // Player stats
   private reelStr: number;
   private drag: number;
   private lineHp: number;
 
-  // Fight state
   distance: number;
   tension: number;
-  time: number;
+  fightElapsed: number;
 
   phase: Phase;
-  private phaseTime: number;
+  private phaseElapsed: number;
   private phaseDuration: number;
 
   outcome: Outcome;
@@ -113,14 +103,14 @@ export class FightEngine {
 
     this.distance = START_DISTANCE;
     this.tension = 0;
-    this.time = 0;
+    this.fightElapsed = 0;
 
     this.phase = Phase.STRUGGLE;
-    this.phaseTime = 0;
+    this.phaseElapsed = 0;
     this.phaseDuration = 0;
     this.outcome = null;
 
-    this.setPhase(Phase.STRUGGLE);
+    this.setPhase(Phase.INIT_STRUGGLE);
   }
 
   private isOutLeveled(): boolean {
@@ -133,8 +123,15 @@ export class FightEngine {
   }
 
   private setPhase(phase: Phase): void {
-    this.phaseTime = 0;
+    this.phaseElapsed = 0;
     this.phase = phase;
+
+    if (
+      this.fightElapsed >= this.cfg.fishStamina + this.cfg.fishTimeout &&
+      !this.isOutLeveled()
+    ) {
+      this.phase = Phase.REST;
+    }
 
     if (phase === Phase.REST) {
       this.phaseDuration = randomRange(
@@ -144,30 +141,35 @@ export class FightEngine {
       return;
     }
 
-    const nextTimeRange = [...this.cfg.fightTimeRange];
-    if (
-      this.time >= this.cfg.fishStamina + this.cfg.fishTimeout &&
-      !this.isOutLeveled()
-    ) {
-      nextTimeRange[0] = 0;
-      nextTimeRange[1] = 0;
-    } else if (Math.random() <= this.cfg.attackChance) {
-      this.phase = Phase.SUPER_STRUGGLE;
-    } else if (this.time < this.cfg.fishStamina && !this.isOutLeveled()) {
-      const delta = this.time - this.cfg.fishStamina;
-      const penalty = (delta / this.cfg.fishTimeout) * nextTimeRange[1];
-      nextTimeRange[1] = nextTimeRange[1] - penalty;
+    if (phase === Phase.SUPER_STRUGGLE) {
+      this.phaseDuration = this.cfg.superStruggleDuration;
+      return;
     }
-    this.phaseDuration =
-      this.phase === Phase.SUPER_STRUGGLE
-        ? this.cfg.superStruggleDuration
-        : randomRange(nextTimeRange[0], nextTimeRange[1]);
+
+    if (phase === Phase.INIT_STRUGGLE) {
+      this.phaseDuration = this.cfg.initStruggleDuration;
+      return;
+    }
+
+    // The upper range of fight stage goes down as the fight goes on
+    const nextTimeRange = [...this.cfg.fightTimeRange];
+    if (this.fightElapsed < this.cfg.fishStamina && !this.isOutLeveled()) {
+      const delta = this.fightElapsed - this.cfg.fishStamina;
+      const penalty = (delta / this.cfg.fishTimeout) * nextTimeRange[1];
+      nextTimeRange[1] = Math.max(nextTimeRange[0], nextTimeRange[1] - penalty);
+    }
+    this.phaseDuration = randomRange(nextTimeRange[0], nextTimeRange[1]);
   }
 
   private tryPhaseSwitch(dt: number): void {
-    this.phaseTime += dt;
-    if (this.phaseTime >= this.phaseDuration) {
-      const next = this.phase === Phase.REST ? Phase.STRUGGLE : Phase.REST;
+    this.phaseElapsed += dt;
+    if (this.phaseElapsed >= this.phaseDuration) {
+      const next =
+        this.phase === Phase.REST
+          ? Math.random() <= this.cfg.attackChance
+            ? Phase.SUPER_STRUGGLE
+            : Phase.STRUGGLE
+          : Phase.REST;
       this.setPhase(next);
     }
   }
@@ -190,7 +192,10 @@ export class FightEngine {
   }
 
   private struggle(dt: number): number {
-    const bonus = this.phase === Phase.SUPER_STRUGGLE ? 10 : 0;
+    const bonus =
+      this.phase === Phase.SUPER_STRUGGLE || this.phase === Phase.INIT_STRUGGLE
+        ? 10
+        : 0;
     const delta = this.getDelta(bonus);
 
     this.tension += (this.fishStr + bonus) * dt;
@@ -208,7 +213,7 @@ export class FightEngine {
       this.phase !== Phase.REST ? this.struggle(dt) : this.rest();
     const delta = Math.max(-distanceClamp, Math.min(distanceClamp, rawDelta));
     this.distance += delta * dt;
-    this.time += dt;
+    this.fightElapsed += dt;
 
     if (this.distance <= 0) {
       this.distance = 0;
@@ -232,11 +237,11 @@ export class FightEngine {
   reset(): void {
     this.distance = START_DISTANCE;
     this.tension = 0;
-    this.time = 0;
+    this.fightElapsed = 0;
     this.outcome = null;
-    this.phaseTime = 0;
+    this.phaseElapsed = 0;
     this.phaseDuration = 0;
-    this.setPhase(Phase.STRUGGLE);
+    this.setPhase(Phase.INIT_STRUGGLE);
   }
 
   runToCompletion(recordHistory = false): {
@@ -248,19 +253,19 @@ export class FightEngine {
 
     if (recordHistory) {
       history.push({
-        time: this.time,
+        time: this.fightElapsed,
         distance: this.distance,
         tension: this.tension,
         phase: this.phase,
       });
     }
 
-    while (this.time < MAX_SIM_TIME) {
+    while (this.fightElapsed < MAX_SIM_TIME) {
       this.step(SIM_DT, SIM_DISTANCE_CLAMP);
 
       if (recordHistory) {
         history.push({
-          time: this.time,
+          time: this.fightElapsed,
           distance: this.distance,
           tension: this.tension,
           phase: this.phase,
@@ -268,11 +273,11 @@ export class FightEngine {
       }
 
       if (this.outcome !== null) {
-        return { history, outcome: this.outcome, duration: this.time };
+        return { history, outcome: this.outcome, duration: this.fightElapsed };
       }
     }
 
-    return { history, outcome: "TIMEOUT", duration: this.time };
+    return { history, outcome: "TIMEOUT", duration: this.fightElapsed };
   }
 
   getState(): FightState {
@@ -280,7 +285,7 @@ export class FightEngine {
       distance: this.distance,
       tension: this.tension,
       phase: this.phase,
-      time: this.time,
+      time: this.fightElapsed,
       outcome: this.outcome,
     };
   }

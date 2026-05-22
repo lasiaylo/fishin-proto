@@ -120,6 +120,12 @@ export function EngineConfigRow({
               onChange={(v) => onChange({ superStruggleDuration: v })}
               min={0}
             />
+            <NumInput
+              label="Init Dur"
+              value={config.initStruggleDuration}
+              onChange={(v) => onChange({ initStruggleDuration: v })}
+              min={0}
+            />
           </Flex>
           <Flex gap="3" wrap="wrap" align="end">
             <NumInput
