@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Fishin2Model is a **Python simulation engine** (`model/`) for economy balancing and fish fight mechanics.
+Fishin2Model is a React game with a built-in balancing tool.
 
 ## Commands
 
-### Model (Python)
+### Dev server
 
 ```bash
-source model/venv/bin/activate
-python model/game_model.py    # Economy simulation with matplotlib plots
-python model/fight_sim.py     # Fish fight mechanics simulation
+npm run dev
 ```
+
+Visit `localhost:5173/debug` for the Model view — fight trace, parameter sweep, and economy simulation charts powered by `src/game/FightEngine.ts` and `src/game/EconomyModel.ts`.
