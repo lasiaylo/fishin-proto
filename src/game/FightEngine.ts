@@ -130,19 +130,17 @@ export class FightEngine {
 
   private getDelta(bonus: number = 0): number {
     const speedDelta = this.fishSpeed + bonus - this.drag;
-    // console.log("fishSpeed", this.fishSpeed, this.drag);
 
     const outLeveled = this.isOutLeveled();
 
-    let speed = outLeveled
+    let fishSpeed = outLeveled
       ? 40
       : BASE_SPEED * Math.pow(SPEED_GROWTH, speedDelta);
-    speed = Math.max(MIN_SPEED, speed);
+    fishSpeed = Math.max(MIN_SPEED, fishSpeed);
 
     const reelDelta = this.reelStr - (this.fishStr + bonus);
     const reel = outLeveled ? 20 : BASE_REEL * Math.pow(REEL_GROWTH, reelDelta);
-    // console.log("REEL", BASE_REEL, reelDelta, reel, speed);
-    return Math.max(-MAX_REEL, speed - reel);
+    return Math.max(-MAX_REEL, fishSpeed - reel);
   }
 
   private struggle(dt: number): number {
@@ -165,7 +163,7 @@ export class FightEngine {
     this.tryPhaseSwitch(dt);
 
     const delta = this.phase !== Phase.REST ? this.struggle(dt) : this.rest();
-    this.distance += Math.max(-15.0, Math.min(15.0, delta)) * dt;
+    this.distance += delta * dt;
     this.time += dt;
 
     if (this.distance <= 0) {
