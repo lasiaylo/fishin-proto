@@ -19,6 +19,7 @@ export interface FightConfig {
   fishTimeout: number;
   superStruggleDuration: number;
   initStruggleDuration: number;
+  struggleBonus: number;
 }
 
 export const DEFAULT_FIGHT_CONFIG: FightConfig = {
@@ -36,6 +37,7 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   fishTimeout: 20,
   superStruggleDuration: 6,
   initStruggleDuration: 2,
+  struggleBonus: 10,
 };
 
 const MAX_SIM_TIME = 120;
@@ -185,7 +187,7 @@ export class FightEngine {
   private struggle(dt: number): number {
     const bonus =
       this.phase === Phase.SUPER_STRUGGLE || this.phase === Phase.INIT_STRUGGLE
-        ? 10
+        ? this.cfg.struggleBonus
         : 0;
     const delta = this.getDelta(bonus);
 
