@@ -154,11 +154,41 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
 
       {results.length > 0 && (
         <>
-          <Text size="2" color="gray">
-            {single
-              ? `${results[0].outcome} · ${results[0].duration.toFixed(1)}s`
-              : `${wins}/${results.length} wins (${((wins / results.length) * 100).toFixed(0)}%) · avg ${avgDur.toFixed(1)}s`}
-          </Text>
+          <Flex gap="4" align="center" wrap="wrap">
+            <Text size="2" color="gray">
+              {single
+                ? `${results[0].outcome} · ${results[0].duration.toFixed(1)}s`
+                : `${wins}/${results.length} wins (${((wins / results.length) * 100).toFixed(0)}%) · avg ${avgDur.toFixed(1)}s`}
+            </Text>
+            {single && (
+              <Flex gap="3" align="center">
+                {(
+                  [
+                    { phase: Phase.REST, label: "Rest" },
+                    { phase: Phase.STRUGGLE, label: "Struggle" },
+                    { phase: Phase.SUPER_STRUGGLE, label: "Super Struggle" },
+                  ] as const
+                ).map(({ phase, label }) => (
+                  <Flex key={phase} gap="1" align="center">
+                    <div
+                      style={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: 2,
+                        background: phaseColor(phase).replace(
+                          /[\d.]+\)$/,
+                          "0.7)",
+                        ),
+                      }}
+                    />
+                    <Text size="1" color="gray">
+                      {label}
+                    </Text>
+                  </Flex>
+                ))}
+              </Flex>
+            )}
+          </Flex>
 
           <Text size="2" weight="bold">
             Line Distance
