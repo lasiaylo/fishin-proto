@@ -21,6 +21,7 @@ import {
 } from "../../game/FightEngine";
 import type { FishData } from "../../util/csvLoader";
 import { COLORS, NumInput, FishSelect, EngineConfigRow } from "./shared";
+import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
 
 interface FightResult {
   history: FrameRecord[];
@@ -85,9 +86,9 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
   const [fishBasePrice, setFishBasePrice] = useState(
     fishData[0]?.basePrice ?? 0,
   );
-  const [reelStr, setReelStr] = useState(3);
-  const [drag, setDrag] = useState(3);
-  const [lineHP, setLineHP] = useState(20);
+  const [reelStr, setReelStr] = useState(INITIAL_PLAYER_STATE.reelStrength);
+  const [drag, setDrag] = useState(INITIAL_PLAYER_STATE.drag);
+  const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
   const [trialCount, setTrialCount] = useState(1);
   const [engineCfg, setEngineCfg] = useState<FightConfig>(DEFAULT_FIGHT_CONFIG);
   const [results, setResults] = useState<FightResult[]>([]);

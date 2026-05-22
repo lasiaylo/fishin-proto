@@ -9,12 +9,16 @@ interface PlayerState {
   ownedLures: Set<string>;
 }
 
+export const INITIAL_PLAYER_STATE = {
+  wallet: 0,
+  reelStrength: 10,
+  drag: 1,
+  lineHP: 20,
+};
+
 export const usePlayer = create(
   subscribeWithSelector<PlayerState>(() => ({
-    wallet: 0,
-    reelStrength: 10,
-    drag: 1,
-    lineHP: 20,
+    ...INITIAL_PLAYER_STATE,
     ownedLures: new Set<string>(),
   })),
 );

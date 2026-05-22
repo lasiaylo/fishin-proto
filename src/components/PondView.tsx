@@ -92,7 +92,6 @@ export function PondView() {
       drag,
       lineHP,
     );
-    console.log("START!", fightRef.current.getState());
 
     pushEvent(EventMsg.HOOKED(fish.name));
     lastTimeRef.current = null;
