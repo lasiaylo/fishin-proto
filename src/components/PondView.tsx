@@ -81,17 +81,16 @@ export function PondView() {
     setBiteReady(false);
     setGameState(GameState.Fighting);
 
-    const { reelStrength, drag, lineStrength } = usePlayer.getState();
+    const { reelStrength, drag, lineHP } = usePlayer.getState();
     const fish = caughtFishRef.current!;
-    lineHpRef.current = lineStrength;
-    console.log("STARTING FIGHT", fish.name, fish.speed, fish.strength);
+    lineHpRef.current = lineHP;
 
     fightRef.current = new FightEngine(
       fish.speed,
       fish.strength,
       reelStrength,
       drag,
-      lineStrength,
+      lineHP,
     );
 
     pushEvent(EventMsg.HOOKED(fish.name));

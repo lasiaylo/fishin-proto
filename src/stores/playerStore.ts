@@ -5,7 +5,7 @@ interface PlayerState {
   wallet: number;
   reelStrength: number;
   drag: number;
-  lineStrength: number;
+  lineHP: number;
   ownedLures: Set<string>;
 }
 
@@ -14,7 +14,7 @@ export const usePlayer = create(
     wallet: 0,
     reelStrength: 10,
     drag: 1,
-    lineStrength: 20,
+    lineHP: 20,
     ownedLures: new Set<string>(),
   })),
 );
