@@ -11,9 +11,9 @@ interface PlayerState {
 
 export const INITIAL_PLAYER_STATE = {
   wallet: 0,
-  reelStrength: 10,
-  drag: 1,
-  lineHP: 20,
+  reelStrength: 3,
+  drag: 3,
+  lineHP: 50,
 };
 
 export const usePlayer = create(
