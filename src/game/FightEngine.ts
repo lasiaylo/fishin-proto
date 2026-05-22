@@ -20,6 +20,12 @@ const ATTACK_CHANCE = 0.1;
 const FISH_STAMINA = 30;
 const FISH_TIMEOUT = 20;
 
+// ── Simulation constants (runToCompletion only, not used in live tick) ──
+
+const MAX_SIM_TIME = 120;
+const SIM_DT = 0.5;
+const SIM_DISTANCE_CLAMP = 15;
+
 // ── Types ──
 
 export enum Phase {
@@ -29,6 +35,13 @@ export enum Phase {
 }
 
 export type Outcome = "WIN" | "LOSE" | null;
+
+export interface FrameRecord {
+  time: number;
+  distance: number;
+  tension: number;
+  phase: Phase;
+}
 
 export interface FightState {
   distance: number;
@@ -155,14 +168,12 @@ export class FightEngine {
     return this.getDelta();
   }
 
-  tick(dt: number): FightState {
-    if (this.outcome !== null) {
-      return this.getState();
-    }
-
+  private step(dt: number, distanceClamp = Infinity): void {
     this.tryPhaseSwitch(dt);
 
-    const delta = this.phase !== Phase.REST ? this.struggle(dt) : this.rest();
+    const rawDelta =
+      this.phase !== Phase.REST ? this.struggle(dt) : this.rest();
+    const delta = Math.max(-distanceClamp, Math.min(distanceClamp, rawDelta));
     this.distance += delta * dt;
     this.time += dt;
 
@@ -176,8 +187,59 @@ export class FightEngine {
       this.tension = this.lineHp;
       this.outcome = "LOSE";
     }
+  }
 
+  tick(dt: number): FightState {
+    if (this.outcome === null) {
+      this.step(dt);
+    }
     return this.getState();
+  }
+
+  reset(): void {
+    this.distance = START_DISTANCE;
+    this.tension = 0;
+    this.time = 0;
+    this.outcome = null;
+    this.phaseTime = 0;
+    this.phaseDuration = 0;
+    this.setPhase(Phase.STRUGGLE);
+  }
+
+  runToCompletion(recordHistory = false): {
+    history: FrameRecord[];
+    outcome: "WIN" | "LOSE" | "TIMEOUT";
+    duration: number;
+  } {
+    const history: FrameRecord[] = [];
+
+    if (recordHistory) {
+      history.push({
+        time: this.time,
+        distance: this.distance,
+        tension: this.tension,
+        phase: this.phase,
+      });
+    }
+
+    while (this.time < MAX_SIM_TIME) {
+      this.step(SIM_DT, SIM_DISTANCE_CLAMP);
+
+      if (recordHistory) {
+        history.push({
+          time: this.time,
+          distance: this.distance,
+          tension: this.tension,
+          phase: this.phase,
+        });
+      }
+
+      if (this.outcome !== null) {
+        return { history, outcome: this.outcome, duration: this.time };
+      }
+    }
+
+    return { history, outcome: "TIMEOUT", duration: this.time };
   }
 
   getState(): FightState {

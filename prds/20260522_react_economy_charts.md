@@ -61,9 +61,9 @@ Add to `src/game/FightEngine.ts`:
 
 Create `src/game/EconomyModel.ts`:
 
-- `SimPlayer` type: `{ reelStrength, drag, lineHP, inventory }`
+- `SimPlayer` type: `{ reelStrength, drag, lineHP }`
 - `EconomyRound` type: per-round record with time, income, rate, fish, upgrades
-- `simulateEconomy(fishData, shopData, start?)` — port of `game_model.py`'s round loop; uses `FightEngine.runToCompletion()` for fight trials; starting defaults: `reelStrength=3, drag=3, lineHP=20, inventory=4`
+- `simulateEconomy(fishData, shopData, start?)` — port of `game_model.py`'s round loop; uses `FightEngine.runToCompletion()` for fight trials; starting defaults: `reelStrength=3, drag=3, lineHP=20`; one fish caught per round (no inventory multiplier)
 - Uses `FishData` and `ShopUpgradeData` from `src/util/csvLoader.ts`
 
 ### Phase 3 — ModelView Component
