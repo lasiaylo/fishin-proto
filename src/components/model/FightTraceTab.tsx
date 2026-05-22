@@ -35,7 +35,8 @@ function buildFightChartData(
   if (results.length === 0) return [];
   const maxLen = Math.max(...results.map((r) => r.history.length));
   return Array.from({ length: maxLen }, (_, i) => {
-    const entry: Record<string, number | null> = { time: i * 0.5 };
+    const ref = results.find((r) => i < r.history.length)!;
+    const entry: Record<string, number | null> = { time: ref.history[i].time };
     results.forEach((r, j) => {
       entry[`d${j}`] = i < r.history.length ? r.history[i].distance : null;
       entry[`t${j}`] = i < r.history.length ? r.history[i].tension : null;
@@ -120,6 +121,12 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
   }
 
   const chartData = buildFightChartData(results);
+  const maxTime =
+    chartData.length > 0 ? (chartData[chartData.length - 1].time as number) : 0;
+  const xTicks = Array.from(
+    { length: Math.floor(maxTime / 0.5) + 1 },
+    (_, i) => +(i * 0.5).toFixed(1),
+  );
   const single = results.length === 1;
   const segments = single ? getPhaseSegments(results[0].history) : [];
   const wins = results.filter((r) => r.outcome === Outcome.WIN).length;
@@ -213,9 +220,19 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
           <ResponsiveContainer width="100%" height={260}>
             <ComposedChart data={chartData} syncId="fight">
               <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis dataKey="time" unit="s" />
+              <XAxis
+                dataKey="time"
+                type="number"
+                unit="s"
+                ticks={xTicks}
+                domain={["dataMin", "dataMax"]}
+              />
               <YAxis domain={[0, 100]} />
-              <Tooltip />
+              <Tooltip
+                formatter={(v: number) => v.toFixed(2)}
+                labelFormatter={(v: number) => `${v.toFixed(2)}s`}
+                labelStyle={{ color: "#000" }}
+              />
               {segments.map((seg, i) => (
                 <ReferenceArea
                   key={i}
@@ -248,9 +265,19 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
           <ResponsiveContainer width="100%" height={180}>
             <ComposedChart data={chartData} syncId="fight">
               <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis dataKey="time" unit="s" />
+              <XAxis
+                dataKey="time"
+                type="number"
+                unit="s"
+                ticks={xTicks}
+                domain={["dataMin", "dataMax"]}
+              />
               <YAxis />
-              <Tooltip />
+              <Tooltip
+                formatter={(v: number) => v.toFixed(2)}
+                labelFormatter={(v: number) => `${v.toFixed(2)}s`}
+                labelStyle={{ color: "#000" }}
+              />
               <ReferenceLine
                 y={lineHP}
                 stroke="#f44336"

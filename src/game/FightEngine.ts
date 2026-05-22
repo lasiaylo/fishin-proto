@@ -39,8 +39,7 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
 };
 
 const MAX_SIM_TIME = 120;
-const SIM_DT = 0.5;
-const SIM_DISTANCE_CLAMP = 15;
+const SIM_DT = 1 / 60;
 
 export enum Phase {
   REST = "REST",
@@ -198,19 +197,21 @@ export class FightEngine {
     return this.getDelta();
   }
 
-  private step(dt: number, distanceClamp = Infinity): void {
+  private applyMovement(dt: number): void {
+    const rawDelta =
+      this.phase !== Phase.REST ? this.struggle(dt) : this.rest();
+    this.distance += rawDelta * dt;
+    this.fightElapsed += dt;
+  }
+
+  private step(dt: number): void {
     const remainingInPhase = this.phaseDuration - this.phaseElapsed;
 
     if (dt >= remainingInPhase) {
-      // Sub-step 1: exhaust the current phase up to its boundary
       const dt1 = remainingInPhase;
       const dt2 = dt - dt1;
 
-      const rawDelta1 =
-        this.phase !== Phase.REST ? this.struggle(dt1) : this.rest();
-      this.distance +=
-        Math.max(-distanceClamp, Math.min(distanceClamp, rawDelta1)) * dt1;
-      this.fightElapsed += dt1;
+      this.applyMovement(dt1);
 
       const next =
         this.phase === Phase.REST
@@ -220,22 +221,11 @@ export class FightEngine {
           : Phase.REST;
       this.setPhase(next);
 
-      // Sub-step 2: begin new phase with leftover time
-      if (dt2 > 0) {
-        const rawDelta2 =
-          this.phase !== Phase.REST ? this.struggle(dt2) : this.rest();
-        this.distance +=
-          Math.max(-distanceClamp, Math.min(distanceClamp, rawDelta2)) * dt2;
-        this.phaseElapsed = dt2;
-        this.fightElapsed += dt2;
-      }
+      this.applyMovement(dt2);
+      this.phaseElapsed = dt2;
     } else {
       this.phaseElapsed += dt;
-      const rawDelta =
-        this.phase !== Phase.REST ? this.struggle(dt) : this.rest();
-      this.distance +=
-        Math.max(-distanceClamp, Math.min(distanceClamp, rawDelta)) * dt;
-      this.fightElapsed += dt;
+      this.applyMovement(dt);
     }
 
     if (this.distance <= 0) {
@@ -284,7 +274,7 @@ export class FightEngine {
     }
 
     while (this.fightElapsed < MAX_SIM_TIME) {
-      this.step(SIM_DT, SIM_DISTANCE_CLAMP);
+      this.step(SIM_DT);
 
       if (recordHistory) {
         history.push({
