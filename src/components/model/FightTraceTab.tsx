@@ -11,9 +11,15 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { FightEngine, Phase, type FrameRecord } from "../../game/FightEngine";
+import {
+  FightEngine,
+  Phase,
+  DEFAULT_FIGHT_CONFIG,
+  type FightConfig,
+  type FrameRecord,
+} from "../../game/FightEngine";
 import type { FishData } from "../../util/csvLoader";
-import { COLORS, NumInput, FishSelect } from "./shared";
+import { COLORS, NumInput, FishSelect, EngineConfigRow } from "./shared";
 
 interface FightResult {
   history: FrameRecord[];
@@ -80,6 +86,7 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
   const [drag, setDrag] = useState(3);
   const [lineHP, setLineHP] = useState(20);
   const [trialCount, setTrialCount] = useState(1);
+  const [engineCfg, setEngineCfg] = useState<FightConfig>(DEFAULT_FIGHT_CONFIG);
   const [results, setResults] = useState<FightResult[]>([]);
 
   useEffect(() => {
@@ -98,6 +105,7 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
       reelStr,
       drag,
       lineHP,
+      engineCfg,
     );
     const out: FightResult[] = [];
     for (let i = 0; i < trialCount; i++) {
@@ -117,6 +125,10 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
 
   return (
     <Flex direction="column" gap="4" pt="4">
+      <EngineConfigRow
+        config={engineCfg}
+        onChange={(patch) => setEngineCfg((c) => ({ ...c, ...patch }))}
+      />
       <Flex gap="3" wrap="wrap" align="end">
         <FishSelect fishData={fishData} value={fishId} onChange={setFishId} />
         <NumInput

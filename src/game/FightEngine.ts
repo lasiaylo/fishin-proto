@@ -4,21 +4,41 @@ import { randomRange } from "../util/random";
 
 const MAX_DISTANCE = 100;
 const START_DISTANCE = MAX_DISTANCE / 2;
-
-const REST_TIME: [number, number] = [2, 6];
-const FIGHT_TIME_RANGE: [number, number] = [1.0, 6.0];
-const BASE_SPEED = 10;
-const MIN_SPEED = -40;
-const BASE_REEL = 25;
-const MAX_REEL = 25;
-const SPEED_GROWTH = 1.1;
-const REEL_GROWTH = 1.1;
-const OUT_LEVELED_THRESHOLD = 4;
 const OUT_LEVELED_GROWTH = 1.5;
-const ATTACK_CHANCE = 0.1;
 
-const FISH_STAMINA = 30;
-const FISH_TIMEOUT = 20;
+// ── Fight Config ──
+
+export interface FightConfig {
+  restTime: [number, number];
+  fightTimeRange: [number, number];
+  baseSpeed: number;
+  minSpeed: number;
+  baseReel: number;
+  maxReel: number;
+  speedGrowth: number;
+  reelGrowth: number;
+  outLeveledThreshold: number;
+  attackChance: number;
+  fishStamina: number;
+  fishTimeout: number;
+  superStruggleDuration: number;
+}
+
+export const DEFAULT_FIGHT_CONFIG: FightConfig = {
+  restTime: [2, 6],
+  fightTimeRange: [1.0, 6.0],
+  baseSpeed: 10,
+  minSpeed: -40,
+  baseReel: 25,
+  maxReel: 25,
+  speedGrowth: 1.1,
+  reelGrowth: 1.1,
+  outLeveledThreshold: 4,
+  attackChance: 0.1,
+  fishStamina: 30,
+  fishTimeout: 20,
+  superStruggleDuration: 6,
+};
 
 // ── Simulation constants (runToCompletion only, not used in live tick) ──
 
@@ -74,18 +94,22 @@ export class FightEngine {
 
   outcome: Outcome;
 
+  private cfg: FightConfig;
+
   constructor(
     fishSpeed: number,
     fishStrength: number,
     reelStr: number,
     drag: number,
     lineHp: number,
+    config?: Partial<FightConfig>,
   ) {
     this.fishSpeed = fishSpeed;
     this.fishStr = fishStrength;
     this.reelStr = reelStr;
     this.drag = drag;
     this.lineHp = lineHp;
+    this.cfg = { ...DEFAULT_FIGHT_CONFIG, ...config };
 
     this.distance = START_DISTANCE;
     this.tension = 0;
@@ -103,7 +127,8 @@ export class FightEngine {
     const speedDelta = this.fishSpeed - this.drag;
     const strDelta = this.fishStr - this.reelStr;
     return (
-      speedDelta > OUT_LEVELED_THRESHOLD || strDelta > OUT_LEVELED_THRESHOLD
+      speedDelta > this.cfg.outLeveledThreshold ||
+      strDelta > this.cfg.outLeveledThreshold
     );
   }
 
@@ -112,24 +137,30 @@ export class FightEngine {
     this.phase = phase;
 
     if (phase === Phase.REST) {
-      this.phaseDuration = randomRange(REST_TIME[0], REST_TIME[1]);
+      this.phaseDuration = randomRange(
+        this.cfg.restTime[0],
+        this.cfg.restTime[1],
+      );
       return;
     }
 
-    const nextTimeRange = [...FIGHT_TIME_RANGE];
-    if (this.time >= FISH_STAMINA + FISH_TIMEOUT && !this.isOutLeveled()) {
+    const nextTimeRange = [...this.cfg.fightTimeRange];
+    if (
+      this.time >= this.cfg.fishStamina + this.cfg.fishTimeout &&
+      !this.isOutLeveled()
+    ) {
       nextTimeRange[0] = 0;
       nextTimeRange[1] = 0;
-    } else if (Math.random() <= ATTACK_CHANCE) {
+    } else if (Math.random() <= this.cfg.attackChance) {
       this.phase = Phase.SUPER_STRUGGLE;
-    } else if (this.time < FISH_STAMINA && !this.isOutLeveled()) {
-      const delta = this.time - FISH_STAMINA;
-      const penalty = (delta / FISH_TIMEOUT) * nextTimeRange[1];
+    } else if (this.time < this.cfg.fishStamina && !this.isOutLeveled()) {
+      const delta = this.time - this.cfg.fishStamina;
+      const penalty = (delta / this.cfg.fishTimeout) * nextTimeRange[1];
       nextTimeRange[1] = nextTimeRange[1] - penalty;
     }
     this.phaseDuration =
       this.phase === Phase.SUPER_STRUGGLE
-        ? 6
+        ? this.cfg.superStruggleDuration
         : randomRange(nextTimeRange[0], nextTimeRange[1]);
   }
 
@@ -148,12 +179,14 @@ export class FightEngine {
 
     let fishSpeed = outLeveled
       ? 40
-      : BASE_SPEED * Math.pow(SPEED_GROWTH, speedDelta);
-    fishSpeed = Math.max(MIN_SPEED, fishSpeed);
+      : this.cfg.baseSpeed * Math.pow(this.cfg.speedGrowth, speedDelta);
+    fishSpeed = Math.max(this.cfg.minSpeed, fishSpeed);
 
     const reelDelta = this.reelStr - (this.fishStr + bonus);
-    const reel = outLeveled ? 20 : BASE_REEL * Math.pow(REEL_GROWTH, reelDelta);
-    return Math.max(-MAX_REEL, fishSpeed - reel);
+    const reel = outLeveled
+      ? 20
+      : this.cfg.baseReel * Math.pow(this.cfg.reelGrowth, reelDelta);
+    return Math.max(-this.cfg.maxReel, fishSpeed - reel);
   }
 
   private struggle(dt: number): number {

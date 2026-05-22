@@ -5,9 +5,13 @@ import React, {
   type CSSProperties,
 } from "react";
 import { Flex, Text, Button } from "@radix-ui/themes";
-import { FightEngine } from "../../game/FightEngine";
+import {
+  FightEngine,
+  DEFAULT_FIGHT_CONFIG,
+  type FightConfig,
+} from "../../game/FightEngine";
 import type { FishData } from "../../util/csvLoader";
-import { NumInput, FishSelect } from "./shared";
+import { NumInput, FishSelect, EngineConfigRow } from "./shared";
 
 interface SweepCell {
   reel: number;
@@ -124,6 +128,7 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
   const [dragMin, setDragMin] = useState(1);
   const [dragMax, setDragMax] = useState(8);
   const [trialsPerCell, setTrialsPerCell] = useState(100);
+  const [engineCfg, setEngineCfg] = useState<FightConfig>(DEFAULT_FIGHT_CONFIG);
   const [cells, setCells] = useState<SweepCell[]>([]);
   const [running, setRunning] = useState(false);
 
@@ -148,6 +153,7 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
             reel,
             drag,
             lineHP,
+            engineCfg,
           );
           let wins = 0,
             totalTime = 0;
@@ -183,6 +189,10 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
 
   return (
     <Flex direction="column" gap="4" pt="4">
+      <EngineConfigRow
+        config={engineCfg}
+        onChange={(patch) => setEngineCfg((c) => ({ ...c, ...patch }))}
+      />
       <Flex gap="3" wrap="wrap" align="end">
         <FishSelect fishData={fishData} value={fishId} onChange={setFishId} />
         <NumInput
