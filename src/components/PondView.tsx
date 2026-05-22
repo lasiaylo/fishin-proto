@@ -6,7 +6,7 @@ import { getAvailableFish } from "../stores/fishStore";
 import { addMoney, usePlayer } from "../stores/playerStore";
 import { pushEvent } from "../stores/eventLogStore";
 import { EventMsg } from "../util/eventMessages";
-import { FightEngine, FightState } from "../game/FightEngine";
+import { FightEngine, FightState, Outcome } from "../game/FightEngine";
 import { randomRange } from "../util/random";
 import { FightView } from "./FightView";
 
@@ -92,6 +92,7 @@ export function PondView() {
       drag,
       lineHP,
     );
+    console.log("START!", fightRef.current.getState());
 
     pushEvent(EventMsg.HOOKED(fish.name));
     lastTimeRef.current = null;
@@ -104,7 +105,7 @@ export function PondView() {
       const state = fightRef.current!.tick(dt);
       setFightState({ ...state });
       if (state.outcome !== null) {
-        finishFight(state.outcome as "WIN" | "LOSE");
+        finishFight(state.outcome!);
         return;
       }
       rafRef.current = requestAnimationFrame(loop);
@@ -113,11 +114,11 @@ export function PondView() {
     rafRef.current = requestAnimationFrame(loop);
   }
 
-  function finishFight(result: "WIN" | "LOSE") {
+  function finishFight(result: Outcome) {
     cancelAnimationFrame(rafRef.current);
     const fish = caughtFishRef.current!;
 
-    if (result === "WIN") {
+    if (result === Outcome.WIN) {
       addMoney(fish.basePrice);
       pushEvent(EventMsg.CAUGHT(fish.name, fish.basePrice));
     } else {

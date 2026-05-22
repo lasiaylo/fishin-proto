@@ -49,7 +49,12 @@ export enum Phase {
   INIT_STRUGGLE = "INIT_STRUGGLE",
 }
 
-export type Outcome = "WIN" | "LOSE" | null;
+export enum Outcome {
+  WIN = "WIN",
+  LOSE_DISTANCE = "LOSE_DISTANCE",
+  LOSE_TENSION = "LOSE_TENSION",
+  TIMEOUT = "TIMEOUT",
+}
 
 export interface FrameRecord {
   time: number;
@@ -63,7 +68,7 @@ export interface FightState {
   tension: number;
   phase: Phase;
   time: number;
-  outcome: Outcome;
+  outcome: Outcome | null;
 }
 
 export class FightEngine {
@@ -82,7 +87,7 @@ export class FightEngine {
   private phaseElapsed: number;
   private phaseDuration: number;
 
-  outcome: Outcome;
+  outcome: Outcome | null;
 
   private cfg: FightConfig;
 
@@ -161,19 +166,6 @@ export class FightEngine {
     this.phaseDuration = randomRange(nextTimeRange[0], nextTimeRange[1]);
   }
 
-  private tryPhaseSwitch(dt: number): void {
-    this.phaseElapsed += dt;
-    if (this.phaseElapsed >= this.phaseDuration) {
-      const next =
-        this.phase === Phase.REST
-          ? Math.random() <= this.cfg.attackChance
-            ? Phase.SUPER_STRUGGLE
-            : Phase.STRUGGLE
-          : Phase.REST;
-      this.setPhase(next);
-    }
-  }
-
   private getDelta(bonus: number = 0): number {
     const speedDelta = this.fishSpeed + bonus - this.drag;
 
@@ -207,7 +199,16 @@ export class FightEngine {
   }
 
   private step(dt: number, distanceClamp = Infinity): void {
-    this.tryPhaseSwitch(dt);
+    this.phaseElapsed += dt;
+    if (this.phaseElapsed >= this.phaseDuration) {
+      const next =
+        this.phase === Phase.REST
+          ? Math.random() <= this.cfg.attackChance
+            ? Phase.SUPER_STRUGGLE
+            : Phase.STRUGGLE
+          : Phase.REST;
+      this.setPhase(next);
+    }
 
     const rawDelta =
       this.phase !== Phase.REST ? this.struggle(dt) : this.rest();
@@ -217,13 +218,13 @@ export class FightEngine {
 
     if (this.distance <= 0) {
       this.distance = 0;
-      this.outcome = "WIN";
+      this.outcome = Outcome.WIN;
     } else if (this.distance >= MAX_DISTANCE) {
       this.distance = MAX_DISTANCE;
-      this.outcome = "LOSE";
+      this.outcome = Outcome.LOSE_DISTANCE;
     } else if (this.tension >= this.lineHp) {
       this.tension = this.lineHp;
-      this.outcome = "LOSE";
+      this.outcome = Outcome.LOSE_TENSION;
     }
   }
 
@@ -246,7 +247,7 @@ export class FightEngine {
 
   runToCompletion(recordHistory = false): {
     history: FrameRecord[];
-    outcome: "WIN" | "LOSE" | "TIMEOUT";
+    outcome: Outcome;
     duration: number;
   } {
     const history: FrameRecord[] = [];
@@ -277,7 +278,7 @@ export class FightEngine {
       }
     }
 
-    return { history, outcome: "TIMEOUT", duration: this.fightElapsed };
+    return { history, outcome: Outcome.TIMEOUT, duration: this.fightElapsed };
   }
 
   getState(): FightState {

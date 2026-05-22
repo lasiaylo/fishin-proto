@@ -7,6 +7,7 @@ import React, {
 import { Flex, Text, Button } from "@radix-ui/themes";
 import {
   FightEngine,
+  Outcome,
   DEFAULT_FIGHT_CONFIG,
   type FightConfig,
 } from "../../game/FightEngine";
@@ -160,7 +161,7 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
           for (let t = 0; t < trialsPerCell; t++) {
             engine.reset();
             const { outcome, duration } = engine.runToCompletion();
-            if (outcome === "WIN") {
+            if (outcome === Outcome.WIN) {
               wins++;
               totalTime += duration;
             }

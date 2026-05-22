@@ -1,4 +1,4 @@
-import { FightEngine } from "./FightEngine";
+import { FightEngine, Outcome } from "./FightEngine";
 import type { FishData, ShopUpgradeData } from "../util/csvLoader";
 
 // ── Constants ──
@@ -57,7 +57,7 @@ function runTrials(
   for (let i = 0; i < n; i++) {
     engine.reset();
     const { outcome, duration } = engine.runToCompletion();
-    if (outcome === "WIN") {
+    if (outcome === Outcome.WIN) {
       winCount++;
       totalWinTime += duration;
     }

@@ -14,6 +14,7 @@ import {
 import {
   FightEngine,
   Phase,
+  Outcome,
   DEFAULT_FIGHT_CONFIG,
   type FightConfig,
   type FrameRecord,
@@ -23,7 +24,7 @@ import { COLORS, NumInput, FishSelect, EngineConfigRow } from "./shared";
 
 interface FightResult {
   history: FrameRecord[];
-  outcome: string;
+  outcome: Outcome;
   duration: number;
 }
 
@@ -120,7 +121,7 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
   const chartData = buildFightChartData(results);
   const single = results.length === 1;
   const segments = single ? getPhaseSegments(results[0].history) : [];
-  const wins = results.filter((r) => r.outcome === "WIN").length;
+  const wins = results.filter((r) => r.outcome === Outcome.WIN).length;
   const avgDur = results.length
     ? results.reduce((s, r) => s + r.duration, 0) / results.length
     : 0;
