@@ -12,7 +12,6 @@ export interface FightConfig {
   maxReel: number;
   speedGrowth: number;
   reelGrowth: number;
-  outLeveledThreshold: number;
   attackChance: number;
   fishStamina: number;
   fishTimeout: number;
@@ -30,7 +29,6 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   maxReel: 25,
   speedGrowth: 1.1,
   reelGrowth: 1.1,
-  outLeveledThreshold: 4,
   attackChance: 0.1,
   fishStamina: 30,
   fishTimeout: 20,
@@ -72,11 +70,11 @@ export interface FightState {
 }
 
 export class FightEngine {
-  private fishSpeed: number;
-  private fishStr: number;
+  private fishAtk: number;
+  private fishDef: number;
 
-  private reelStr: number;
-  private drag: number;
+  private playerAtk: number;
+  private playerDef: number;
   private lineHp: number;
 
   distance: number;
@@ -94,15 +92,15 @@ export class FightEngine {
   constructor(
     fishSpeed: number,
     fishStrength: number,
-    reelStr: number,
-    drag: number,
+    playerAtk: number,
+    playerDef: number,
     lineHp: number,
     config?: Partial<FightConfig>,
   ) {
-    this.fishSpeed = fishSpeed;
-    this.fishStr = fishStrength;
-    this.reelStr = reelStr;
-    this.drag = drag;
+    this.fishAtk = fishSpeed;
+    this.fishDef = fishStrength;
+    this.playerAtk = playerAtk;
+    this.playerDef = playerDef;
     this.lineHp = lineHp;
     this.cfg = { ...DEFAULT_FIGHT_CONFIG, ...config };
 
@@ -118,23 +116,11 @@ export class FightEngine {
     this.setPhase(Phase.INIT_STRUGGLE);
   }
 
-  private isOutLeveled(): boolean {
-    const speedDelta = this.fishSpeed - this.drag;
-    const strDelta = this.fishStr - this.reelStr;
-    return (
-      speedDelta > this.cfg.outLeveledThreshold ||
-      strDelta > this.cfg.outLeveledThreshold
-    );
-  }
-
   private setPhase(phase: Phase): void {
     this.phaseElapsed = 0;
     this.phase = phase;
 
-    if (
-      this.fightElapsed >= this.cfg.fishStamina + this.cfg.fishTimeout &&
-      !this.isOutLeveled()
-    ) {
+    if (this.fightElapsed >= this.cfg.fishStamina + this.cfg.fishTimeout) {
       this.phase = Phase.REST;
     }
 
@@ -158,7 +144,7 @@ export class FightEngine {
 
     // The upper range of fight stage goes down as the fight goes on
     const nextTimeRange = [...this.cfg.fightTimeRange];
-    if (this.fightElapsed < this.cfg.fishStamina && !this.isOutLeveled()) {
+    if (this.fightElapsed < this.cfg.fishStamina) {
       const delta = this.fightElapsed - this.cfg.fishStamina;
       const penalty = (delta / this.cfg.fishTimeout) * nextTimeRange[1];
       nextTimeRange[1] = Math.max(nextTimeRange[0], nextTimeRange[1] - penalty);
@@ -166,21 +152,8 @@ export class FightEngine {
     this.phaseDuration = randomRange(nextTimeRange[0], nextTimeRange[1]);
   }
 
-  private getDelta(bonus: number = 0): number {
-    const speedDelta = this.fishSpeed + bonus - this.drag;
-
-    const outLeveled = this.isOutLeveled();
-
-    let fishSpeed = outLeveled
-      ? 40
-      : this.cfg.baseSpeed * Math.pow(this.cfg.speedGrowth, speedDelta);
-    fishSpeed = Math.max(this.cfg.minSpeed, fishSpeed);
-
-    const reelDelta = this.reelStr - (this.fishStr + bonus);
-    const reel = outLeveled
-      ? 20
-      : this.cfg.baseReel * Math.pow(this.cfg.reelGrowth, reelDelta);
-    return Math.max(-this.cfg.maxReel, fishSpeed - reel);
+  private getDelta(attack: number, defense: number, bonus: number = 0): number {
+    return this.cfg.baseReel * (attack / (attack + defense));
   }
 
   private struggle(dt: number): number {
@@ -190,7 +163,7 @@ export class FightEngine {
         : 0;
     const delta = this.getDelta(bonus);
 
-    this.tension += (this.fishStr + bonus) * dt;
+    this.tension += (this.fishDef + bonus) * dt;
     return delta;
   }
 

@@ -170,12 +170,6 @@ export function EngineConfigRow({
               min={0}
               max={1}
             />
-            <NumInput
-              label="OL Threshold"
-              value={config.outLeveledThreshold}
-              onChange={(v) => onChange({ outLeveledThreshold: v })}
-              min={0}
-            />
           </Flex>
         </>
       )}
