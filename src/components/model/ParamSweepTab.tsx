@@ -123,12 +123,12 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
   const [fishBasePrice, setFishBasePrice] = useState(
     fishData[0]?.basePrice ?? 0,
   );
-  const [lineHP, setLineHP] = useState(20);
+  const [lineHP, setLineHP] = useState(50);
   const [reelMin, setReelMin] = useState(1);
   const [reelMax, setReelMax] = useState(8);
   const [dragMin, setDragMin] = useState(1);
   const [dragMax, setDragMax] = useState(8);
-  const [trialsPerCell, setTrialsPerCell] = useState(100);
+  const [trialsPerCell, setTrialsPerCell] = useState(50);
   const [engineCfg, setEngineCfg] = useState<FightConfig>(DEFAULT_FIGHT_CONFIG);
   const [cells, setCells] = useState<SweepCell[]>([]);
   const [running, setRunning] = useState(false);

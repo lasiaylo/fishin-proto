@@ -4,6 +4,7 @@ const MAX_DISTANCE = 100;
 const START_DISTANCE = MAX_DISTANCE / 2;
 
 export interface FightConfig {
+  tensionRate: number;
   restTime: [number, number];
   fightTimeRange: [number, number];
   baseSpeed: number;
@@ -19,6 +20,7 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   baseReel: 25,
   initStruggleDuration: 2,
   struggleBonus: 10,
+  tensionRate: 10,
 };
 
 const MAX_SIM_TIME = 120;
@@ -123,26 +125,19 @@ export class FightEngine {
   }
 
   private getDelta(attack: number, defense: number, bonus: number = 0): number {
-    return this.cfg.baseReel * (attack / (attack + defense));
-  }
-
-  private struggle(dt: number): number {
-    const bonus =
-      this.phase === Phase.INIT_STRUGGLE ? this.cfg.struggleBonus : 0;
-    const delta = this.getDelta(bonus);
-
-    this.tension += (this.fishDef + bonus) * dt;
+    let delta = this.cfg.baseReel * (attack / (attack + defense));
+    // console.log(this.phase, delta )
     return delta;
   }
 
-  private rest(): number {
-    return this.getDelta();
-  }
-
   private applyMovement(dt: number): void {
-    const rawDelta =
-      this.phase !== Phase.REST ? this.struggle(dt) : this.rest();
-    this.distance += rawDelta * dt;
+    const isFight = this.phase !== Phase.REST;
+    const rawDelta = isFight
+      ? this.getDelta(this.fishAtk, this.playerDef)
+      : this.getDelta(this.playerAtk, this.fishDef);
+    const mult = isFight ? 1 : -1;
+    this.distance += mult * rawDelta * dt;
+    // this.tension += this.cfg.tensionRate * (isFight ? 1 : 0.5);
     this.fightElapsed += dt;
   }
 
