@@ -7,32 +7,16 @@ export interface FightConfig {
   restTime: [number, number];
   fightTimeRange: [number, number];
   baseSpeed: number;
-  minSpeed: number;
   baseReel: number;
-  maxReel: number;
-  speedGrowth: number;
-  reelGrowth: number;
-  attackChance: number;
-  fishStamina: number;
-  fishTimeout: number;
-  superStruggleDuration: number;
   initStruggleDuration: number;
   struggleBonus: number;
 }
 
 export const DEFAULT_FIGHT_CONFIG: FightConfig = {
-  restTime: [2, 6],
-  fightTimeRange: [1.0, 6.0],
+  restTime: [3, 4],
+  fightTimeRange: [1.0, 4],
   baseSpeed: 10,
-  minSpeed: -40,
   baseReel: 25,
-  maxReel: 25,
-  speedGrowth: 1.1,
-  reelGrowth: 1.1,
-  attackChance: 0.1,
-  fishStamina: 30,
-  fishTimeout: 20,
-  superStruggleDuration: 6,
   initStruggleDuration: 2,
   struggleBonus: 10,
 };
@@ -43,7 +27,6 @@ const SIM_DT = 1 / 60;
 export enum Phase {
   REST = "REST",
   STRUGGLE = "STRUGGLE",
-  SUPER_STRUGGLE = "SUPER_STRUGGLE",
   INIT_STRUGGLE = "INIT_STRUGGLE",
 }
 
@@ -120,10 +103,6 @@ export class FightEngine {
     this.phaseElapsed = 0;
     this.phase = phase;
 
-    if (this.fightElapsed >= this.cfg.fishStamina + this.cfg.fishTimeout) {
-      this.phase = Phase.REST;
-    }
-
     if (phase === Phase.REST) {
       this.phaseDuration = randomRange(
         this.cfg.restTime[0],
@@ -132,24 +111,15 @@ export class FightEngine {
       return;
     }
 
-    if (phase === Phase.SUPER_STRUGGLE) {
-      this.phaseDuration = this.cfg.superStruggleDuration;
-      return;
-    }
-
     if (phase === Phase.INIT_STRUGGLE) {
       this.phaseDuration = this.cfg.initStruggleDuration;
       return;
     }
 
-    // The upper range of fight stage goes down as the fight goes on
-    const nextTimeRange = [...this.cfg.fightTimeRange];
-    if (this.fightElapsed < this.cfg.fishStamina) {
-      const delta = this.fightElapsed - this.cfg.fishStamina;
-      const penalty = (delta / this.cfg.fishTimeout) * nextTimeRange[1];
-      nextTimeRange[1] = Math.max(nextTimeRange[0], nextTimeRange[1] - penalty);
-    }
-    this.phaseDuration = randomRange(nextTimeRange[0], nextTimeRange[1]);
+    this.phaseDuration = randomRange(
+      this.cfg.fightTimeRange[0],
+      this.cfg.fightTimeRange[1],
+    );
   }
 
   private getDelta(attack: number, defense: number, bonus: number = 0): number {
@@ -158,9 +128,7 @@ export class FightEngine {
 
   private struggle(dt: number): number {
     const bonus =
-      this.phase === Phase.SUPER_STRUGGLE || this.phase === Phase.INIT_STRUGGLE
-        ? this.cfg.struggleBonus
-        : 0;
+      this.phase === Phase.INIT_STRUGGLE ? this.cfg.struggleBonus : 0;
     const delta = this.getDelta(bonus);
 
     this.tension += (this.fishDef + bonus) * dt;
@@ -187,12 +155,7 @@ export class FightEngine {
 
       this.applyMovement(dt1);
 
-      const next =
-        this.phase === Phase.REST
-          ? Math.random() <= this.cfg.attackChance
-            ? Phase.SUPER_STRUGGLE
-            : Phase.STRUGGLE
-          : Phase.REST;
+      const next = this.phase === Phase.REST ? Phase.STRUGGLE : Phase.REST;
       this.setPhase(next);
 
       this.applyMovement(dt2);

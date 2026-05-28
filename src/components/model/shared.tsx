@@ -103,24 +103,6 @@ export function EngineConfigRow({
               min={0}
             />
             <NumInput
-              label="Stamina"
-              value={config.fishStamina}
-              onChange={(v) => onChange({ fishStamina: v })}
-              min={0}
-            />
-            <NumInput
-              label="Timeout"
-              value={config.fishTimeout}
-              onChange={(v) => onChange({ fishTimeout: v })}
-              min={0}
-            />
-            <NumInput
-              label="Super Dur"
-              value={config.superStruggleDuration}
-              onChange={(v) => onChange({ superStruggleDuration: v })}
-              min={0}
-            />
-            <NumInput
               label="Init Dur"
               value={config.initStruggleDuration}
               onChange={(v) => onChange({ initStruggleDuration: v })}
@@ -134,41 +116,10 @@ export function EngineConfigRow({
               onChange={(v) => onChange({ baseSpeed: v })}
             />
             <NumInput
-              label="Min Speed"
-              value={config.minSpeed}
-              onChange={(v) => onChange({ minSpeed: v })}
-              min={-999}
-            />
-            <NumInput
               label="Base Reel"
               value={config.baseReel}
               onChange={(v) => onChange({ baseReel: v })}
               min={0}
-            />
-            <NumInput
-              label="Max Reel"
-              value={config.maxReel}
-              onChange={(v) => onChange({ maxReel: v })}
-              min={0}
-            />
-            <NumInput
-              label="Speed Growth"
-              value={config.speedGrowth}
-              onChange={(v) => onChange({ speedGrowth: v })}
-              min={0}
-            />
-            <NumInput
-              label="Reel Growth"
-              value={config.reelGrowth}
-              onChange={(v) => onChange({ reelGrowth: v })}
-              min={0}
-            />
-            <NumInput
-              label="Attack %"
-              value={config.attackChance}
-              onChange={(v) => onChange({ attackChance: v })}
-              min={0}
-              max={1}
             />
           </Flex>
         </>

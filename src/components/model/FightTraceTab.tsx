@@ -73,8 +73,6 @@ function phaseColor(phase: Phase): string {
       return "rgba(0,255,0,0.08)";
     case Phase.STRUGGLE:
       return "rgba(255,0,0,0.12)";
-    case Phase.SUPER_STRUGGLE:
-      return "rgba(255,0,0,0.40)";
     case Phase.INIT_STRUGGLE:
       return "rgba(255,140,0,0.40)";
   }
@@ -189,7 +187,6 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
                   [
                     { phase: Phase.REST, label: "Rest" },
                     { phase: Phase.STRUGGLE, label: "Struggle" },
-                    { phase: Phase.SUPER_STRUGGLE, label: "Super Struggle" },
                     { phase: Phase.INIT_STRUGGLE, label: "Init Struggle" },
                   ] as const
                 ).map(({ phase, label }) => (
