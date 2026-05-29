@@ -131,7 +131,7 @@ export class FightEngine {
       : this.getDelta(this.playerAtk * this.atkMult, this.fishDef);
     const mult = isFight ? 1 : -1;
     this.distance += mult * rawDelta * dt;
-    this.tension += this.fishThrash * (isFight ? 1 : 0.5);
+    this.tension += this.fishThrash * (isFight ? 1 : 0.5) * dt;
     this.fightElapsed += dt;
   }
 

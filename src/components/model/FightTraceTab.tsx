@@ -283,7 +283,7 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
                 ticks={xTicks}
                 domain={["dataMin", "dataMax"]}
               />
-              <YAxis />
+              <YAxis domain={[0, lineHP]} />
               <Tooltip
                 formatter={(v: number) => v.toFixed(2)}
                 labelFormatter={(v: number) => `${v.toFixed(2)}s`}
@@ -293,7 +293,6 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
                 y={lineHP}
                 stroke="#f44336"
                 strokeDasharray="4 2"
-                label={{ value: "break", fill: "#f44336", fontSize: 11 }}
               />
               {results.map((_, i) => (
                 <Line
