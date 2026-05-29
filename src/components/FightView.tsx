@@ -52,7 +52,12 @@ export function FightView({ state, lineHp, fading = false }: FightViewProps) {
         {phase}
       </Text>
       <StatBar label="Lure Distance" value={distance} max={100} color="cyan" />
-      <StatBar label="Line Tension" value={tension} max={lineHp} color="red" />
+      <StatBar
+        label="Line HP"
+        value={lineHp - tension}
+        max={lineHp}
+        color="red"
+      />
     </Flex>
   );
 }
