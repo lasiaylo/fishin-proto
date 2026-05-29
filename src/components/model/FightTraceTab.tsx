@@ -86,8 +86,8 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
   const [fishBasePrice, setFishBasePrice] = useState(
     fishData[0]?.basePrice ?? 0,
   );
-  const [reelStr, setReelStr] = useState(INITIAL_PLAYER_STATE.reelStrength);
-  const [drag, setDrag] = useState(INITIAL_PLAYER_STATE.drag);
+  const [reelStr, setReelStr] = useState(INITIAL_PLAYER_STATE.attack);
+  const [drag, setDrag] = useState(INITIAL_PLAYER_STATE.defense);
   const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
   const [trialCount, setTrialCount] = useState(1);
   const [engineCfg, setEngineCfg] = useState<FightConfig>(DEFAULT_FIGHT_CONFIG);

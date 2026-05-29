@@ -128,8 +128,8 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
   const [lineHP, setLineHP] = useState(10);
   const [reelMin, setReelMin] = useState(1);
   const [reelMax, setReelMax] = useState(8);
-  const [dragMin, setDragMin] = useState(1);
-  const [dragMax, setDragMax] = useState(8);
+  const dragMin = reelMin;
+  const dragMax = reelMax;
   const [trialsPerCell, setTrialsPerCell] = useState(50);
   const [engineCfg, setEngineCfg] = useState<FightConfig>(DEFAULT_FIGHT_CONFIG);
   const [cells, setCells] = useState<SweepCell[]>([]);
@@ -255,30 +255,8 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
       </Flex>
       <Flex gap="3" wrap="wrap" align="end">
         <NumInput label="Line HP" value={lineHP} onChange={setLineHP} min={1} />
-        <NumInput
-          label="Attack Min"
-          value={reelMin}
-          onChange={setReelMin}
-          min={1}
-        />
-        <NumInput
-          label="Attack Max"
-          value={reelMax}
-          onChange={setReelMax}
-          min={1}
-        />
-        <NumInput
-          label="Defense Min"
-          value={dragMin}
-          onChange={setDragMin}
-          min={1}
-        />
-        <NumInput
-          label="Defense Max"
-          value={dragMax}
-          onChange={setDragMax}
-          min={1}
-        />
+        <NumInput label="Min" value={reelMin} onChange={setReelMin} min={1} />
+        <NumInput label="Max" value={reelMax} onChange={setReelMax} min={1} />
         <NumInput
           label="Trials/Cell"
           value={trialsPerCell}
