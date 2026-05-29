@@ -1,3 +1,3 @@
 ID, Name, BasePrice, Attack, Defense, Thrash, RequiredLure
-MINNOW, Minnow, 5, 1, 1, 0,
+MINNOW, Minnow, 5, 1, 1, 1.5,
 TROUT, Trout, 2, 10, 10, 0, LURE_1

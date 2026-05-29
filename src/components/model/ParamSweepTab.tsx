@@ -67,7 +67,7 @@ function Heatmap({
           gap: 2,
         }}
       >
-        <div style={hdr}>r\d</div>
+        <div style={hdr}>A\D</div>
         {dragVals.map((d) => (
           <div key={d} style={hdr}>
             {d}
@@ -125,7 +125,7 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
   const [fishBasePrice, setFishBasePrice] = useState(
     fishData[0]?.basePrice ?? 0,
   );
-  const [lineHP, setLineHP] = useState(50);
+  const [lineHP, setLineHP] = useState(10);
   const [reelMin, setReelMin] = useState(1);
   const [reelMax, setReelMax] = useState(8);
   const [dragMin, setDragMin] = useState(1);

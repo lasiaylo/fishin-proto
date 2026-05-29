@@ -13,7 +13,7 @@ export const INITIAL_PLAYER_STATE = {
   wallet: 0,
   reelStrength: 3,
   drag: 3,
-  lineHP: 50,
+  lineHP: 10,
 };
 
 export const usePlayer = create(

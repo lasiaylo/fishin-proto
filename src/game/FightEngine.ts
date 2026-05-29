@@ -11,9 +11,9 @@ export interface FightConfig {
 }
 
 export const DEFAULT_FIGHT_CONFIG: FightConfig = {
-  restTimeRange: [3, 4],
+  restTimeRange: [2, 4],
   fightTimeRange: [1.0, 4],
-  baseSpeed: 25,
+  baseSpeed: 30,
   initStruggleDuration: 2,
 };
 
