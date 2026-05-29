@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import { ShopUpgradeData, loadShopData } from "../util/csvLoader";
+import { ShopUpgradeData, StatName, loadShopData } from "../util/csvLoader";
 import { addLure, addToStat, deductMoney, getWallet } from "./playerStore";
 import { pushEvent } from "./eventLogStore";
 import { EventMsg } from "../util/eventMessages";
@@ -57,10 +57,19 @@ export function buyUpgrade(id: string) {
   const newLevel = upgrade.level + 1;
 
   // Apply stat change
-  if (upgrade.stat === "lure") {
-    addLure(upgrade.id);
-  } else {
-    addToStat(upgrade.stat, upgrade.valuePerLevel);
+  switch (upgrade.stat) {
+    case StatName.LURE:
+      addLure(upgrade.id);
+      break;
+    case StatName.ATTACK:
+      addToStat("attack", upgrade.valuePerLevel);
+      break;
+    case StatName.DEFENSE:
+      addToStat("defense", upgrade.valuePerLevel);
+      break;
+    case StatName.HP:
+      addToStat("lineHP", upgrade.valuePerLevel);
+      break;
   }
 
   // Update upgrade level

@@ -14,6 +14,7 @@ import {
 } from "../../game/FightEngine";
 import type { FishData } from "../../util/csvLoader";
 import { NumInput, FishSelect, EngineConfigRow } from "./shared";
+import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
 
 interface SweepCell {
   reel: number;
@@ -126,8 +127,8 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
     fishData[0]?.basePrice ?? 0,
   );
   const [lineHP, setLineHP] = useState(10);
-  const [reelMin, setReelMin] = useState(1);
-  const [reelMax, setReelMax] = useState(8);
+  const [reelMin, setReelMin] = useState(INITIAL_PLAYER_STATE.attack);
+  const [reelMax, setReelMax] = useState(INITIAL_PLAYER_STATE.attack + 8);
   const dragMin = reelMin;
   const dragMax = reelMax;
   const [trialsPerCell, setTrialsPerCell] = useState(50);

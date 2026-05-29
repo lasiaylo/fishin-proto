@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { simulateEconomy, type EconomyRound } from "../../game/EconomyModel";
+import { StatName } from "../../util/csvLoader";
 import type { FishData, ShopUpgradeData } from "../../util/csvLoader";
 import { COLORS, NumInput } from "./shared";
 import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
@@ -29,7 +30,7 @@ export function EconomyTab({
   const [rounds, setRounds] = useState<EconomyRound[]>([]);
   const [running, setRunning] = useState(false);
 
-  const nonLureUpgrades = shopData.filter((u) => u.stat !== "lure");
+  const nonLureUpgrades = shopData.filter((u) => u.stat !== StatName.LURE);
 
   function runSim() {
     setRunning(true);

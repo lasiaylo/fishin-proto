@@ -13,8 +13,8 @@ export interface PlayerState extends PlayerStats {
 
 export const INITIAL_PLAYER_STATE = {
   wallet: 0,
-  attack: 3,
-  defense: 3,
+  attack: 2,
+  defense: 2,
   lineHP: 10,
   ownedLures: new Set<string>(),
 };
@@ -39,12 +39,8 @@ export function setStat(stat: string, value: number) {
   usePlayer.setState((s) => ({ ...s, [stat]: value }));
 }
 
-export function addToStat(stat: string, value: number) {
-  usePlayer.setState((s) => {
-    const current = (s as unknown as Record<string, unknown>)[stat];
-    if (typeof current !== "number") return s;
-    return { ...s, [stat]: current + value };
-  });
+export function addToStat(stat: keyof PlayerStats, value: number) {
+  usePlayer.setState((s) => ({ ...s, [stat]: s[stat] + value }));
 }
 
 export function addLure(lureId: string) {

@@ -1,4 +1,5 @@
 import { FightEngine, Outcome } from "./FightEngine";
+import { StatName } from "../util/csvLoader";
 import type { FishData, ShopUpgradeData } from "../util/csvLoader";
 import {
   INITIAL_PLAYER_STATE,
@@ -111,19 +112,18 @@ function applyUpgrade(
   levels[upgrade.id] = (levels[upgrade.id] ?? 0) + 1;
 
   switch (upgrade.stat) {
-    case "lure":
+    case StatName.LURE:
       ownedLures.add(upgrade.id);
       break;
-    case "reelStrength":
+    case StatName.ATTACK:
       player.attack += upgrade.valuePerLevel;
       break;
-    case "drag":
+    case StatName.DEFENSE:
       player.defense += upgrade.valuePerLevel;
       break;
-    case "lineStrength":
+    case StatName.HP:
       player.lineHP += upgrade.valuePerLevel;
       break;
-    // other stats (e.g. "win", "inventory") are money sinks with no mechanical effect
   }
 }
 
@@ -165,7 +165,7 @@ export function simulateEconomy(
       wallet -= price;
       applyUpgrade(upgrade, player, ownedLures, levels);
       upgradesBought.push(`${upgrade.id} L${levels[upgrade.id]}`);
-      if (upgrade.stat === "lure") boughtLure = true;
+      if (upgrade.stat === StatName.LURE) boughtLure = true;
       result = cheapestUpgrade(shopData, levels, wallet);
     }
 

@@ -8,12 +8,27 @@ export interface FishData {
   thrash: number;
 }
 
+export enum StatName {
+  ATTACK = "ATTACK",
+  DEFENSE = "DEFENSE",
+  HP = "HP",
+  LURE = "LURE",
+  WIN = "win",
+}
+
+const STAT_NAME_VALUES = new Set<string>(Object.values(StatName));
+
+function parseStatName(value: string): StatName {
+  if (STAT_NAME_VALUES.has(value)) return value as StatName;
+  throw new Error(`Invalid stat name in CSV: "${value}"`);
+}
+
 export interface ShopUpgradeData {
   id: string;
   name: string;
   description: string;
   prices: number[];
-  stat: string;
+  stat: StatName;
   valuePerLevel: number;
 }
 
@@ -64,7 +79,7 @@ export async function loadShopData(): Promise<ShopUpgradeData[]> {
       name: display?.name ?? row[0],
       description: display?.description ?? "",
       prices: row[1].split(" ").map(Number),
-      stat: row[2],
+      stat: parseStatName(row[2]),
       valuePerLevel: Number(row[3]),
     };
   });
