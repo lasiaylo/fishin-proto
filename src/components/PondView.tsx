@@ -34,6 +34,7 @@ export function PondView() {
   const lineHpRef = useRef<number>(0);
   const rafRef = useRef<number>(0);
   const lastTimeRef = useRef<number | null>(null);
+  const reelRef = useRef<boolean>(false);
   const biteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hookWindowRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -83,7 +84,7 @@ export function PondView() {
     setBiteReady(false);
     setGameState(GameState.Fighting);
 
-    const { reelStrength, drag, lineHP } = usePlayer.getState();
+    const { attack, defense, lineHP } = usePlayer.getState();
     const fish = caughtFishRef.current!;
     lineHpRef.current = lineHP;
 
@@ -91,8 +92,8 @@ export function PondView() {
       fish.attack,
       fish.defense,
       fish.thrash,
-      reelStrength,
-      drag,
+      attack,
+      defense,
       lineHP,
     );
 
@@ -104,7 +105,7 @@ export function PondView() {
       const dt = Math.min((timestamp - lastTimeRef.current) / 1000, 0.1);
       lastTimeRef.current = timestamp;
 
-      const state = fightRef.current!.tick(dt);
+      const state = fightRef.current!.tick(dt, reelRef.current);
       setFightState({ ...state });
       if (state.outcome !== null) {
         console.log("Finished!", state.outcome, state.time);
@@ -167,6 +168,12 @@ export function PondView() {
         state={fightState}
         lineHp={lineHpRef.current}
         fading={fading}
+        onReelStart={() => {
+          reelRef.current = true;
+        }}
+        onReelEnd={() => {
+          reelRef.current = false;
+        }}
       />
     );
   }

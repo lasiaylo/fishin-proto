@@ -115,41 +115,47 @@ export class FightEngine {
     this.phaseDuration = randomRange(range[0], range[1]);
   }
 
-  private getDelta(attack: number, defense: number, bonus: number = 0): number {
+  private getDelta(attack: number, defense: number): number {
     const atk = attack * this.atkMult;
     let delta = this.cfg.baseSpeed * (atk / (atk + defense));
     // console.log(this.phase, delta )
     return delta;
   }
 
-  private applyMovement(dt: number): void {
+  private applyMovement(dt: number, reel?: boolean): void {
     const isFight = this.phase !== Phase.REST;
+    const reelAtkMult = (reel ?? true) ? 1 : 0;
+    const reelGrace = this.phaseElapsed <= 0.5;
+    const reelThrashMult = reelGrace ? 1 : (reel ?? false) ? 1.5 : 1;
     const rawDelta = isFight
       ? this.getDelta(this.fishAtk, this.playerDef)
-      : this.getDelta(this.playerAtk * this.atkMult, this.fishDef);
+      : this.getDelta(
+          this.playerAtk * this.atkMult * reelAtkMult,
+          this.fishDef,
+        );
     const mult = isFight ? 1 : -1;
     this.distance += mult * rawDelta * dt;
-    this.tension += this.fishThrash * (isFight ? 1 : 0.5) * dt;
+    this.tension += this.fishThrash * (isFight ? reelThrashMult : 0.5) * dt;
     this.fightElapsed += dt;
   }
 
-  private step(dt: number): void {
+  private step(dt: number, reel?: boolean): void {
     const remainingInPhase = this.phaseDuration - this.phaseElapsed;
 
-    if (dt >= remainingInPhase) {
+    if (dt < remainingInPhase) {
+      this.phaseElapsed += dt;
+      this.applyMovement(dt, reel);
+    } else {
       const dt1 = remainingInPhase;
       const dt2 = dt - dt1;
 
-      this.applyMovement(dt1);
+      this.applyMovement(dt1, reel);
 
       const next = this.phase === Phase.REST ? Phase.STRUGGLE : Phase.REST;
       this.setPhase(next);
 
-      this.applyMovement(dt2);
+      this.applyMovement(dt2, reel);
       this.phaseElapsed = dt2;
-    } else {
-      this.phaseElapsed += dt;
-      this.applyMovement(dt);
     }
 
     if (this.distance <= 0) {
@@ -164,9 +170,9 @@ export class FightEngine {
     }
   }
 
-  tick(dt: number): FightState {
+  tick(dt: number, reel?: boolean): FightState {
     if (this.outcome === null) {
-      this.step(dt);
+      this.step(dt, reel);
     }
     return this.getState();
   }

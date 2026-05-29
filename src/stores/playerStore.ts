@@ -1,25 +1,27 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 
-interface PlayerState {
-  wallet: number;
-  reelStrength: number;
-  drag: number;
+export interface PlayerStats {
+  attack: number;
+  defense: number;
   lineHP: number;
+}
+export interface PlayerState extends PlayerStats {
+  wallet: number;
   ownedLures: Set<string>;
 }
 
 export const INITIAL_PLAYER_STATE = {
   wallet: 0,
-  reelStrength: 3,
-  drag: 3,
+  attack: 3,
+  defense: 3,
   lineHP: 10,
+  ownedLures: new Set<string>(),
 };
 
 export const usePlayer = create(
   subscribeWithSelector<PlayerState>(() => ({
     ...INITIAL_PLAYER_STATE,
-    ownedLures: new Set<string>(),
   })),
 );
 

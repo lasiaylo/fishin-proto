@@ -3,6 +3,7 @@ import { Flex, Progress, Text } from "@radix-ui/themes";
 import { FightState } from "../game/FightEngine";
 // @ts-ignore
 import { progressPropDefs } from "@radix-ui/themes/props";
+import { MyButton } from "./MyButton";
 
 function StatBar({
   label,
@@ -35,9 +36,17 @@ interface FightViewProps {
   state: FightState;
   lineHp: number;
   fading?: boolean;
+  onReelStart: () => void;
+  onReelEnd: () => void;
 }
 
-export function FightView({ state, lineHp, fading = false }: FightViewProps) {
+export function FightView({
+  state,
+  lineHp,
+  fading = false,
+  onReelStart,
+  onReelEnd,
+}: FightViewProps) {
   const { distance, tension, phase } = state;
 
   return (
@@ -48,6 +57,13 @@ export function FightView({ state, lineHp, fading = false }: FightViewProps) {
       p="4"
       style={{ opacity: fading ? 0 : 1, transition: "opacity 0.6s ease" }}
     >
+      <div
+        onMouseDown={onReelStart}
+        onMouseUp={onReelEnd}
+        onMouseLeave={onReelEnd}
+      >
+        <MyButton onClick={() => {}}>Reel</MyButton>
+      </div>
       <Text size="2" color="gray">
         {phase}
       </Text>

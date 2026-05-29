@@ -11,13 +11,10 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import {
-  simulateEconomy,
-  DEFAULT_SIM_PLAYER,
-  type EconomyRound,
-} from "../../game/EconomyModel";
+import { simulateEconomy, type EconomyRound } from "../../game/EconomyModel";
 import type { FishData, ShopUpgradeData } from "../../util/csvLoader";
 import { COLORS, NumInput } from "./shared";
+import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
 
 export function EconomyTab({
   fishData,
@@ -26,9 +23,9 @@ export function EconomyTab({
   fishData: FishData[];
   shopData: ShopUpgradeData[];
 }) {
-  const [reelStr, setReelStr] = useState(DEFAULT_SIM_PLAYER.attack);
-  const [drag, setDrag] = useState(DEFAULT_SIM_PLAYER.defense);
-  const [lineHP, setLineHP] = useState(DEFAULT_SIM_PLAYER.lineHP);
+  const [reelStr, setReelStr] = useState(INITIAL_PLAYER_STATE.attack);
+  const [drag, setDrag] = useState(INITIAL_PLAYER_STATE.defense);
+  const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
   const [rounds, setRounds] = useState<EconomyRound[]>([]);
   const [running, setRunning] = useState(false);
 

@@ -1,5 +1,10 @@
 import { FightEngine, Outcome } from "./FightEngine";
 import type { FishData, ShopUpgradeData } from "../util/csvLoader";
+import {
+  INITIAL_PLAYER_STATE,
+  PlayerState,
+  PlayerStats,
+} from "../stores/playerStore";
 
 // ── Constants ──
 
@@ -10,12 +15,6 @@ const MAX_FIGHT_TIME = 30;
 const MAX_ROUNDS = 100;
 
 // ── Types ──
-
-export interface SimPlayer {
-  attack: number;
-  defense: number;
-  lineHP: number;
-}
 
 export interface EconomyRound {
   round: number;
@@ -31,17 +30,11 @@ export interface EconomyRound {
   boughtLure: boolean;
 }
 
-export const DEFAULT_SIM_PLAYER: SimPlayer = {
-  attack: 3,
-  defense: 3,
-  lineHP: 20,
-};
-
 // ── Helpers ──
 
 function runTrials(
   fish: FishData,
-  player: SimPlayer,
+  player: PlayerStats,
   n: number,
 ): { winCount: number; avgWinTime: number } {
   const engine = new FightEngine(
@@ -72,7 +65,7 @@ function runTrials(
 
 function pickBestFish(
   fishData: FishData[],
-  player: SimPlayer,
+  player: PlayerStats,
   ownedLures: Set<string>,
 ): { fish: FishData; avgFightTime: number } | null {
   const sorted = [...fishData].sort((a, b) => b.basePrice - a.basePrice);
@@ -111,7 +104,7 @@ function cheapestUpgrade(
 
 function applyUpgrade(
   upgrade: ShopUpgradeData,
-  player: SimPlayer,
+  player: PlayerStats,
   ownedLures: Set<string>,
   levels: Record<string, number>,
 ): void {
@@ -139,9 +132,11 @@ function applyUpgrade(
 export function simulateEconomy(
   fishData: FishData[],
   shopData: ShopUpgradeData[],
-  start: SimPlayer = DEFAULT_SIM_PLAYER,
+  start: PlayerStats = {
+    ...INITIAL_PLAYER_STATE,
+  },
 ): EconomyRound[] {
-  const player: SimPlayer = { ...start };
+  const player = { ...start };
   const ownedLures = new Set<string>();
   const levels: Record<string, number> = Object.fromEntries(
     shopData.map((u) => [u.id, 0]),
