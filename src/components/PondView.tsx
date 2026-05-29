@@ -52,8 +52,9 @@ export function PondView() {
         id: "debug",
         name: "Debug Fish",
         basePrice: 0,
-        defense: 5,
         attack: 5,
+        defense: 5,
+        thrash: 5,
         requiredLure: "none",
       };
       startFight();
@@ -89,6 +90,7 @@ export function PondView() {
     fightRef.current = new FightEngine(
       fish.attack,
       fish.defense,
+      fish.thrash,
       reelStrength,
       drag,
       lineHP,

@@ -47,6 +47,7 @@ function runTrials(
   const engine = new FightEngine(
     fish.attack,
     fish.defense,
+    fish.thrash,
     player.attack,
     player.defense,
     player.lineHP,

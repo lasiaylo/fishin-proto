@@ -5,6 +5,7 @@ export interface FishData {
   attack: number;
   defense: number;
   requiredLure: string;
+  thrash: number;
 }
 
 export interface ShopUpgradeData {
@@ -35,7 +36,8 @@ export async function loadFishData(): Promise<FishData[]> {
     basePrice: Number(row[2]),
     attack: Number(row[3]),
     defense: Number(row[4]),
-    requiredLure: row[5] || "",
+    thrash: Number(row[5]) || 0,
+    requiredLure: row[6] || "",
   }));
 }
 

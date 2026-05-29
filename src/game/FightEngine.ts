@@ -4,13 +4,11 @@ const MAX_DISTANCE = 100;
 const START_DISTANCE = MAX_DISTANCE / 2;
 
 export interface FightConfig {
-  tensionRate: number;
   restTimeRange: [number, number];
   fightTimeRange: [number, number];
   baseSpeed: number;
   baseReel: number;
   initStruggleDuration: number;
-  struggleBonus: number;
 }
 
 export const DEFAULT_FIGHT_CONFIG: FightConfig = {
@@ -19,8 +17,6 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   baseSpeed: 10,
   baseReel: 25,
   initStruggleDuration: 2,
-  struggleBonus: 10,
-  tensionRate: 10,
 };
 
 const MAX_SIM_TIME = 120;
@@ -57,6 +53,7 @@ export interface FightState {
 export class FightEngine {
   private fishAtk: number;
   private fishDef: number;
+  private fishThrash: number;
 
   private playerAtk: number;
   private playerDef: number;
@@ -79,6 +76,7 @@ export class FightEngine {
   constructor(
     fishAttack: number,
     fishDefense: number,
+    fishThrash: number,
     playerAtk: number,
     playerDef: number,
     lineHp: number,
@@ -86,6 +84,7 @@ export class FightEngine {
   ) {
     this.fishAtk = fishAttack;
     this.fishDef = fishDefense;
+    this.fishThrash = fishThrash;
     this.playerAtk = playerAtk;
     this.playerDef = playerDef;
     this.lineHp = lineHp;
@@ -132,7 +131,7 @@ export class FightEngine {
       : this.getDelta(this.playerAtk * this.atkMult, this.fishDef);
     const mult = isFight ? 1 : -1;
     this.distance += mult * rawDelta * dt;
-    // this.tension += this.cfg.tensionRate * (isFight ? 1 : 0.5);
+    this.tension += this.fishThrash * (isFight ? 1 : 0.5);
     this.fightElapsed += dt;
   }
 

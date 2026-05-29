@@ -82,6 +82,7 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
   const [fishId, setFishId] = useState(fishData[0]?.id ?? "");
   const [fishSpeed, setFishSpeed] = useState(fishData[0]?.attack ?? 0);
   const [fishStrength, setFishStrength] = useState(fishData[0]?.defense ?? 0);
+  const [fishThrash, setFishThrash] = useState(fishData[0]?.thrash ?? 0);
   const [fishBasePrice, setFishBasePrice] = useState(
     fishData[0]?.basePrice ?? 0,
   );
@@ -97,6 +98,7 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
     if (fish) {
       setFishSpeed(fish.attack);
       setFishStrength(fish.defense);
+      setFishThrash(fish.thrash);
       setFishBasePrice(fish.basePrice);
     }
   }, [fishId, fishData]);
@@ -105,6 +107,7 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
     const engine = new FightEngine(
       fishSpeed,
       fishStrength,
+      fishThrash,
       reelStr,
       drag,
       lineHP,
@@ -151,6 +154,12 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
           value={fishStrength}
           onChange={setFishStrength}
           min={1}
+        />
+        <NumInput
+          label="Thrash"
+          value={fishThrash}
+          onChange={setFishThrash}
+          min={0}
         />
         <NumInput
           label="Base Price"
