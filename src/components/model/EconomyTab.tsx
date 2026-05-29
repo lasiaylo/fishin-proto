@@ -26,8 +26,8 @@ export function EconomyTab({
   fishData: FishData[];
   shopData: ShopUpgradeData[];
 }) {
-  const [reelStr, setReelStr] = useState(DEFAULT_SIM_PLAYER.reelStrength);
-  const [drag, setDrag] = useState(DEFAULT_SIM_PLAYER.drag);
+  const [reelStr, setReelStr] = useState(DEFAULT_SIM_PLAYER.attack);
+  const [drag, setDrag] = useState(DEFAULT_SIM_PLAYER.defense);
   const [lineHP, setLineHP] = useState(DEFAULT_SIM_PLAYER.lineHP);
   const [rounds, setRounds] = useState<EconomyRound[]>([]);
   const [running, setRunning] = useState(false);
@@ -39,8 +39,8 @@ export function EconomyTab({
     setTimeout(() => {
       setRounds(
         simulateEconomy(fishData, shopData, {
-          reelStrength: reelStr,
-          drag,
+          attack: reelStr,
+          defense: drag,
           lineHP,
         }),
       );
@@ -64,8 +64,13 @@ export function EconomyTab({
   return (
     <Flex direction="column" gap="4" pt="4">
       <Flex gap="3" wrap="wrap" align="end">
-        <NumInput label="Reel" value={reelStr} onChange={setReelStr} min={1} />
-        <NumInput label="Drag" value={drag} onChange={setDrag} min={1} />
+        <NumInput
+          label="Attack"
+          value={reelStr}
+          onChange={setReelStr}
+          min={1}
+        />
+        <NumInput label="Defense" value={drag} onChange={setDrag} min={1} />
         <NumInput label="Line HP" value={lineHP} onChange={setLineHP} min={1} />
         <Button onClick={runSim} disabled={running}>
           {running ? "Running…" : "Run Economy"}

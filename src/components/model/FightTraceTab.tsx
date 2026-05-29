@@ -80,8 +80,8 @@ function phaseColor(phase: Phase): string {
 
 export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
   const [fishId, setFishId] = useState(fishData[0]?.id ?? "");
-  const [fishSpeed, setFishSpeed] = useState(fishData[0]?.speed ?? 0);
-  const [fishStrength, setFishStrength] = useState(fishData[0]?.strength ?? 0);
+  const [fishSpeed, setFishSpeed] = useState(fishData[0]?.attack ?? 0);
+  const [fishStrength, setFishStrength] = useState(fishData[0]?.defense ?? 0);
   const [fishBasePrice, setFishBasePrice] = useState(
     fishData[0]?.basePrice ?? 0,
   );
@@ -95,8 +95,8 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
   useEffect(() => {
     const fish = fishData.find((f) => f.id === fishId);
     if (fish) {
-      setFishSpeed(fish.speed);
-      setFishStrength(fish.strength);
+      setFishSpeed(fish.attack);
+      setFishStrength(fish.defense);
       setFishBasePrice(fish.basePrice);
     }
   }, [fishId, fishData]);
@@ -141,13 +141,13 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
       <Flex gap="3" wrap="wrap" align="end">
         <FishSelect fishData={fishData} value={fishId} onChange={setFishId} />
         <NumInput
-          label="Speed"
+          label="Attack"
           value={fishSpeed}
           onChange={setFishSpeed}
           min={1}
         />
         <NumInput
-          label="Strength"
+          label="Defense"
           value={fishStrength}
           onChange={setFishStrength}
           min={1}
@@ -160,8 +160,13 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
         />
       </Flex>
       <Flex gap="3" wrap="wrap" align="end">
-        <NumInput label="Reel" value={reelStr} onChange={setReelStr} min={1} />
-        <NumInput label="Drag" value={drag} onChange={setDrag} min={1} />
+        <NumInput
+          label="Attack"
+          value={reelStr}
+          onChange={setReelStr}
+          min={1}
+        />
+        <NumInput label="Defense" value={drag} onChange={setDrag} min={1} />
         <NumInput label="Line HP" value={lineHP} onChange={setLineHP} min={1} />
         <NumInput
           label="Trials"

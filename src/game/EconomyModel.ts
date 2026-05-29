@@ -12,8 +12,8 @@ const MAX_ROUNDS = 100;
 // ── Types ──
 
 export interface SimPlayer {
-  reelStrength: number;
-  drag: number;
+  attack: number;
+  defense: number;
   lineHP: number;
 }
 
@@ -32,8 +32,8 @@ export interface EconomyRound {
 }
 
 export const DEFAULT_SIM_PLAYER: SimPlayer = {
-  reelStrength: 3,
-  drag: 3,
+  attack: 3,
+  defense: 3,
   lineHP: 20,
 };
 
@@ -45,10 +45,10 @@ function runTrials(
   n: number,
 ): { winCount: number; avgWinTime: number } {
   const engine = new FightEngine(
-    fish.speed,
-    fish.strength,
-    player.reelStrength,
-    player.drag,
+    fish.attack,
+    fish.defense,
+    player.attack,
+    player.defense,
     player.lineHP,
   );
   let winCount = 0;
@@ -121,10 +121,10 @@ function applyUpgrade(
       ownedLures.add(upgrade.id);
       break;
     case "reelStrength":
-      player.reelStrength += upgrade.valuePerLevel;
+      player.attack += upgrade.valuePerLevel;
       break;
     case "drag":
-      player.drag += upgrade.valuePerLevel;
+      player.defense += upgrade.valuePerLevel;
       break;
     case "lineStrength":
       player.lineHP += upgrade.valuePerLevel;

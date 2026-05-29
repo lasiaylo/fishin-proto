@@ -52,12 +52,13 @@ export function PondView() {
         id: "debug",
         name: "Debug Fish",
         basePrice: 0,
-        strength: 5,
-        speed: 5,
+        defense: 5,
+        attack: 5,
         requiredLure: "none",
       };
       startFight();
     }
+
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
@@ -86,8 +87,8 @@ export function PondView() {
     lineHpRef.current = lineHP;
 
     fightRef.current = new FightEngine(
-      fish.speed,
-      fish.strength,
+      fish.attack,
+      fish.defense,
       reelStrength,
       drag,
       lineHP,

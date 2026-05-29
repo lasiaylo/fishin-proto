@@ -2,8 +2,8 @@ export interface FishData {
   id: string;
   name: string;
   basePrice: number;
-  strength: number;
-  speed: number;
+  attack: number;
+  defense: number;
   requiredLure: string;
 }
 
@@ -33,8 +33,8 @@ export async function loadFishData(): Promise<FishData[]> {
     id: row[0],
     name: row[1],
     basePrice: Number(row[2]),
-    strength: Number(row[3]),
-    speed: Number(row[4]),
+    attack: Number(row[3]),
+    defense: Number(row[4]),
     requiredLure: row[5] || "",
   }));
 }

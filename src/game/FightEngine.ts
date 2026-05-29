@@ -77,15 +77,15 @@ export class FightEngine {
   private atkMult: number = 1;
 
   constructor(
-    fishSpeed: number,
-    fishStrength: number,
+    fishAttack: number,
+    fishDefense: number,
     playerAtk: number,
     playerDef: number,
     lineHp: number,
     config?: Partial<FightConfig>,
   ) {
-    this.fishAtk = fishSpeed;
-    this.fishDef = fishStrength;
+    this.fishAtk = fishAttack;
+    this.fishDef = fishDefense;
     this.playerAtk = playerAtk;
     this.playerDef = playerDef;
     this.lineHp = lineHp;

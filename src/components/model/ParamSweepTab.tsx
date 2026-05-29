@@ -119,8 +119,8 @@ function Heatmap({
 
 export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
   const [fishId, setFishId] = useState(fishData[0]?.id ?? "");
-  const [fishSpeed, setFishSpeed] = useState(fishData[0]?.speed ?? 0);
-  const [fishStrength, setFishStrength] = useState(fishData[0]?.strength ?? 0);
+  const [fishSpeed, setFishSpeed] = useState(fishData[0]?.attack ?? 0);
+  const [fishStrength, setFishStrength] = useState(fishData[0]?.defense ?? 0);
   const [fishBasePrice, setFishBasePrice] = useState(
     fishData[0]?.basePrice ?? 0,
   );
@@ -138,8 +138,8 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
   useEffect(() => {
     const fish = fishData.find((f) => f.id === fishId);
     if (fish) {
-      setFishSpeed(fish.speed);
-      setFishStrength(fish.strength);
+      setFishSpeed(fish.attack);
+      setFishStrength(fish.defense);
       setFishBasePrice(fish.basePrice);
     }
   }, [fishId, fishData]);
@@ -219,13 +219,13 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
       <Flex gap="3" wrap="wrap" align="end">
         <FishSelect fishData={fishData} value={fishId} onChange={setFishId} />
         <NumInput
-          label="Speed"
+          label="Attack"
           value={fishSpeed}
           onChange={setFishSpeed}
           min={1}
         />
         <NumInput
-          label="Strength"
+          label="Defense"
           value={fishStrength}
           onChange={setFishStrength}
           min={1}
@@ -240,25 +240,25 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
       <Flex gap="3" wrap="wrap" align="end">
         <NumInput label="Line HP" value={lineHP} onChange={setLineHP} min={1} />
         <NumInput
-          label="Reel Min"
+          label="Attack Min"
           value={reelMin}
           onChange={setReelMin}
           min={1}
         />
         <NumInput
-          label="Reel Max"
+          label="Attack Max"
           value={reelMax}
           onChange={setReelMax}
           min={1}
         />
         <NumInput
-          label="Drag Min"
+          label="Defense Min"
           value={dragMin}
           onChange={setDragMin}
           min={1}
         />
         <NumInput
-          label="Drag Max"
+          label="Defense Max"
           value={dragMax}
           onChange={setDragMax}
           min={1}
