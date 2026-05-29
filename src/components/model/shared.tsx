@@ -76,14 +76,18 @@ export function EngineConfigRow({
           <Flex gap="3" wrap="wrap" align="end">
             <NumInput
               label="Rest Min"
-              value={config.restTime[0]}
-              onChange={(v) => onChange({ restTime: [v, config.restTime[1]] })}
+              value={config.restTimeRange[0]}
+              onChange={(v) =>
+                onChange({ restTimeRange: [v, config.restTimeRange[1]] })
+              }
               min={0}
             />
             <NumInput
               label="Rest Max"
-              value={config.restTime[1]}
-              onChange={(v) => onChange({ restTime: [config.restTime[0], v] })}
+              value={config.restTimeRange[1]}
+              onChange={(v) =>
+                onChange({ restTimeRange: [config.restTimeRange[0], v] })
+              }
               min={0}
             />
             <NumInput

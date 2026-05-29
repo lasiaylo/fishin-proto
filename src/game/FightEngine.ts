@@ -5,7 +5,7 @@ const START_DISTANCE = MAX_DISTANCE / 2;
 
 export interface FightConfig {
   tensionRate: number;
-  restTime: [number, number];
+  restTimeRange: [number, number];
   fightTimeRange: [number, number];
   baseSpeed: number;
   baseReel: number;
@@ -14,7 +14,7 @@ export interface FightConfig {
 }
 
 export const DEFAULT_FIGHT_CONFIG: FightConfig = {
-  restTime: [3, 4],
+  restTimeRange: [3, 4],
   fightTimeRange: [1.0, 4],
   baseSpeed: 10,
   baseReel: 25,
@@ -74,6 +74,8 @@ export class FightEngine {
 
   private cfg: FightConfig;
 
+  private atkMult: number = 1;
+
   constructor(
     fishSpeed: number,
     fishStrength: number,
@@ -104,28 +106,21 @@ export class FightEngine {
   private setPhase(phase: Phase): void {
     this.phaseElapsed = 0;
     this.phase = phase;
-
-    if (phase === Phase.REST) {
-      this.phaseDuration = randomRange(
-        this.cfg.restTime[0],
-        this.cfg.restTime[1],
-      );
-      return;
-    }
+    this.atkMult = randomRange(0.95, 1.05);
 
     if (phase === Phase.INIT_STRUGGLE) {
       this.phaseDuration = this.cfg.initStruggleDuration;
       return;
     }
+    const range =
+      phase === Phase.REST ? this.cfg.restTimeRange : this.cfg.fightTimeRange;
 
-    this.phaseDuration = randomRange(
-      this.cfg.fightTimeRange[0],
-      this.cfg.fightTimeRange[1],
-    );
+    this.phaseDuration = randomRange(range[0], range[1]);
   }
 
   private getDelta(attack: number, defense: number, bonus: number = 0): number {
-    let delta = this.cfg.baseReel * (attack / (attack + defense));
+    const atk = attack * this.atkMult;
+    let delta = this.cfg.baseReel * (atk / (atk + defense));
     // console.log(this.phase, delta )
     return delta;
   }
@@ -134,7 +129,7 @@ export class FightEngine {
     const isFight = this.phase !== Phase.REST;
     const rawDelta = isFight
       ? this.getDelta(this.fishAtk, this.playerDef)
-      : this.getDelta(this.playerAtk, this.fishDef);
+      : this.getDelta(this.playerAtk * this.atkMult, this.fishDef);
     const mult = isFight ? 1 : -1;
     this.distance += mult * rawDelta * dt;
     // this.tension += this.cfg.tensionRate * (isFight ? 1 : 0.5);
@@ -186,6 +181,7 @@ export class FightEngine {
     this.outcome = null;
     this.phaseElapsed = 0;
     this.phaseDuration = 0;
+    this.atkMult = 1;
     this.setPhase(Phase.INIT_STRUGGLE);
   }
 
