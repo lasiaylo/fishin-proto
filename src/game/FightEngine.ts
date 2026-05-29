@@ -7,15 +7,13 @@ export interface FightConfig {
   restTimeRange: [number, number];
   fightTimeRange: [number, number];
   baseSpeed: number;
-  baseReel: number;
   initStruggleDuration: number;
 }
 
 export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   restTimeRange: [3, 4],
   fightTimeRange: [1.0, 4],
-  baseSpeed: 10,
-  baseReel: 25,
+  baseSpeed: 25,
   initStruggleDuration: 2,
 };
 
@@ -119,7 +117,7 @@ export class FightEngine {
 
   private getDelta(attack: number, defense: number, bonus: number = 0): number {
     const atk = attack * this.atkMult;
-    let delta = this.cfg.baseReel * (atk / (atk + defense));
+    let delta = this.cfg.baseSpeed * (atk / (atk + defense));
     // console.log(this.phase, delta )
     return delta;
   }

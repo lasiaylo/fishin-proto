@@ -119,12 +119,6 @@ export function EngineConfigRow({
               value={config.baseSpeed}
               onChange={(v) => onChange({ baseSpeed: v })}
             />
-            <NumInput
-              label="Base Reel"
-              value={config.baseReel}
-              onChange={(v) => onChange({ baseReel: v })}
-              min={0}
-            />
           </Flex>
         </>
       )}
