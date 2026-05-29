@@ -2,6 +2,7 @@ import React, {
   Fragment,
   useState,
   useEffect,
+  useRef,
   type CSSProperties,
 } from "react";
 import { Flex, Text, Button } from "@radix-ui/themes";
@@ -132,6 +133,7 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
   const [engineCfg, setEngineCfg] = useState<FightConfig>(DEFAULT_FIGHT_CONFIG);
   const [cells, setCells] = useState<SweepCell[]>([]);
   const [running, setRunning] = useState(false);
+  const cancelRef = useRef(false);
 
   useEffect(() => {
     const fish = fishData.find((f) => f.id === fishId);
@@ -142,41 +144,61 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
     }
   }, [fishId, fishData]);
 
-  function runSweep() {
+  async function runSweep() {
+    cancelRef.current = false;
     setRunning(true);
-    setTimeout(() => {
-      const result: SweepCell[] = [];
-      for (let reel = reelMin; reel <= reelMax; reel++) {
-        for (let drag = dragMin; drag <= dragMax; drag++) {
-          const engine = new FightEngine(
-            fishSpeed,
-            fishStrength,
-            reel,
-            drag,
-            lineHP,
-            engineCfg,
-          );
-          let wins = 0,
-            totalTime = 0;
-          for (let t = 0; t < trialsPerCell; t++) {
-            engine.reset();
-            const { outcome, duration } = engine.runToCompletion();
-            if (outcome === Outcome.WIN) {
-              wins++;
-              totalTime += duration;
-            }
-          }
-          result.push({
-            reel,
-            drag,
-            winPct: (wins / trialsPerCell) * 100,
-            avgTime: wins > 0 ? totalTime / wins : 120,
-          });
+    setCells([]);
+
+    const pairs: { reel: number; drag: number }[] = [];
+    for (let reel = reelMin; reel <= reelMax; reel++)
+      for (let drag = dragMin; drag <= dragMax; drag++)
+        pairs.push({ reel, drag });
+
+    const acc = new Map(
+      pairs.map(({ reel, drag }) => [
+        `${reel}-${drag}`,
+        { wins: 0, totalTime: 0 },
+      ]),
+    );
+    const engines = new Map(
+      pairs.map(({ reel, drag }) => [
+        `${reel}-${drag}`,
+        new FightEngine(fishSpeed, fishStrength, reel, drag, lineHP, engineCfg),
+      ]),
+    );
+
+    for (let t = 0; t < trialsPerCell; t++) {
+      if (cancelRef.current) break;
+
+      for (const { reel, drag } of pairs) {
+        const key = `${reel}-${drag}`;
+        const engine = engines.get(key)!;
+        engine.reset();
+        const { outcome, duration } = engine.runToCompletion();
+        if (outcome === Outcome.WIN) {
+          const a = acc.get(key)!;
+          a.wins++;
+          a.totalTime += duration;
         }
       }
-      setCells(result);
-      setRunning(false);
-    }, 0);
+
+      const count = t + 1;
+      setCells(
+        pairs.map(({ reel, drag }) => {
+          const { wins, totalTime } = acc.get(`${reel}-${drag}`)!;
+          return {
+            reel,
+            drag,
+            winPct: (wins / count) * 100,
+            avgTime: wins > 0 ? totalTime / wins : 120,
+          };
+        }),
+      );
+
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    }
+
+    setRunning(false);
   }
 
   const reelVals = Array.from(
@@ -251,6 +273,17 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
         <Button onClick={runSweep} disabled={running}>
           {running ? "Running…" : "Run Sweep"}
         </Button>
+        {running && (
+          <Button
+            variant="soft"
+            color="red"
+            onClick={() => {
+              cancelRef.current = true;
+            }}
+          >
+            Stop
+          </Button>
+        )}
       </Flex>
 
       {cells.length > 0 && (
