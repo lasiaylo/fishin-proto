@@ -22,6 +22,7 @@ export interface EconomyRound {
   rate: number; // $/sec
   lureId: string; // "" = no lure
   fishCatchTimes: Record<string, number>; // fishId → avgFightTime (all fish in chosen lure pool)
+  fishEarnings: Record<string, number>; // fishId → avgEarnings considering win rate
   upgradesBought: string[];
   upgradeLevels: Record<string, number>;
   boughtLure: boolean;
@@ -71,10 +72,12 @@ function evalLure(
     avgEarningsPerCast: number;
   } | null;
   catchTimes: Record<string, number>;
+  earnings: Record<string, number>;
 } {
   let bestRate;
   let best = null;
   const catchTimes: Record<string, number> = {};
+  const earnings: Record<string, number> = {};
 
   for (const [lureId, pool] of groups) {
     if (lureId && !ownedLures.has(lureId)) continue;
@@ -85,7 +88,9 @@ function evalLure(
     for (const fish of pool) {
       const { winCount, avgFightTime } = runTrials(fish, player, EVAL_TRIALS);
       catchTimes[fish.id] = avgFightTime;
-      totalEarnings += (fish.basePrice * winCount) / EVAL_TRIALS;
+      const avgEarnings = (fish.basePrice * winCount) / EVAL_TRIALS;
+      earnings[fish.id] = avgEarnings / avgFightTime;
+      totalEarnings += avgEarnings;
       totalFightTime += avgFightTime;
     }
 
@@ -101,7 +106,7 @@ function evalLure(
     }
   }
 
-  return { best, catchTimes };
+  return { best, catchTimes, earnings };
 }
 
 function cheapestUpgrade(
@@ -179,11 +184,11 @@ export function simulateEconomy(
   }
 
   for (let round = 1; round <= MAX_ROUNDS; round++) {
-    const { best, catchTimes: fishCatchTimes } = evalLure(
-      fishByLure,
-      player,
-      ownedLures,
-    );
+    const {
+      best,
+      catchTimes: fishCatchTimes,
+      earnings: fishEarnings,
+    } = evalLure(fishByLure, player, ownedLures);
     if (!best) break;
 
     const { lureId, avgFightTime, avgEarningsPerCast } = best;
@@ -216,6 +221,7 @@ export function simulateEconomy(
       rate: income / roundTime,
       lureId,
       fishCatchTimes,
+      fishEarnings,
       upgradesBought,
       upgradeLevels: { ...levels },
       boughtLure,

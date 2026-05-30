@@ -68,9 +68,11 @@ export function EconomyTab({
     ),
   }));
 
-  const walletData = rounds.map((r) => ({
+  const earningsData = rounds.map((r) => ({
     time: r.cumulativeTime,
-    wallet: r.wallet,
+    ...Object.fromEntries(
+      fishData.map((f) => [`${f.id}_earn`, r.fishEarnings[f.id] ?? null]),
+    ),
   }));
 
   const levelData = rounds.map((r) => ({
@@ -263,7 +265,41 @@ export function EconomyTab({
 
             <Flex direction="column" gap="2">
               <Text size="2" weight="bold">
-                Avg Catch Time (s)
+                Fish Income Rate ($)
+              </Text>
+              <ResponsiveContainer width="100%" height={200}>
+                <ComposedChart data={earningsData} syncId="economy">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <XAxis
+                    dataKey="time"
+                    type="number"
+                    domain={[0, maxTime]}
+                    ticks={xTicks}
+                    tickFormatter={(v: number) => `${v / 60}`}
+                  />
+                  <YAxis />
+                  {/* @ts-ignore */}
+                  <Tooltip {...tooltipProps} />
+                  <Legend />
+                  {fishData.map((f) => (
+                    <Line
+                      key={`${f.id}_earn`}
+                      dataKey={`${f.id}_earn`}
+                      stroke={fishColorMap[f.id]}
+                      dot={false}
+                      strokeWidth={2}
+                      isAnimationActive={false}
+                      name={f.name}
+                      connectNulls={false}
+                    />
+                  ))}
+                </ComposedChart>
+              </ResponsiveContainer>
+            </Flex>
+
+            <Flex direction="column" gap="2">
+              <Text size="2" weight="bold">
+                Catch Time (s)
               </Text>
               <ResponsiveContainer width="100%" height={200}>
                 <ComposedChart data={catchTimeData} syncId="economy">
@@ -335,45 +371,6 @@ export function EconomyTab({
                       name={u.name}
                     />
                   ))}
-                </ComposedChart>
-              </ResponsiveContainer>
-            </Flex>
-
-            <Flex direction="column" gap="2">
-              <Text size="2" weight="bold">
-                Wallet ($)
-              </Text>
-              <ResponsiveContainer width="100%" height={200}>
-                <ComposedChart data={walletData} syncId="economy">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis
-                    dataKey="time"
-                    type="number"
-                    domain={[0, maxTime]}
-                    ticks={xTicks}
-                    tickFormatter={(v: number) => `${v / 60}`}
-                  />
-                  <YAxis />
-                  {/* @ts-ignore */}
-                  <Tooltip {...tooltipProps} />
-                  {rounds
-                    .filter((r) => r.boughtLure)
-                    .map((r) => (
-                      <ReferenceLine
-                        key={r.round}
-                        x={r.cumulativeTime}
-                        stroke="#4caf50"
-                        strokeDasharray="4 2"
-                      />
-                    ))}
-                  <Line
-                    dataKey="wallet"
-                    stroke="#ff922b"
-                    dot={false}
-                    strokeWidth={2}
-                    isAnimationActive={false}
-                    name="wallet"
-                  />
                 </ComposedChart>
               </ResponsiveContainer>
             </Flex>
