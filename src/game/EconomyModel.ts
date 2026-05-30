@@ -1,4 +1,4 @@
-import { FightEngine, MAX_SIM_TIME, Outcome } from "./FightEngine";
+import { FightEngine, Outcome } from "./FightEngine";
 import { FishData, ShopUpgradeData, StatName } from "../util/csvLoader";
 import { INITIAL_PLAYER_STATE, PlayerStats } from "../stores/playerStore";
 
@@ -20,8 +20,8 @@ export interface EconomyRound {
   income: number;
   wallet: number; // after income, before upgrades
   rate: number; // $/sec
-  fishId: string;
-  fishCatchTimes: Record<string, number>; // fishId → CAST_WAIT_TIME + avgFightTime (accessible fish only)
+  lureId: string; // "" = no lure
+  fishCatchTimes: Record<string, number>; // fishId → avgFightTime (all fish in chosen lure pool)
   upgradesBought: string[];
   upgradeLevels: Record<string, number>;
   boughtLure: boolean;
@@ -60,32 +60,44 @@ function runTrials(
   };
 }
 
-function evalFish(
-  fishData: FishData[],
+function evalLure(
+  groups: Map<string, FishData[]>,
   player: PlayerStats,
   ownedLures: Set<string>,
 ): {
-  best: { fish: FishData; avgFightTime: number } | null;
+  best: {
+    lureId: string;
+    avgFightTime: number;
+    avgEarningsPerCast: number;
+  } | null;
   catchTimes: Record<string, number>;
 } {
   let bestRate;
-
-  let best: { fish: FishData; avgFightTime: number } | null = null;
+  let best = null;
   const catchTimes: Record<string, number> = {};
-  console.log("FISH", fishData);
 
-  for (const fish of fishData) {
-    if (fish.requiredLure && !ownedLures.has(fish.requiredLure)) continue;
+  for (const [lureId, pool] of groups) {
+    if (lureId && !ownedLures.has(lureId)) continue;
 
-    const { winCount, avgFightTime } = runTrials(fish, player, EVAL_TRIALS);
-    if (winCount === 0 || avgFightTime > MAX_SIM_TIME) continue;
+    let totalEarnings = 0;
+    let totalFightTime = 0;
 
-    catchTimes[fish.id] = avgFightTime;
+    for (const fish of pool) {
+      const { winCount, avgFightTime } = runTrials(fish, player, EVAL_TRIALS);
+      catchTimes[fish.id] = avgFightTime;
+      totalEarnings += (fish.basePrice * winCount) / EVAL_TRIALS;
+      totalFightTime += avgFightTime;
+    }
 
-    const rate = (fish.basePrice * winCount) / EVAL_TRIALS / avgFightTime;
-    if (bestRate == undefined || rate >= bestRate) {
+    const avgFightTime = totalFightTime / pool.length;
+    if (avgFightTime === 0) continue;
+
+    const avgEarningsPerCast = totalEarnings / pool.length;
+    const rate = avgEarningsPerCast / avgFightTime;
+
+    if (bestRate === undefined || rate >= bestRate) {
       bestRate = rate;
-      best = { fish, avgFightTime };
+      best = { lureId, avgFightTime, avgEarningsPerCast };
     }
   }
 
@@ -105,7 +117,7 @@ function cheapestUpgrade(
     const price = upgrade.prices[level];
     if (price > wallet) continue;
     if (upgrade.stat === StatName.LURE) {
-      best = { upgrade, price };
+      return { upgrade, price };
     }
     if (
       best === null ||
@@ -159,19 +171,24 @@ export function simulateEconomy(
   let wallet = 0;
   let cumulativeTime = 0;
   const rounds: EconomyRound[] = [];
+  const fishByLure = new Map<string, FishData[]>();
+  for (const fish of fishData) {
+    if (!fishByLure.has(fish.requiredLure))
+      fishByLure.set(fish.requiredLure, []);
+    fishByLure.get(fish.requiredLure)!.push(fish);
+  }
 
   for (let round = 1; round <= MAX_ROUNDS; round++) {
-    const { best, catchTimes: fishCatchTimes } = evalFish(
-      fishData,
+    const { best, catchTimes: fishCatchTimes } = evalLure(
+      fishByLure,
       player,
       ownedLures,
     );
     if (!best) break;
 
-    const { fish, avgFightTime } = best;
-    const roundTime =
-      2 * SHOP_TRAVEL_TIME + FISH_PER_TRIP * (CAST_WAIT_TIME + avgFightTime);
-    const income = FISH_PER_TRIP * fish.basePrice;
+    const { lureId, avgFightTime, avgEarningsPerCast } = best;
+    const roundTime = FISH_PER_TRIP * (CAST_WAIT_TIME + avgFightTime);
+    const income = FISH_PER_TRIP * avgEarningsPerCast;
     wallet += income;
     cumulativeTime += roundTime;
 
@@ -197,7 +214,7 @@ export function simulateEconomy(
       income,
       wallet: walletSnapshot,
       rate: income / roundTime,
-      fishId: fish.id,
+      lureId,
       fishCatchTimes,
       upgradesBought,
       upgradeLevels: { ...levels },

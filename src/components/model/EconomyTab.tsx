@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Flex, Text, Button } from "@radix-ui/themes";
+import { Flex, Text, Button, Table } from "@radix-ui/themes";
 import {
   ComposedChart,
   Line,
@@ -80,28 +80,71 @@ export function EconomyTab({
     ),
   }));
 
+  const lures = [
+    { id: "", name: "No Lure" },
+    ...shopData
+      .filter((u) => u.stat === StatName.LURE)
+      .map((u) => ({ id: u.id, name: u.name })),
+  ];
+  const lureColorMap = Object.fromEntries(
+    lures.map((l, i) => [l.id, COLORS[i % COLORS.length]]),
+  );
+  const lureNameMap = Object.fromEntries(lures.map((l) => [l.id, l.name]));
+
   const fishColorMap = Object.fromEntries(
     fishData.map((f, i) => [f.id, COLORS[i % COLORS.length]]),
   );
-  const fishNameMap = Object.fromEntries(fishData.map((f) => [f.id, f.name]));
 
-  const fishRegions: { x1: number; x2: number; fishId: string }[] = [];
+  const lureShopMap = Object.fromEntries(
+    shopData.filter((u) => u.stat === StatName.LURE).map((u) => [u.id, u]),
+  );
+  const lureRows: {
+    name: string;
+    cost: number;
+    timeSincePrev: number | null;
+  }[] = [];
+  {
+    let lastLureTime: number | null = null;
+    for (const r of rounds) {
+      if (!r.boughtLure) continue;
+      for (const entry of r.upgradesBought) {
+        const match = entry.match(/^(.+) L(\d+)$/);
+        if (!match) continue;
+        const [, id, levelStr] = match;
+        const upgrade = lureShopMap[id];
+        if (!upgrade) continue;
+        const level = parseInt(levelStr, 10);
+        const cost = upgrade.prices[level - 1];
+        lureRows.push({
+          name: upgrade.name,
+          cost,
+          timeSincePrev:
+            lastLureTime !== null
+              ? r.cumulativeTime - lastLureTime
+              : r.cumulativeTime,
+        });
+        lastLureTime = r.cumulativeTime;
+      }
+    }
+  }
+
+  const lureRegions: { x1: number; x2: number; lureId: string }[] = [];
   if (rounds.length > 0) {
     let regionStart = 0;
     for (let i = 0; i < rounds.length; i++) {
       const r = rounds[i];
-      if (i === rounds.length - 1 || rounds[i + 1].fishId !== r.fishId) {
-        fishRegions.push({
+      if (i === rounds.length - 1 || rounds[i + 1].lureId !== r.lureId) {
+        lureRegions.push({
           x1: regionStart,
           x2: r.cumulativeTime,
-          fishId: r.fishId,
+          lureId: r.lureId,
         });
         regionStart = r.cumulativeTime;
       }
     }
   }
 
-  const activeFishIds = [...new Set(rounds.map((r) => r.fishId))];
+  const activeLureIds = [...new Set(rounds.map((r) => r.lureId))];
 
   const tooltipProps = {
     labelStyle: { color: "#111" },
@@ -148,19 +191,19 @@ export function EconomyTab({
                 <Text size="2" weight="bold">
                   Income Rate ($/s)
                 </Text>
-                {activeFishIds.map((id) => (
+                {activeLureIds.map((id) => (
                   <Flex key={id} align="center" gap="1">
                     <div
                       style={{
                         width: 10,
                         height: 10,
                         borderRadius: 2,
-                        backgroundColor: fishColorMap[id],
+                        backgroundColor: lureColorMap[id],
                         opacity: 0.8,
                       }}
                     />
                     <Text size="1" color="gray">
-                      {fishNameMap[id]}
+                      {lureNameMap[id]}
                     </Text>
                   </Flex>
                 ))}
@@ -168,12 +211,12 @@ export function EconomyTab({
               <ResponsiveContainer width="100%" height={200}>
                 <ComposedChart data={rateData} syncId="economy">
                   <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  {fishRegions.map((region, i) => (
+                  {lureRegions.map((region, i) => (
                     <ReferenceArea
                       key={i}
                       x1={region.x1}
                       x2={region.x2}
-                      fill={fishColorMap[region.fishId]}
+                      fill={lureColorMap[region.lureId]}
                       fillOpacity={0.12}
                       ifOverflow="hidden"
                     />
@@ -196,7 +239,6 @@ export function EconomyTab({
                         x={r.cumulativeTime}
                         stroke="#4caf50"
                         strokeDasharray="4 2"
-                        label={{ value: "lure", fill: "#4caf50", fontSize: 10 }}
                       />
                     ))}
                   <Line
@@ -279,7 +321,6 @@ export function EconomyTab({
                         x={r.cumulativeTime}
                         stroke="#4caf50"
                         strokeDasharray="4 2"
-                        label={{ value: "lure", fill: "#4caf50", fontSize: 10 }}
                       />
                     ))}
                   {nonLureUpgrades.map((u, i) => (
@@ -323,7 +364,6 @@ export function EconomyTab({
                         x={r.cumulativeTime}
                         stroke="#4caf50"
                         strokeDasharray="4 2"
-                        label={{ value: "lure", fill: "#4caf50", fontSize: 10 }}
                       />
                     ))}
                   <Line
@@ -337,6 +377,38 @@ export function EconomyTab({
                 </ComposedChart>
               </ResponsiveContainer>
             </Flex>
+
+            {lureRows.length > 0 && (
+              <Flex direction="column" gap="2">
+                <Text size="2" weight="bold">
+                  Lure Purchases
+                </Text>
+                <Table.Root variant="surface">
+                  <Table.Header>
+                    <Table.Row>
+                      <Table.ColumnHeaderCell>Lure</Table.ColumnHeaderCell>
+                      <Table.ColumnHeaderCell>Cost ($)</Table.ColumnHeaderCell>
+                      <Table.ColumnHeaderCell>
+                        Time Since Prev (s)
+                      </Table.ColumnHeaderCell>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body>
+                    {lureRows.map((row, i) => (
+                      <Table.Row key={i}>
+                        <Table.Cell>{row.name}</Table.Cell>
+                        <Table.Cell>{row.cost}</Table.Cell>
+                        <Table.Cell>
+                          {row.timeSincePrev !== null
+                            ? Math.round(row.timeSincePrev)
+                            : "—"}
+                        </Table.Cell>
+                      </Table.Row>
+                    ))}
+                  </Table.Body>
+                </Table.Root>
+              </Flex>
+            )}
           </div>
         </>
       )}
