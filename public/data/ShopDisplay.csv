@@ -1,5 +1,6 @@
 ID, Name, Description
-LINE_STR, Line Strength, Lii
-ROD_STR, Rod, Looo
+ATTACK, Reel Power, Reel in fish faster when they're resting
+DEFENSE, Rod, Prevents fish from pulling so hard when they're really fighting
+HP, Rod, Increases how much tension the line can take before it snaps.
 LURE_1, Floater, Catch more fish
 WIN, Win, Win the game

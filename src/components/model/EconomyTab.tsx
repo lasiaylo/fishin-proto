@@ -52,6 +52,13 @@ export function EconomyTab({
     upgrade: r.upgradesBought.length > 0 ? parseFloat(r.rate.toFixed(4)) : null,
   }));
 
+  const maxTime =
+    rounds.length > 0 ? rounds[rounds.length - 1].cumulativeTime : 0;
+  const xTicks = Array.from(
+    { length: Math.floor(maxTime / 30) + 1 },
+    (_, i) => i * 30,
+  );
+
   const levelData = rounds.map((r) => ({
     time: r.cumulativeTime,
     ...Object.fromEntries(
@@ -87,7 +94,13 @@ export function EconomyTab({
           <ResponsiveContainer width="100%" height={250}>
             <ComposedChart data={rateData} syncId="economy">
               <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis dataKey="time" unit="s" />
+              <XAxis
+                dataKey="time"
+                type="number"
+                domain={[0, maxTime]}
+                ticks={xTicks}
+                tickFormatter={(v: number) => `${v / 60}`}
+              />
               <YAxis />
               <Tooltip />
               {rounds
@@ -126,7 +139,13 @@ export function EconomyTab({
           <ResponsiveContainer width="100%" height={200}>
             <ComposedChart data={levelData} syncId="economy">
               <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis dataKey="time" unit="s" />
+              <XAxis
+                dataKey="time"
+                type="number"
+                domain={[0, maxTime]}
+                ticks={xTicks}
+                tickFormatter={(v: number) => `${v / 60}`}
+              />
               <YAxis allowDecimals={false} />
               <Tooltip />
               <Legend />

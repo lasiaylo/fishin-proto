@@ -17,7 +17,7 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   initStruggleDuration: 2,
 };
 
-const MAX_SIM_TIME = 120;
+export const MAX_SIM_TIME = 120;
 const SIM_DT = 1 / 60;
 
 export enum Phase {

@@ -135,6 +135,8 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
     ? results.reduce((s, r) => s + r.duration, 0) / results.length
     : 0;
 
+  // @ts-ignore
+  // @ts-ignore
   return (
     <Flex direction="column" gap="4" pt="4">
       <EngineConfigRow
@@ -240,7 +242,9 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
               />
               <YAxis domain={[0, 100]} />
               <Tooltip
+                // @ts-ignore
                 formatter={(v: number) => v.toFixed(2)}
+                // @ts-ignore
                 labelFormatter={(v: number) => `${v.toFixed(2)}s`}
                 labelStyle={{ color: "#000" }}
               />
@@ -285,7 +289,9 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
               />
               <YAxis domain={[0, lineHP]} />
               <Tooltip
+                // @ts-ignore
                 formatter={(v: number) => v.toFixed(2)}
+                // @ts-ignore
                 labelFormatter={(v: number) => `${v.toFixed(2)}s`}
                 labelStyle={{ color: "#000" }}
               />

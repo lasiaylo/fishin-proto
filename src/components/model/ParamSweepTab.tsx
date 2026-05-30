@@ -10,6 +10,7 @@ import {
   FightEngine,
   Outcome,
   DEFAULT_FIGHT_CONFIG,
+  MAX_SIM_TIME,
   type FightConfig,
 } from "../../game/FightEngine";
 import type { FishData } from "../../util/csvLoader";
@@ -201,7 +202,7 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
             reel,
             drag,
             winPct: (wins / count) * 100,
-            avgTime: wins > 0 ? totalTime / wins : 120,
+            avgTime: wins > 0 ? totalTime / wins : MAX_SIM_TIME,
           };
         }),
       );
@@ -299,7 +300,7 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
             dragVals={dragVals}
             cells={cells}
             getValue={(c) => c.avgTime}
-            format={(v) => (v >= 120 ? "—" : v.toFixed(1))}
+            format={(v) => (v >= MAX_SIM_TIME ? "—" : v.toFixed(1))}
             toColor={avgTimeToColor}
           />
         </Flex>

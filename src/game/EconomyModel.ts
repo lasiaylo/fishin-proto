@@ -1,4 +1,4 @@
-import { FightEngine, Outcome } from "./FightEngine";
+import { FightEngine, Outcome, MAX_SIM_TIME } from "./FightEngine";
 import { StatName } from "../util/csvLoader";
 import type { FishData, ShopUpgradeData } from "../util/csvLoader";
 import {
@@ -12,7 +12,6 @@ import {
 const SHOP_TRAVEL_TIME = 5;
 const CAST_WAIT_TIME = 5;
 const EVAL_TRIALS = 500;
-const MAX_FIGHT_TIME = 30;
 const MAX_ROUNDS = 100;
 
 // ── Types ──
@@ -75,7 +74,7 @@ function pickBestFish(
     if (fish.requiredLure && !ownedLures.has(fish.requiredLure)) continue;
 
     const { winCount, avgWinTime } = runTrials(fish, player, EVAL_TRIALS);
-    if (winCount > 0 && avgWinTime <= MAX_FIGHT_TIME) {
+    if (winCount > 0 && avgWinTime <= MAX_SIM_TIME) {
       return { fish, avgFightTime: avgWinTime };
     }
   }
