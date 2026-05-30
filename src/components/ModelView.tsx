@@ -31,7 +31,10 @@ export function ModelView() {
         {fishData.length === 0 ? (
           <Text color="gray">Loading data…</Text>
         ) : (
-          <Tabs.Root defaultValue="fight">
+          <Tabs.Root
+            value={localStorage.getItem("debugTab") ?? "fight"}
+            onValueChange={(v) => localStorage.setItem("debugTab", v)}
+          >
             <Tabs.List>
               <Tabs.Trigger value="fight">Fight Trace</Tabs.Trigger>
               <Tabs.Trigger value="sweep">Parameter Sweep</Tabs.Trigger>
