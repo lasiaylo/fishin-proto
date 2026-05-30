@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Flex, Text, Button } from "@radix-ui/themes";
 import {
   ComposedChart,
+  BarChart,
+  Bar,
   Line,
   ReferenceArea,
   ReferenceLine,
@@ -9,6 +11,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
 } from "recharts";
 import {
@@ -76,6 +79,29 @@ function phaseColor(phase: Phase): string {
     case Phase.INIT_STRUGGLE:
       return "rgba(255,140,0,0.40)";
   }
+}
+
+function buildDurationHistogram(results: FightResult[]) {
+  const binCount = Math.min(
+    10,
+    Math.max(4, Math.ceil(Math.log2(results.length) + 1)),
+  );
+  const durations = results.map((r) => r.duration);
+  const min = Math.min(...durations);
+  const max = Math.max(...durations);
+  const binWidth = min === max ? 1 : (max - min) / binCount;
+  const count = min === max ? 1 : binCount;
+  const bins = Array.from({ length: count }, (_, i) => ({
+    label: `${(min + i * binWidth).toFixed(1)}s`,
+    wins: 0,
+    losses: 0,
+  }));
+  results.forEach((r) => {
+    const idx = Math.min(Math.floor((r.duration - min) / binWidth), count - 1);
+    if (r.outcome === Outcome.WIN) bins[idx].wins++;
+    else bins[idx].losses++;
+  });
+  return bins;
 }
 
 export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
@@ -226,6 +252,45 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
               </Flex>
             )}
           </Flex>
+
+          {!single && (
+            <>
+              <Text size="2" weight="bold">
+                Fight Duration Distribution
+              </Text>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart
+                  data={buildDurationHistogram(results)}
+                  barCategoryGap="10%"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip
+                    // @ts-ignore
+                    formatter={(v: number, name: string) => [
+                      v,
+                      name === "wins" ? "Win" : "Loss",
+                    ]}
+                    labelStyle={{ color: "#000" }}
+                  />
+                  <Legend formatter={(v) => (v === "wins" ? "Win" : "Loss")} />
+                  <Bar
+                    dataKey="wins"
+                    stackId="a"
+                    fill="#4caf50"
+                    isAnimationActive={false}
+                  />
+                  <Bar
+                    dataKey="losses"
+                    stackId="a"
+                    fill="#f44336"
+                    isAnimationActive={false}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </>
+          )}
 
           <Text size="2" weight="bold">
             Line Distance

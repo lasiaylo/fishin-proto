@@ -1,5 +1,5 @@
 ID, Name, BasePrice, Attack, Defense, Thrash, RequiredLure
 MINNOW, Minnow, 5, 1, 1, 1,
 SHAD, Shad, 8, 2, 2, 1, LURE_1
-BLUEGILL, Bluegill, 8, 2, 2, 1, LURE_1
-TROUT, Trout, 2, 10, 10, 1, LURE_1
+BLUEGILL, Bluegill, 15, 10, 10, 1, LURE_2
+TROUT, Trout, 20, 15, 15, 1, LURE_2

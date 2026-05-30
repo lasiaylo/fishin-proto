@@ -1,17 +1,13 @@
-import { FightEngine, Outcome, MAX_SIM_TIME } from "./FightEngine";
-import { StatName } from "../util/csvLoader";
-import type { FishData, ShopUpgradeData } from "../util/csvLoader";
-import {
-  INITIAL_PLAYER_STATE,
-  PlayerState,
-  PlayerStats,
-} from "../stores/playerStore";
+import { FightEngine, MAX_SIM_TIME, Outcome } from "./FightEngine";
+import { FishData, ShopUpgradeData, StatName } from "../util/csvLoader";
+import { INITIAL_PLAYER_STATE, PlayerStats } from "../stores/playerStore";
 
 // ── Constants ──
 
+const FISH_PER_TRIP = 4;
 const SHOP_TRAVEL_TIME = 5;
 const CAST_WAIT_TIME = 5;
-const EVAL_TRIALS = 500;
+const EVAL_TRIALS = 100;
 const MAX_ROUNDS = 100;
 
 // ── Types ──
@@ -25,6 +21,7 @@ export interface EconomyRound {
   wallet: number; // after income, before upgrades
   rate: number; // $/sec
   fishId: string;
+  fishCatchTimes: Record<string, number>; // fishId → CAST_WAIT_TIME + avgFightTime (accessible fish only)
   upgradesBought: string[];
   upgradeLevels: Record<string, number>;
   boughtLure: boolean;
@@ -36,7 +33,7 @@ function runTrials(
   fish: FishData,
   player: PlayerStats,
   n: number,
-): { winCount: number; avgWinTime: number } {
+): { winCount: number; avgFightTime: number } {
   const engine = new FightEngine(
     fish.attack,
     fish.defense,
@@ -53,33 +50,46 @@ function runTrials(
     const { outcome, duration } = engine.runToCompletion();
     if (outcome === Outcome.WIN) {
       winCount++;
-      totalWinTime += duration;
     }
+    totalWinTime += duration;
   }
 
   return {
     winCount,
-    avgWinTime: winCount > 0 ? totalWinTime / winCount : Infinity,
+    avgFightTime: totalWinTime / n,
   };
 }
 
-function pickBestFish(
+function evalFish(
   fishData: FishData[],
   player: PlayerStats,
   ownedLures: Set<string>,
-): { fish: FishData; avgFightTime: number } | null {
-  const sorted = [...fishData].sort((a, b) => b.basePrice - a.basePrice);
+): {
+  best: { fish: FishData; avgFightTime: number } | null;
+  catchTimes: Record<string, number>;
+} {
+  let bestRate;
 
-  for (const fish of sorted) {
+  let best: { fish: FishData; avgFightTime: number } | null = null;
+  const catchTimes: Record<string, number> = {};
+  console.log("FISH", fishData);
+
+  for (const fish of fishData) {
     if (fish.requiredLure && !ownedLures.has(fish.requiredLure)) continue;
 
-    const { winCount, avgWinTime } = runTrials(fish, player, EVAL_TRIALS);
-    if (winCount > 0 && avgWinTime <= MAX_SIM_TIME) {
-      return { fish, avgFightTime: avgWinTime };
+    const { winCount, avgFightTime } = runTrials(fish, player, EVAL_TRIALS);
+    if (winCount === 0 || avgFightTime > MAX_SIM_TIME) continue;
+
+    catchTimes[fish.id] = avgFightTime;
+
+    const rate = (fish.basePrice * winCount) / EVAL_TRIALS / avgFightTime;
+    if (bestRate == undefined || rate >= bestRate) {
+      bestRate = rate;
+      best = { fish, avgFightTime };
     }
   }
 
-  return null;
+  return { best, catchTimes };
 }
 
 function cheapestUpgrade(
@@ -94,7 +104,13 @@ function cheapestUpgrade(
     if (level >= upgrade.prices.length) continue;
     const price = upgrade.prices[level];
     if (price > wallet) continue;
-    if (best === null || price < best.price) {
+    if (upgrade.stat === StatName.LURE) {
+      best = { upgrade, price };
+    }
+    if (
+      best === null ||
+      (price < best.price && best.upgrade.stat !== StatName.LURE)
+    ) {
       best = { upgrade, price };
     }
   }
@@ -145,12 +161,17 @@ export function simulateEconomy(
   const rounds: EconomyRound[] = [];
 
   for (let round = 1; round <= MAX_ROUNDS; round++) {
-    const best = pickBestFish(fishData, player, ownedLures);
+    const { best, catchTimes: fishCatchTimes } = evalFish(
+      fishData,
+      player,
+      ownedLures,
+    );
     if (!best) break;
 
     const { fish, avgFightTime } = best;
-    const roundTime = 2 * SHOP_TRAVEL_TIME + CAST_WAIT_TIME + avgFightTime;
-    const income = fish.basePrice;
+    const roundTime =
+      2 * SHOP_TRAVEL_TIME + FISH_PER_TRIP * (CAST_WAIT_TIME + avgFightTime);
+    const income = FISH_PER_TRIP * fish.basePrice;
     wallet += income;
     cumulativeTime += roundTime;
 
@@ -158,14 +179,14 @@ export function simulateEconomy(
     const upgradesBought: string[] = [];
     let boughtLure = false;
 
-    let result = cheapestUpgrade(shopData, levels, wallet);
-    while (result !== null) {
-      const { upgrade, price } = result;
+    let cheapUpgrade = cheapestUpgrade(shopData, levels, wallet);
+    while (cheapUpgrade !== null) {
+      const { upgrade, price } = cheapUpgrade;
       wallet -= price;
       applyUpgrade(upgrade, player, ownedLures, levels);
       upgradesBought.push(`${upgrade.id} L${levels[upgrade.id]}`);
       if (upgrade.stat === StatName.LURE) boughtLure = true;
-      result = cheapestUpgrade(shopData, levels, wallet);
+      cheapUpgrade = cheapestUpgrade(shopData, levels, wallet);
     }
 
     rounds.push({
@@ -177,6 +198,7 @@ export function simulateEconomy(
       wallet: walletSnapshot,
       rate: income / roundTime,
       fishId: fish.id,
+      fishCatchTimes,
       upgradesBought,
       upgradeLevels: { ...levels },
       boughtLure,

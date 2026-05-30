@@ -132,7 +132,7 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
   const [reelMax, setReelMax] = useState(INITIAL_PLAYER_STATE.attack + 8);
   const dragMin = reelMin;
   const dragMax = reelMax;
-  const [trialsPerCell, setTrialsPerCell] = useState(50);
+  const [trialsPerCell, setTrialsPerCell] = useState(100);
   const [engineCfg, setEngineCfg] = useState<FightConfig>(DEFAULT_FIGHT_CONFIG);
   const [cells, setCells] = useState<SweepCell[]>([]);
   const [running, setRunning] = useState(false);
@@ -187,11 +187,11 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
         const engine = engines.get(key)!;
         engine.reset();
         const { outcome, duration } = engine.runToCompletion();
+        const a = acc.get(key)!;
         if (outcome === Outcome.WIN) {
-          const a = acc.get(key)!;
           a.wins++;
-          a.totalTime += duration;
         }
+        a.totalTime += duration;
       }
 
       const count = t + 1;
@@ -202,7 +202,7 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
             reel,
             drag,
             winPct: (wins / count) * 100,
-            avgTime: wins > 0 ? totalTime / wins : MAX_SIM_TIME,
+            avgTime: totalTime / count,
           };
         }),
       );

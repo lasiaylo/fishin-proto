@@ -14,6 +14,9 @@ import { EconomyTab } from "./model/EconomyTab";
 export function ModelView() {
   const [fishData, setFishData] = useState<FishData[]>([]);
   const [shopData, setShopData] = useState<ShopUpgradeData[]>([]);
+  const [activeTab, setActiveTab] = useState(
+    () => localStorage.getItem("debugTab") ?? "fight",
+  );
 
   useEffect(() => {
     Promise.all([loadFishData(), loadShopData()]).then(([fish, shop]) => {
@@ -32,8 +35,11 @@ export function ModelView() {
           <Text color="gray">Loading data…</Text>
         ) : (
           <Tabs.Root
-            value={localStorage.getItem("debugTab") ?? "fight"}
-            onValueChange={(v) => localStorage.setItem("debugTab", v)}
+            value={activeTab}
+            onValueChange={(v) => {
+              setActiveTab(v);
+              localStorage.setItem("debugTab", v);
+            }}
           >
             <Tabs.List>
               <Tabs.Trigger value="fight">Fight Trace</Tabs.Trigger>

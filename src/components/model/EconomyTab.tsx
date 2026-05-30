@@ -3,6 +3,7 @@ import { Flex, Text, Button } from "@radix-ui/themes";
 import {
   ComposedChart,
   Line,
+  ReferenceArea,
   ReferenceLine,
   XAxis,
   YAxis,
@@ -29,6 +30,7 @@ export function EconomyTab({
   const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
   const [rounds, setRounds] = useState<EconomyRound[]>([]);
   const [running, setRunning] = useState(false);
+  const [gridLayout, setGridLayout] = useState(true);
 
   const nonLureUpgrades = shopData.filter((u) => u.stat !== StatName.LURE);
 
@@ -55,9 +57,21 @@ export function EconomyTab({
   const maxTime =
     rounds.length > 0 ? rounds[rounds.length - 1].cumulativeTime : 0;
   const xTicks = Array.from(
-    { length: Math.floor(maxTime / 30) + 1 },
-    (_, i) => i * 30,
+    { length: Math.floor(maxTime / 60) + 1 },
+    (_, i) => i * 60,
   );
+
+  const catchTimeData = rounds.map((r) => ({
+    time: r.cumulativeTime,
+    ...Object.fromEntries(
+      fishData.map((f) => [f.id, r.fishCatchTimes[f.id] ?? null]),
+    ),
+  }));
+
+  const walletData = rounds.map((r) => ({
+    time: r.cumulativeTime,
+    wallet: r.wallet,
+  }));
 
   const levelData = rounds.map((r) => ({
     time: r.cumulativeTime,
@@ -65,6 +79,29 @@ export function EconomyTab({
       nonLureUpgrades.map((u) => [u.id, r.upgradeLevels[u.id] ?? 0]),
     ),
   }));
+
+  const fishColorMap = Object.fromEntries(
+    fishData.map((f, i) => [f.id, COLORS[i % COLORS.length]]),
+  );
+  const fishNameMap = Object.fromEntries(fishData.map((f) => [f.id, f.name]));
+
+  const fishRegions: { x1: number; x2: number; fishId: string }[] = [];
+  if (rounds.length > 0) {
+    let regionStart = 0;
+    for (let i = 0; i < rounds.length; i++) {
+      const r = rounds[i];
+      if (i === rounds.length - 1 || rounds[i + 1].fishId !== r.fishId) {
+        fishRegions.push({
+          x1: regionStart,
+          x2: r.cumulativeTime,
+          fishId: r.fishId,
+        });
+        regionStart = r.cumulativeTime;
+      }
+    }
+  }
+
+  const activeFishIds = [...new Set(rounds.map((r) => r.fishId))];
 
   return (
     <Flex direction="column" gap="4" pt="4">
@@ -80,6 +117,9 @@ export function EconomyTab({
         <Button onClick={runSim} disabled={running}>
           {running ? "Running…" : "Run Economy"}
         </Button>
+        <Button variant="soft" onClick={() => setGridLayout((g) => !g)}>
+          {gridLayout ? "List" : "Grid"}
+        </Button>
       </Flex>
 
       {rounds.length > 0 && (
@@ -88,81 +128,204 @@ export function EconomyTab({
             {rounds.length} rounds simulated
           </Text>
 
-          <Text size="2" weight="bold">
-            Income Rate ($/s)
-          </Text>
-          <ResponsiveContainer width="100%" height={250}>
-            <ComposedChart data={rateData} syncId="economy">
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis
-                dataKey="time"
-                type="number"
-                domain={[0, maxTime]}
-                ticks={xTicks}
-                tickFormatter={(v: number) => `${v / 60}`}
-              />
-              <YAxis />
-              <Tooltip />
-              {rounds
-                .filter((r) => r.boughtLure)
-                .map((r) => (
-                  <ReferenceLine
-                    key={r.round}
-                    x={r.cumulativeTime}
-                    stroke="#4caf50"
-                    strokeDasharray="4 2"
-                    label={{ value: "lure", fill: "#4caf50", fontSize: 10 }}
-                  />
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: gridLayout ? "1fr 1fr" : "1fr",
+              gap: 16,
+            }}
+          >
+            <Flex direction="column" gap="2">
+              <Flex align="center" gap="4" wrap="wrap">
+                <Text size="2" weight="bold">
+                  Income Rate ($/s)
+                </Text>
+                {activeFishIds.map((id) => (
+                  <Flex key={id} align="center" gap="1">
+                    <div
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: 2,
+                        backgroundColor: fishColorMap[id],
+                        opacity: 0.8,
+                      }}
+                    />
+                    <Text size="1" color="gray">
+                      {fishNameMap[id]}
+                    </Text>
+                  </Flex>
                 ))}
-              <Line
-                dataKey="rate"
-                stroke="#60cdff"
-                dot={false}
-                strokeWidth={2}
-                isAnimationActive={false}
-                name="$/s"
-              />
-              <Line
-                dataKey="upgrade"
-                stroke="#ffd43b"
-                dot={{ fill: "#ffd43b", r: 4 }}
-                strokeWidth={0}
-                isAnimationActive={false}
-                name="upgrade"
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
+              </Flex>
+              <ResponsiveContainer width="100%" height={200}>
+                <ComposedChart data={rateData} syncId="economy">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  {fishRegions.map((region, i) => (
+                    <ReferenceArea
+                      key={i}
+                      x1={region.x1}
+                      x2={region.x2}
+                      fill={fishColorMap[region.fishId]}
+                      fillOpacity={0.12}
+                      ifOverflow="hidden"
+                    />
+                  ))}
+                  <XAxis
+                    dataKey="time"
+                    type="number"
+                    domain={[0, maxTime]}
+                    ticks={xTicks}
+                    tickFormatter={(v: number) => `${v / 60}`}
+                  />
+                  <YAxis />
+                  <Tooltip />
+                  {rounds
+                    .filter((r) => r.boughtLure)
+                    .map((r) => (
+                      <ReferenceLine
+                        key={r.round}
+                        x={r.cumulativeTime}
+                        stroke="#4caf50"
+                        strokeDasharray="4 2"
+                        label={{ value: "lure", fill: "#4caf50", fontSize: 10 }}
+                      />
+                    ))}
+                  <Line
+                    dataKey="rate"
+                    stroke="#60cdff"
+                    dot={false}
+                    strokeWidth={2}
+                    isAnimationActive={false}
+                    name="$/s"
+                  />
+                  <Line
+                    dataKey="upgrade"
+                    stroke="#ffd43b"
+                    dot={{ fill: "#ffd43b", r: 4 }}
+                    strokeWidth={0}
+                    isAnimationActive={false}
+                    name="upgrade"
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </Flex>
 
-          <Text size="2" weight="bold">
-            Upgrade Levels
-          </Text>
-          <ResponsiveContainer width="100%" height={200}>
-            <ComposedChart data={levelData} syncId="economy">
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis
-                dataKey="time"
-                type="number"
-                domain={[0, maxTime]}
-                ticks={xTicks}
-                tickFormatter={(v: number) => `${v / 60}`}
-              />
-              <YAxis allowDecimals={false} />
-              <Tooltip />
-              <Legend />
-              {nonLureUpgrades.map((u, i) => (
-                <Line
-                  key={u.id}
-                  dataKey={u.id}
-                  type="stepAfter"
-                  stroke={COLORS[i % COLORS.length]}
-                  dot={false}
-                  strokeWidth={2}
-                  isAnimationActive={false}
-                  name={u.name}
-                />
-              ))}
-            </ComposedChart>
-          </ResponsiveContainer>
+            <Flex direction="column" gap="2">
+              <Text size="2" weight="bold">
+                Avg Catch Time (s)
+              </Text>
+              <ResponsiveContainer width="100%" height={200}>
+                <ComposedChart data={catchTimeData} syncId="economy">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <XAxis
+                    dataKey="time"
+                    type="number"
+                    domain={[0, maxTime]}
+                    ticks={xTicks}
+                    tickFormatter={(v: number) => `${v / 60}`}
+                  />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  {fishData.map((f) => (
+                    <Line
+                      key={f.id}
+                      dataKey={f.id}
+                      stroke={fishColorMap[f.id]}
+                      dot={false}
+                      strokeWidth={2}
+                      isAnimationActive={false}
+                      name={f.name}
+                      connectNulls={false}
+                    />
+                  ))}
+                </ComposedChart>
+              </ResponsiveContainer>
+            </Flex>
+
+            <Flex direction="column" gap="2">
+              <Text size="2" weight="bold">
+                Upgrade Levels
+              </Text>
+              <ResponsiveContainer width="100%" height={200}>
+                <ComposedChart data={levelData} syncId="economy">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <XAxis
+                    dataKey="time"
+                    type="number"
+                    domain={[0, maxTime]}
+                    ticks={xTicks}
+                    tickFormatter={(v: number) => `${v / 60}`}
+                  />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Legend />
+                  {rounds
+                    .filter((r) => r.boughtLure)
+                    .map((r) => (
+                      <ReferenceLine
+                        key={r.round}
+                        x={r.cumulativeTime}
+                        stroke="#4caf50"
+                        strokeDasharray="4 2"
+                        label={{ value: "lure", fill: "#4caf50", fontSize: 10 }}
+                      />
+                    ))}
+                  {nonLureUpgrades.map((u, i) => (
+                    <Line
+                      key={u.id}
+                      dataKey={u.id}
+                      type="stepAfter"
+                      stroke={COLORS[i % COLORS.length]}
+                      dot={false}
+                      strokeWidth={2}
+                      isAnimationActive={false}
+                      name={u.name}
+                    />
+                  ))}
+                </ComposedChart>
+              </ResponsiveContainer>
+            </Flex>
+
+            <Flex direction="column" gap="2">
+              <Text size="2" weight="bold">
+                Wallet ($)
+              </Text>
+              <ResponsiveContainer width="100%" height={200}>
+                <ComposedChart data={walletData} syncId="economy">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <XAxis
+                    dataKey="time"
+                    type="number"
+                    domain={[0, maxTime]}
+                    ticks={xTicks}
+                    tickFormatter={(v: number) => `${v / 60}`}
+                  />
+                  <YAxis />
+                  <Tooltip />
+                  {rounds
+                    .filter((r) => r.boughtLure)
+                    .map((r) => (
+                      <ReferenceLine
+                        key={r.round}
+                        x={r.cumulativeTime}
+                        stroke="#4caf50"
+                        strokeDasharray="4 2"
+                        label={{ value: "lure", fill: "#4caf50", fontSize: 10 }}
+                      />
+                    ))}
+                  <Line
+                    dataKey="wallet"
+                    stroke="#ff922b"
+                    dot={false}
+                    strokeWidth={2}
+                    isAnimationActive={false}
+                    name="wallet"
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </Flex>
+          </div>
         </>
       )}
     </Flex>
