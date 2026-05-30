@@ -103,6 +103,14 @@ export function EconomyTab({
 
   const activeFishIds = [...new Set(rounds.map((r) => r.fishId))];
 
+  const tooltipProps = {
+    labelStyle: { color: "#111" },
+    formatter: (v: number) => (typeof v === "number" ? +v.toFixed(2) : v),
+    labelFormatter: (label: number) => +Number(label).toFixed(2),
+  };
+
+  // @ts-ignore
+  // @ts-ignore
   return (
     <Flex direction="column" gap="4" pt="4">
       <Flex gap="3" wrap="wrap" align="end">
@@ -178,7 +186,8 @@ export function EconomyTab({
                     tickFormatter={(v: number) => `${v / 60}`}
                   />
                   <YAxis />
-                  <Tooltip />
+                  {/* @ts-ignore */}
+                  <Tooltip {...tooltipProps} />
                   {rounds
                     .filter((r) => r.boughtLure)
                     .map((r) => (
@@ -225,7 +234,8 @@ export function EconomyTab({
                     tickFormatter={(v: number) => `${v / 60}`}
                   />
                   <YAxis />
-                  <Tooltip />
+                  {/* @ts-ignore */}
+                  <Tooltip {...tooltipProps} />
                   <Legend />
                   {fishData.map((f) => (
                     <Line
@@ -258,7 +268,8 @@ export function EconomyTab({
                     tickFormatter={(v: number) => `${v / 60}`}
                   />
                   <YAxis allowDecimals={false} />
-                  <Tooltip />
+                  {/* @ts-ignore */}
+                  <Tooltip {...tooltipProps} />
                   <Legend />
                   {rounds
                     .filter((r) => r.boughtLure)
@@ -302,7 +313,8 @@ export function EconomyTab({
                     tickFormatter={(v: number) => `${v / 60}`}
                   />
                   <YAxis />
-                  <Tooltip />
+                  {/* @ts-ignore */}
+                  <Tooltip {...tooltipProps} />
                   {rounds
                     .filter((r) => r.boughtLure)
                     .map((r) => (
