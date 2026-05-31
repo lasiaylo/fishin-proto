@@ -19,7 +19,7 @@ export function InventoryView() {
       <Code size="2">${wallet}</Code>
       <Flex direction="column" gap="1">
         <Text size="1" color="gray">
-          Fish Cooler
+          fish cooler
         </Text>
         {Array.from({ length: INVENTORY_SIZE }).map((_, i) => {
           const fish = inventory[i];

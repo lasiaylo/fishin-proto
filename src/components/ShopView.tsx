@@ -9,7 +9,7 @@ import {
 import { usePlayer } from "../stores/playerStore";
 import { MyButton } from "./MyButton";
 
-const CATEGORY_ORDER = ["LURES", "ROD UPGRADES", "MISC"];
+const CATEGORY_ORDER = ["lures", "rod upgrades", "misc"];
 
 export function ShopView() {
   const upgrades = useShop((s) => s.upgrades);
@@ -40,7 +40,7 @@ export function ShopView() {
                   description={upgrade.description}
                   onClick={() => buyUpgrade(upgrade.id)}
                 >
-                  {upgrade.name} ({maxed ? "MAX" : `$${price}`})
+                  {upgrade.name} ({maxed ? "max" : `$${price}`})
                 </MyButton>
               );
             })}

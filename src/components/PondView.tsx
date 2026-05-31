@@ -23,7 +23,7 @@ enum GameState {
   Fighting = "fighting",
 }
 
-const SPOTS = ["Shallow End", "Deep End", "Far End"] as const;
+const SPOTS = ["shallow end", "deep end", "far end"] as const;
 // const BITE_DELAY: [number, number] = [2, 8];
 const BITE_DELAY: [number, number] = [0, 0];
 const HOOK_WINDOW = 2;
@@ -177,12 +177,12 @@ export function PondView() {
     return (
       <Flex className="fade-in" direction="column" gap="3" p="4">
         <Flex direction="column" gap="2">
-          <Text size="1">Lure</Text>
+          <Text size="1">lure</Text>
           <select
             value={selectedLure ?? ""}
             onChange={(e) => setSelectedLure(e.target.value || null)}
           >
-            <option value="">None</option>
+            <option value="">none</option>
             {ownedLureList.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.name}
@@ -224,7 +224,7 @@ export function PondView() {
 
   if (gameState === GameState.Missed) {
     onClick = () => setGameState(GameState.Idle);
-    message = "Return";
+    message = "return";
   } else {
     onClick = () => {
       if (biteReady) {
@@ -235,7 +235,7 @@ export function PondView() {
       if (hookWindowRef.current !== null) clearTimeout(hookWindowRef.current);
       setGameState(GameState.Idle);
     };
-    message = biteReady ? "Hook" : "Reel";
+    message = biteReady ? "hook" : "reel";
   }
 
   return (

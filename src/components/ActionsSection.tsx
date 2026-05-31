@@ -29,8 +29,8 @@ export function ActionsSection() {
     <Flex flexGrow="1" direction="column" maxWidth={"500px"}>
       <Tabs.Root value={tab} onValueChange={handleTabChange}>
         <Tabs.List>
-          <Tabs.Trigger value="pond">Pond</Tabs.Trigger>
-          <Tabs.Trigger value="shop">Shop</Tabs.Trigger>
+          <Tabs.Trigger value="pond">pond</Tabs.Trigger>
+          <Tabs.Trigger value="shop">shop</Tabs.Trigger>
         </Tabs.List>
         <Tabs.Content value="pond">
           <Flex className={"fade-in"}>

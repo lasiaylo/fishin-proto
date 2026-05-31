@@ -62,14 +62,14 @@ export function FightView({
         onMouseUp={onReelEnd}
         onMouseLeave={onReelEnd}
       >
-        <MyButton onClick={() => {}}>Reel</MyButton>
+        <MyButton onClick={() => {}}>reel</MyButton>
       </div>
       <Text size="2" color="gray">
         {phase}
       </Text>
-      <StatBar label="Lure Distance" value={distance} max={100} color="cyan" />
+      <StatBar label="lure distance" value={distance} max={100} color="cyan" />
       <StatBar
-        label="Line HP"
+        label="line hp"
         value={lineHp - tension}
         max={lineHp}
         color="red"
