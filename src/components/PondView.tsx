@@ -192,7 +192,7 @@ export function PondView() {
         </Flex>
 
         <Text size={"1"} mt={"4"}>
-          Choose a fishing spot
+          choose a fishing spot
         </Text>
         {SPOTS.map((spot) => (
           <MyButton key={spot} onClick={() => handleSpotClick(spot)}>

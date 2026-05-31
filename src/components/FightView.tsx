@@ -14,7 +14,7 @@ function StatBar({
   label: string;
   value: number;
   max: number;
-  color: progressPropDefs.color;
+  color?: progressPropDefs.color;
 }) {
   const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
   return (
@@ -67,13 +67,8 @@ export function FightView({
       <Text size="2" color="gray">
         {phase}
       </Text>
-      <StatBar label="lure distance" value={distance} max={100} color="cyan" />
-      <StatBar
-        label="line hp"
-        value={lineHp - tension}
-        max={lineHp}
-        color="red"
-      />
+      <StatBar label="lure distance" value={distance} max={100} />
+      <StatBar label="line hp" value={lineHp - tension} max={lineHp} />
     </Flex>
   );
 }
