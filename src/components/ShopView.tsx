@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Flex, Text } from "@radix-ui/themes";
+import { Flex, Grid, Text } from "@radix-ui/themes";
 import {
   useShop,
   buyUpgrade,
@@ -27,23 +27,24 @@ export function ShopView() {
           <Text size="2" weight="bold" color="gray">
             {label}
           </Text>
-          {group.map((upgrade) => {
-            const price = getUpgradePrice(upgrade);
-            const maxed = isMaxed(upgrade);
-            const disabled = maxed || price === null || wallet < price;
+          <Grid columns="2" gapY="3" gapX="8">
+            {group.map((upgrade) => {
+              const price = getUpgradePrice(upgrade);
+              const maxed = isMaxed(upgrade);
+              const disabled = maxed || price === null || wallet < price;
 
-            return (
-              <Box key={upgrade.id} maxWidth={"300px"}>
+              return (
                 <MyButton
+                  key={upgrade.id}
                   disabled={disabled}
                   description={upgrade.description}
                   onClick={() => buyUpgrade(upgrade.id)}
                 >
                   {upgrade.name} ({maxed ? "MAX" : `$${price}`})
                 </MyButton>
-              </Box>
-            );
-          })}
+              );
+            })}
+          </Grid>
         </Flex>
       ))}
     </Flex>
