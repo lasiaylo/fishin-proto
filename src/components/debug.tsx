@@ -1,16 +1,16 @@
 import React, { useState } from "react";
 import { Flex, Separator, Text, Button } from "@radix-ui/themes";
-import { addMoney, usePlayer } from "../stores/playerStore";
-import { useShop, buyUpgrade, getUpgradePrice } from "../stores/shopStore";
+import { setMoney, usePlayer } from "../stores/playerStore";
+import { useShop, setUpgradeLevelDebug } from "../stores/shopStore";
 import { pushEvent } from "../stores/eventLogStore";
 
 export function Debug() {
   return (
     <Flex direction="row" gap="4" p="4" wrap="wrap">
-      <MoneySection />
-      <EventLogSection />
       <ShopUpgradeSection />
       <StoreView />
+      <MoneySection />
+      <EventLogSection />
     </Flex>
   );
 }
@@ -21,8 +21,8 @@ function MoneySection() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const num = Number(value);
-    if (!isNaN(num) && num !== 0) {
-      addMoney(num);
+    if (!isNaN(num) && num >= 0) {
+      setMoney(num);
       setValue("");
     }
   }
@@ -41,14 +41,13 @@ function MoneySection() {
             style={{ width: "80px" }}
           />
           <Button type="submit" size="1">
-            Add Money
+            Set Money
           </Button>
         </Flex>
       </form>
     </Flex>
   );
 }
-
 
 function EventLogSection() {
   const [value, setValue] = useState("");
@@ -85,23 +84,6 @@ function EventLogSection() {
 function ShopUpgradeSection() {
   const upgrades = useShop((s) => s.upgrades);
 
-  function forceBuy(id: string) {
-    const state = useShop.getState();
-    const idx = state.upgrades.findIndex((u) => u.id === id);
-    if (idx === -1) return;
-
-    const upgrade = state.upgrades[idx];
-    const price = getUpgradePrice(upgrade);
-    if (price === null) return;
-
-    // Force-buy: give enough money, then buy normally
-    const wallet = usePlayer.getState().wallet;
-    if (wallet < price) {
-      addMoney(price - wallet);
-    }
-    buyUpgrade(id);
-  }
-
   return (
     <Flex direction="column" gap="2">
       <Text weight="bold">Shop Upgrades</Text>
@@ -109,16 +91,21 @@ function ShopUpgradeSection() {
       <Flex gap="2" wrap="wrap" direction="column">
         {upgrades.map((u) => (
           <Flex key={u.id} gap="2" align="center">
-            <Button
-              size="1"
-              variant="soft"
-              onClick={() => forceBuy(u.id)}
-              disabled={u.level >= u.prices.length}
-            >
+            <Text size="1" style={{ width: "80px" }}>
               {u.id}
-            </Button>
-            <Text size="1">
-              Lv {u.level}/{u.prices.length}
+            </Text>
+            <input
+              type="number"
+              min={0}
+              max={u.prices.length}
+              value={u.level}
+              onChange={(e) =>
+                setUpgradeLevelDebug(u.id, Number(e.target.value))
+              }
+              style={{ width: "50px" }}
+            />
+            <Text size="1" color="gray">
+              / {u.prices.length}
             </Text>
           </Flex>
         ))}

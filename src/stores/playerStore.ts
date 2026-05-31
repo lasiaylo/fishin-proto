@@ -38,6 +38,10 @@ export function addMoney(amount: number) {
   usePlayer.setState((s) => ({ wallet: s.wallet + amount }));
 }
 
+export function setMoney(amount: number) {
+  usePlayer.setState({ wallet: amount });
+}
+
 export function deductMoney(amount: number) {
   usePlayer.setState((s) => ({ wallet: Math.max(0, s.wallet - amount) }));
 }
@@ -54,6 +58,14 @@ export function addLure(lureId: string) {
   usePlayer.setState((s) => {
     const lures = new Set(s.ownedLures);
     lures.add(lureId);
+    return { ownedLures: lures };
+  });
+}
+
+export function removeLure(lureId: string) {
+  usePlayer.setState((s) => {
+    const lures = new Set(s.ownedLures);
+    lures.delete(lureId);
     return { ownedLures: lures };
   });
 }

@@ -1,7 +1,13 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { ShopUpgradeData, StatName, loadShopData } from "../util/csvLoader";
-import { addLure, addToStat, deductMoney, getWallet } from "./playerStore";
+import {
+  addLure,
+  addToStat,
+  deductMoney,
+  getWallet,
+  removeLure,
+} from "./playerStore";
 import { pushEvent } from "./eventLogStore";
 import { EventMsg } from "../util/eventMessages";
 
@@ -81,4 +87,38 @@ export function buyUpgrade(id: string) {
   useShop.setState({ upgrades: newUpgrades });
 
   pushEvent(EventMsg.BOUGHT(upgrade.name, newLevel));
+}
+
+export function setUpgradeLevelDebug(id: string, newLevel: number) {
+  const state = useShop.getState();
+  const idx = state.upgrades.findIndex((u) => u.id === id);
+  if (idx === -1) return;
+
+  const upgrade = state.upgrades[idx];
+  const clamped = Math.max(0, Math.min(newLevel, upgrade.prices.length));
+  const delta = clamped - upgrade.level;
+  if (delta === 0) return;
+
+  switch (upgrade.stat) {
+    case StatName.LURE:
+      if (clamped > 0) addLure(upgrade.id);
+      else removeLure(upgrade.id);
+      break;
+    case StatName.ATTACK:
+      addToStat("attack", delta * upgrade.valuePerLevel);
+      break;
+    case StatName.DEFENSE:
+      addToStat("defense", delta * upgrade.valuePerLevel);
+      break;
+    case StatName.HP:
+      addToStat("lineHP", delta * upgrade.valuePerLevel);
+      break;
+    case StatName.INVENTORY:
+      addToStat("inventorySize", delta * upgrade.valuePerLevel);
+      break;
+  }
+
+  const newUpgrades = [...state.upgrades];
+  newUpgrades[idx] = { ...upgrade, level: clamped };
+  useShop.setState({ upgrades: newUpgrades });
 }
