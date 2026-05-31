@@ -18,6 +18,63 @@ import type { FishData, ShopUpgradeData } from "../../util/csvLoader";
 import { COLORS, NumInput } from "./shared";
 import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
 
+const tooltipProps = {
+  labelStyle: { color: "#111" },
+  formatter: (v: number) => (typeof v === "number" ? +v.toFixed(2) : v),
+  labelFormatter: (label: number) => +Number(label).toFixed(2),
+};
+
+const lineProps = {
+  dot: false as const,
+  strokeWidth: 2,
+  isAnimationActive: false,
+};
+
+function EconomyChart({
+  title,
+  data,
+  maxTime,
+  xTicks,
+  integerYAxis,
+  header,
+  children,
+}: {
+  title: string;
+  data: object[];
+  maxTime: number;
+  xTicks: number[];
+  integerYAxis?: boolean;
+  header?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <Flex direction="column" gap="2">
+      <Flex align="center" gap="4" wrap="wrap">
+        <Text size="2" weight="bold">
+          {title}
+        </Text>
+        {header}
+      </Flex>
+      <ResponsiveContainer width="100%" height={200}>
+        <ComposedChart data={data} syncId="economy">
+          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+          <XAxis
+            dataKey="time"
+            type="number"
+            domain={[0, maxTime]}
+            ticks={xTicks}
+            tickFormatter={(v: number) => `${v / 60}`}
+          />
+          <YAxis allowDecimals={!integerYAxis} />
+          {/* @ts-ignore */}
+          <Tooltip {...tooltipProps} />
+          {children}
+        </ComposedChart>
+      </ResponsiveContainer>
+    </Flex>
+  );
+}
+
 export function EconomyTab({
   fishData,
   shopData,
@@ -72,6 +129,20 @@ export function EconomyTab({
     time: r.cumulativeTime,
     ...Object.fromEntries(
       fishData.map((f) => [`${f.id}_earn`, r.fishEarnings[f.id] ?? null]),
+    ),
+  }));
+
+  const playerStatData = rounds.map((r) => ({
+    time: r.cumulativeTime,
+    attack: r.playerStats.attack,
+    defense: r.playerStats.defense,
+    lineHP: r.playerStats.lineHP,
+  }));
+
+  const lureRateData = rounds.map((r) => ({
+    time: r.cumulativeTime,
+    ...Object.fromEntries(
+      Object.entries(r.lureRates).map(([id, rate]) => [id, rate]),
     ),
   }));
 
@@ -148,14 +219,19 @@ export function EconomyTab({
 
   const activeLureIds = [...new Set(rounds.map((r) => r.lureId))];
 
-  const tooltipProps = {
-    labelStyle: { color: "#111" },
-    formatter: (v: number) => (typeof v === "number" ? +v.toFixed(2) : v),
-    labelFormatter: (label: number) => +Number(label).toFixed(2),
-  };
+  const chartProps = { maxTime, xTicks };
 
-  // @ts-ignore
-  // @ts-ignore
+  const lurePurchaseLines = rounds
+    .filter((r) => r.boughtLure)
+    .map((r) => (
+      <ReferenceLine
+        key={r.round}
+        x={r.cumulativeTime}
+        stroke="#4caf50"
+        strokeDasharray="4 2"
+      />
+    ));
+
   return (
     <Flex direction="column" gap="4" pt="4">
       <Flex gap="3" wrap="wrap" align="end">
@@ -188,192 +264,152 @@ export function EconomyTab({
               gap: 16,
             }}
           >
-            <Flex direction="column" gap="2">
-              <Flex align="center" gap="4" wrap="wrap">
-                <Text size="2" weight="bold">
-                  Income Rate ($/s)
-                </Text>
-                {activeLureIds.map((id) => (
-                  <Flex key={id} align="center" gap="1">
-                    <div
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: 2,
-                        backgroundColor: lureColorMap[id],
-                        opacity: 0.8,
-                      }}
-                    />
-                    <Text size="1" color="gray">
-                      {lureNameMap[id]}
-                    </Text>
-                  </Flex>
-                ))}
-              </Flex>
-              <ResponsiveContainer width="100%" height={200}>
-                <ComposedChart data={rateData} syncId="economy">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  {lureRegions.map((region, i) => (
-                    <ReferenceArea
-                      key={i}
-                      x1={region.x1}
-                      x2={region.x2}
-                      fill={lureColorMap[region.lureId]}
-                      fillOpacity={0.12}
-                      ifOverflow="hidden"
-                    />
-                  ))}
-                  <XAxis
-                    dataKey="time"
-                    type="number"
-                    domain={[0, maxTime]}
-                    ticks={xTicks}
-                    tickFormatter={(v: number) => `${v / 60}`}
+            <EconomyChart
+              title="Income Rate ($/s)"
+              data={rateData}
+              {...chartProps}
+              header={activeLureIds.map((id) => (
+                <Flex key={id} align="center" gap="1">
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: 2,
+                      backgroundColor: lureColorMap[id],
+                      opacity: 0.8,
+                    }}
                   />
-                  <YAxis />
-                  {/* @ts-ignore */}
-                  <Tooltip {...tooltipProps} />
-                  {rounds
-                    .filter((r) => r.boughtLure)
-                    .map((r) => (
-                      <ReferenceLine
-                        key={r.round}
-                        x={r.cumulativeTime}
-                        stroke="#4caf50"
-                        strokeDasharray="4 2"
-                      />
-                    ))}
-                  <Line
-                    dataKey="rate"
-                    stroke="#60cdff"
-                    dot={false}
-                    strokeWidth={2}
-                    isAnimationActive={false}
-                    name="$/s"
-                  />
-                  <Line
-                    dataKey="upgrade"
-                    stroke="#ffd43b"
-                    dot={{ fill: "#ffd43b", r: 4 }}
-                    strokeWidth={0}
-                    isAnimationActive={false}
-                    name="upgrade"
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </Flex>
+                  <Text size="1" color="gray">
+                    {lureNameMap[id]}
+                  </Text>
+                </Flex>
+              ))}
+            >
+              {lureRegions.map((region, i) => (
+                <ReferenceArea
+                  key={i}
+                  x1={region.x1}
+                  x2={region.x2}
+                  fill={lureColorMap[region.lureId]}
+                  fillOpacity={0.12}
+                  ifOverflow="hidden"
+                />
+              ))}
+              {lurePurchaseLines}
+              <Line dataKey="rate" stroke="#60cdff" {...lineProps} name="$/s" />
+              <Line
+                dataKey="upgrade"
+                stroke="#ffd43b"
+                dot={{ fill: "#ffd43b", r: 4 }}
+                strokeWidth={0}
+                isAnimationActive={false}
+                name="upgrade"
+              />
+            </EconomyChart>
 
-            <Flex direction="column" gap="2">
-              <Text size="2" weight="bold">
-                Fish Income Rate ($)
-              </Text>
-              <ResponsiveContainer width="100%" height={200}>
-                <ComposedChart data={earningsData} syncId="economy">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis
-                    dataKey="time"
-                    type="number"
-                    domain={[0, maxTime]}
-                    ticks={xTicks}
-                    tickFormatter={(v: number) => `${v / 60}`}
-                  />
-                  <YAxis />
-                  {/* @ts-ignore */}
-                  <Tooltip {...tooltipProps} />
-                  <Legend />
-                  {fishData.map((f) => (
-                    <Line
-                      key={`${f.id}_earn`}
-                      dataKey={`${f.id}_earn`}
-                      stroke={fishColorMap[f.id]}
-                      dot={false}
-                      strokeWidth={2}
-                      isAnimationActive={false}
-                      name={f.name}
-                      connectNulls={false}
-                    />
-                  ))}
-                </ComposedChart>
-              </ResponsiveContainer>
-            </Flex>
+            <EconomyChart
+              title="Fish Income Rate ($)"
+              data={earningsData}
+              {...chartProps}
+            >
+              <Legend />
+              {fishData.map((f) => (
+                <Line
+                  key={`${f.id}_earn`}
+                  dataKey={`${f.id}_earn`}
+                  stroke={fishColorMap[f.id]}
+                  {...lineProps}
+                  name={f.name}
+                  connectNulls={false}
+                />
+              ))}
+            </EconomyChart>
 
-            <Flex direction="column" gap="2">
-              <Text size="2" weight="bold">
-                Catch Time (s)
-              </Text>
-              <ResponsiveContainer width="100%" height={200}>
-                <ComposedChart data={catchTimeData} syncId="economy">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis
-                    dataKey="time"
-                    type="number"
-                    domain={[0, maxTime]}
-                    ticks={xTicks}
-                    tickFormatter={(v: number) => `${v / 60}`}
-                  />
-                  <YAxis />
-                  {/* @ts-ignore */}
-                  <Tooltip {...tooltipProps} />
-                  <Legend />
-                  {fishData.map((f) => (
-                    <Line
-                      key={f.id}
-                      dataKey={f.id}
-                      stroke={fishColorMap[f.id]}
-                      dot={false}
-                      strokeWidth={2}
-                      isAnimationActive={false}
-                      name={f.name}
-                      connectNulls={false}
-                    />
-                  ))}
-                </ComposedChart>
-              </ResponsiveContainer>
-            </Flex>
+            <EconomyChart
+              title="Lure Income Rates ($/s)"
+              data={lureRateData}
+              {...chartProps}
+            >
+              <Legend />
+              {lures.map((l) => (
+                <Line
+                  key={l.id}
+                  dataKey={l.id}
+                  stroke={lureColorMap[l.id]}
+                  {...lineProps}
+                  name={l.name}
+                  connectNulls={false}
+                />
+              ))}
+            </EconomyChart>
 
-            <Flex direction="column" gap="2">
-              <Text size="2" weight="bold">
-                Upgrade Levels
-              </Text>
-              <ResponsiveContainer width="100%" height={200}>
-                <ComposedChart data={levelData} syncId="economy">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis
-                    dataKey="time"
-                    type="number"
-                    domain={[0, maxTime]}
-                    ticks={xTicks}
-                    tickFormatter={(v: number) => `${v / 60}`}
-                  />
-                  <YAxis allowDecimals={false} />
-                  {/* @ts-ignore */}
-                  <Tooltip {...tooltipProps} />
-                  <Legend />
-                  {rounds
-                    .filter((r) => r.boughtLure)
-                    .map((r) => (
-                      <ReferenceLine
-                        key={r.round}
-                        x={r.cumulativeTime}
-                        stroke="#4caf50"
-                        strokeDasharray="4 2"
-                      />
-                    ))}
-                  {nonLureUpgrades.map((u, i) => (
-                    <Line
-                      key={u.id}
-                      dataKey={u.id}
-                      type="stepAfter"
-                      stroke={COLORS[i % COLORS.length]}
-                      dot={false}
-                      strokeWidth={2}
-                      isAnimationActive={false}
-                      name={u.id}
-                    />
-                  ))}
-                </ComposedChart>
-              </ResponsiveContainer>
-            </Flex>
+            <EconomyChart
+              title="Catch Time (s)"
+              data={catchTimeData}
+              {...chartProps}
+            >
+              <Legend />
+              {fishData.map((f) => (
+                <Line
+                  key={f.id}
+                  dataKey={f.id}
+                  stroke={fishColorMap[f.id]}
+                  {...lineProps}
+                  name={f.name}
+                  connectNulls={false}
+                />
+              ))}
+            </EconomyChart>
+
+            <EconomyChart
+              title="Upgrade Levels"
+              data={levelData}
+              {...chartProps}
+              integerYAxis
+            >
+              {lurePurchaseLines}
+              <Legend />
+              {nonLureUpgrades.map((u, i) => (
+                <Line
+                  key={u.id}
+                  dataKey={u.id}
+                  type="stepAfter"
+                  stroke={COLORS[i % COLORS.length]}
+                  {...lineProps}
+                  name={u.id}
+                />
+              ))}
+            </EconomyChart>
+
+            <EconomyChart
+              title="Player Stats"
+              data={playerStatData}
+              {...chartProps}
+              integerYAxis
+            >
+              <Legend />
+              <Line
+                dataKey="attack"
+                type="stepAfter"
+                stroke="#ff6b6b"
+                {...lineProps}
+                name="Attack"
+              />
+              <Line
+                dataKey="defense"
+                type="stepAfter"
+                stroke="#74c0fc"
+                {...lineProps}
+                name="Defense"
+              />
+              <Line
+                dataKey="lineHP"
+                type="stepAfter"
+                stroke="#69db7c"
+                {...lineProps}
+                name="Line HP"
+              />
+            </EconomyChart>
 
             {lureRows.length > 0 && (
               <Flex direction="column" gap="2">

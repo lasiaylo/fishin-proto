@@ -23,9 +23,11 @@ export interface EconomyRound {
   lureId: string; // "" = no lure
   fishCatchTimes: Record<string, number>; // fishId → avgFightTime (all fish in chosen lure pool)
   fishEarnings: Record<string, number>; // fishId → avgEarnings considering win rate
+  lureRates: Record<string, number>; // lureId → $/s for each accessible lure
   upgradesBought: string[];
   upgradeLevels: Record<string, number>;
   boughtLure: boolean;
+  playerStats: PlayerStats;
 }
 
 // ── Helpers ──
@@ -73,11 +75,13 @@ function evalLure(
   } | null;
   catchTimes: Record<string, number>;
   earnings: Record<string, number>;
+  lureRates: Record<string, number>;
 } {
   let bestRate;
   let best = null;
   const catchTimes: Record<string, number> = {};
   const earnings: Record<string, number> = {};
+  const lureRates: Record<string, number> = {};
 
   for (const [lureId, pool] of groups) {
     if (lureId && !ownedLures.has(lureId)) continue;
@@ -99,6 +103,7 @@ function evalLure(
 
     const avgEarningsPerCast = totalEarnings / pool.length;
     const rate = avgEarningsPerCast / avgFightTime;
+    lureRates[lureId] = rate;
 
     if (bestRate === undefined || rate >= bestRate) {
       bestRate = rate;
@@ -106,7 +111,7 @@ function evalLure(
     }
   }
 
-  return { best, catchTimes, earnings };
+  return { best, catchTimes, earnings, lureRates };
 }
 
 function cheapestUpgrade(
@@ -188,6 +193,7 @@ export function simulateEconomy(
       best,
       catchTimes: fishCatchTimes,
       earnings: fishEarnings,
+      lureRates,
     } = evalLure(fishByLure, player, ownedLures);
     if (!best) break;
 
@@ -222,9 +228,11 @@ export function simulateEconomy(
       lureId,
       fishCatchTimes,
       fishEarnings,
+      lureRates,
       upgradesBought,
       upgradeLevels: { ...levels },
       boughtLure,
+      playerStats: { ...player },
     });
 
     const allMaxed = shopData.every(
