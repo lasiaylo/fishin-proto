@@ -1,9 +1,10 @@
 import { Code, Flex, Text } from "@radix-ui/themes";
 import React from "react";
-import { usePlayer } from "../stores/playerStore";
+import { INVENTORY_SIZE, usePlayer } from "../stores/playerStore";
 
 export function InventoryView() {
   const wallet = usePlayer((s) => s.wallet);
+  const inventory = usePlayer((s) => s.inventory);
 
   return (
     <Flex
@@ -13,9 +14,22 @@ export function InventoryView() {
       flexShrink="0"
       maxHeight="500px"
       width="200px"
-      gap={"5"}
+      gap={"3"}
     >
-      <Code size="2">Money: ${wallet}</Code>
+      <Code size="2">${wallet}</Code>
+      <Flex direction="column" gap="1">
+        <Text size="1" color="gray">
+          Fish Cooler
+        </Text>
+        {Array.from({ length: INVENTORY_SIZE }).map((_, i) => {
+          const fish = inventory[i];
+          return (
+            <Code key={i} size="1" color={fish ? undefined : "gray"}>
+              {fish ? `${fish.name}` : "—"}
+            </Code>
+          );
+        })}
+      </Flex>
     </Flex>
   );
 }

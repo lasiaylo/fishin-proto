@@ -164,8 +164,6 @@ function applyUpgrade(
   }
 }
 
-// ── Main export ──
-
 export function simulateEconomy(
   fishData: FishData[],
   shopData: ShopUpgradeData[],

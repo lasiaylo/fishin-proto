@@ -107,9 +107,23 @@ export function EngineConfigRow({
               min={0}
             />
             <NumInput
-              label="Init Dur"
-              value={config.initStruggleDuration}
-              onChange={(v) => onChange({ initStruggleDuration: v })}
+              label="Init Min"
+              value={config.initStruggleDuration[0]}
+              onChange={(v) =>
+                onChange({
+                  initStruggleDuration: [v, config.initStruggleDuration[1]],
+                })
+              }
+              min={0}
+            />
+            <NumInput
+              label="Init Max"
+              value={config.initStruggleDuration[1]}
+              onChange={(v) =>
+                onChange({
+                  initStruggleDuration: [config.initStruggleDuration[0], v],
+                })
+              }
               min={0}
             />
           </Flex>

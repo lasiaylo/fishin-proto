@@ -3,7 +3,11 @@ import { Flex, Text } from "@radix-ui/themes";
 import { MyButton } from "./MyButton";
 import { FishData } from "../util/csvLoader";
 import { getAvailableFish } from "../stores/fishStore";
-import { addMoney, usePlayer } from "../stores/playerStore";
+import {
+  addFishToInventory,
+  INVENTORY_SIZE,
+  usePlayer,
+} from "../stores/playerStore";
 import { pushEvent } from "../stores/eventLogStore";
 import { EventMsg } from "../util/eventMessages";
 import { FightEngine, FightState, Outcome } from "../game/FightEngine";
@@ -24,6 +28,7 @@ const HOOK_WINDOW = 2;
 const RESULT_DURATION = 1000;
 
 export function PondView() {
+  const invCount = usePlayer((s) => s.inventory.length);
   const [gameState, setGameState] = useState<GameState>(GameState.Idle);
   const [biteReady, setBiteReady] = useState(false);
   const [fading, setFading] = useState(false);
@@ -123,8 +128,8 @@ export function PondView() {
     const fish = caughtFishRef.current!;
 
     if (result === Outcome.WIN) {
-      addMoney(fish.basePrice);
-      pushEvent(EventMsg.CAUGHT(fish.name, fish.basePrice));
+      addFishToInventory(fish);
+      pushEvent(EventMsg.CAUGHT(fish.name));
     } else {
       pushEvent(EventMsg.GOT_AWAY(fish.name));
     }
@@ -150,6 +155,13 @@ export function PondView() {
   }
 
   if (gameState === GameState.Idle) {
+    if (invCount >= INVENTORY_SIZE) {
+      return (
+        <Flex className="fade-in" direction="column" gap="3" p="4">
+          <Text size={"1"}>The cooler is full</Text>
+        </Flex>
+      );
+    }
     return (
       <Flex className="fade-in" direction="column" gap="3" p="4">
         <Text size={"1"}>Choose a fishing spot</Text>

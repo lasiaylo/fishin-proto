@@ -18,12 +18,6 @@ import type { FishData, ShopUpgradeData } from "../../util/csvLoader";
 import { COLORS, NumInput } from "./shared";
 import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
 
-const tooltipProps = {
-  labelStyle: { color: "#111" },
-  formatter: (v: number) => (typeof v === "number" ? +v.toFixed(2) : v),
-  labelFormatter: (label: number) => +Number(label).toFixed(2),
-};
-
 const lineProps = {
   dot: false as const,
   strokeWidth: 2,
@@ -47,6 +41,7 @@ function EconomyChart({
   header?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  // @ts-ignore
   return (
     <Flex direction="column" gap="2">
       <Flex align="center" gap="4" wrap="wrap">
@@ -66,8 +61,13 @@ function EconomyChart({
             tickFormatter={(v: number) => `${v / 60}`}
           />
           <YAxis allowDecimals={!integerYAxis} />
-          {/* @ts-ignore */}
-          <Tooltip {...tooltipProps} />
+          <Tooltip
+            labelStyle={{ color: "#111" }}
+            // @ts-ignore
+            formatter={(v: number) => +v.toFixed(2)}
+            // @ts-ignore
+            labelFormatter={(label: number) => +Number(label).toFixed(2)}
+          />
           {children}
         </ComposedChart>
       </ResponsiveContainer>
@@ -308,24 +308,6 @@ export function EconomyTab({
             </EconomyChart>
 
             <EconomyChart
-              title="Fish Income Rate ($)"
-              data={earningsData}
-              {...chartProps}
-            >
-              <Legend />
-              {fishData.map((f) => (
-                <Line
-                  key={`${f.id}_earn`}
-                  dataKey={`${f.id}_earn`}
-                  stroke={fishColorMap[f.id]}
-                  {...lineProps}
-                  name={f.name}
-                  connectNulls={false}
-                />
-              ))}
-            </EconomyChart>
-
-            <EconomyChart
               title="Lure Income Rates ($/s)"
               data={lureRateData}
               {...chartProps}
@@ -338,6 +320,24 @@ export function EconomyTab({
                   stroke={lureColorMap[l.id]}
                   {...lineProps}
                   name={l.name}
+                  connectNulls={false}
+                />
+              ))}
+            </EconomyChart>
+
+            <EconomyChart
+              title="Fish Income Rate ($)"
+              data={earningsData}
+              {...chartProps}
+            >
+              <Legend />
+              {fishData.map((f) => (
+                <Line
+                  key={`${f.id}_earn`}
+                  dataKey={`${f.id}_earn`}
+                  stroke={fishColorMap[f.id]}
+                  {...lineProps}
+                  name={f.name}
                   connectNulls={false}
                 />
               ))}
@@ -357,26 +357,6 @@ export function EconomyTab({
                   {...lineProps}
                   name={f.name}
                   connectNulls={false}
-                />
-              ))}
-            </EconomyChart>
-
-            <EconomyChart
-              title="Upgrade Levels"
-              data={levelData}
-              {...chartProps}
-              integerYAxis
-            >
-              {lurePurchaseLines}
-              <Legend />
-              {nonLureUpgrades.map((u, i) => (
-                <Line
-                  key={u.id}
-                  dataKey={u.id}
-                  type="stepAfter"
-                  stroke={COLORS[i % COLORS.length]}
-                  {...lineProps}
-                  name={u.id}
                 />
               ))}
             </EconomyChart>
@@ -409,6 +389,26 @@ export function EconomyTab({
                 {...lineProps}
                 name="Line HP"
               />
+            </EconomyChart>
+
+            <EconomyChart
+              title="Upgrade Levels"
+              data={levelData}
+              {...chartProps}
+              integerYAxis
+            >
+              {lurePurchaseLines}
+              <Legend />
+              {nonLureUpgrades.map((u, i) => (
+                <Line
+                  key={u.id}
+                  dataKey={u.id}
+                  type="stepAfter"
+                  stroke={COLORS[i % COLORS.length]}
+                  {...lineProps}
+                  name={u.id}
+                />
+              ))}
             </EconomyChart>
 
             {lureRows.length > 0 && (
