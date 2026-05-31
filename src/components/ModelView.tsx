@@ -10,6 +10,7 @@ import {
 import { FightTraceTab } from "./model/FightTraceTab";
 import { ParamSweepTab } from "./model/ParamSweepTab";
 import { EconomyTab } from "./model/EconomyTab";
+import { GraphsTab } from "./model/GraphsTab";
 
 export function ModelView() {
   const [fishData, setFishData] = useState<FishData[]>([]);
@@ -47,6 +48,7 @@ export function ModelView() {
               <Tabs.Trigger value="fight">Fight Trace</Tabs.Trigger>
               <Tabs.Trigger value="sweep">Parameter Sweep</Tabs.Trigger>
               <Tabs.Trigger value="economy">Economy</Tabs.Trigger>
+              <Tabs.Trigger value="graphs">Graphs</Tabs.Trigger>
             </Tabs.List>
             <Tabs.Content value="fight">
               <FightTraceTab fishData={fishData} />
@@ -56,6 +58,9 @@ export function ModelView() {
             </Tabs.Content>
             <Tabs.Content value="economy">
               <EconomyTab fishData={fishData} shopData={shopData} />
+            </Tabs.Content>
+            <Tabs.Content value="graphs">
+              <GraphsTab fishData={fishData} shopData={shopData} />
             </Tabs.Content>
           </Tabs.Root>
         )}

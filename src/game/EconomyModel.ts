@@ -166,6 +166,37 @@ function applyUpgrade(
   }
 }
 
+export function computeLureRates(
+  fishData: FishData[],
+  player: PlayerStats,
+  trialsPerFish: number,
+): Record<string, number> {
+  const fishByLure = new Map<string, FishData[]>();
+  for (const fish of fishData) {
+    if (!fishByLure.has(fish.requiredLure))
+      fishByLure.set(fish.requiredLure, []);
+    fishByLure.get(fish.requiredLure)!.push(fish);
+  }
+  const allLures = new Set(fishData.map((f) => f.requiredLure));
+  const rates: Record<string, number> = {};
+
+  for (const [lureId, pool] of fishByLure) {
+    let totalEarnings = 0;
+    let totalFightTime = 0;
+    for (const fish of pool) {
+      const { winCount, avgFightTime } = runTrials(fish, player, trialsPerFish);
+      const avgEarnings = (fish.basePrice * winCount) / trialsPerFish;
+      totalEarnings += avgEarnings;
+      totalFightTime += avgFightTime;
+    }
+    const avgFightTime = totalFightTime / pool.length;
+    if (avgFightTime === 0) continue;
+    rates[lureId] = totalEarnings / pool.length / avgFightTime;
+  }
+
+  return rates;
+}
+
 export function simulateEconomy(
   fishData: FishData[],
   shopData: ShopUpgradeData[],
