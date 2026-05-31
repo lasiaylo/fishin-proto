@@ -158,7 +158,7 @@ export function PondView() {
     if (invCount >= INVENTORY_SIZE) {
       return (
         <Flex className="fade-in" direction="column" gap="3" p="4">
-          <Text size={"1"}>The cooler is full</Text>
+          <Text size={"1"}>The cooler is full.</Text>
         </Flex>
       );
     }

@@ -14,8 +14,8 @@ export interface FightConfig {
 export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   restTimeRange: [2, 4],
   fightTimeRange: [1.0, 4],
+  initStruggleDuration: [1.8, 2.2],
   baseSpeed: 30,
-  initStruggleDuration: [2, 2],
 };
 
 export const MAX_SIM_TIME = 120;
