@@ -56,6 +56,19 @@ export async function loadFishData(): Promise<FishData[]> {
   }));
 }
 
+export async function loadShopGameplayData(): Promise<ShopUpgradeData[]> {
+  const res = await fetch("/data/ShopGameplay.csv");
+  const rows = parseCSV(await res.text());
+  return rows.slice(1).map((row) => ({
+    id: row[0],
+    name: row[0],
+    description: "",
+    prices: row[1].split(" ").map(Number),
+    stat: parseStatName(row[2]),
+    valuePerLevel: Number(row[3]),
+  }));
+}
+
 export async function loadShopData(): Promise<ShopUpgradeData[]> {
   const [gameplayRes, displayRes] = await Promise.all([
     fetch("/data/ShopGameplay.csv"),

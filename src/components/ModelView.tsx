@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Theme, Tabs, Flex, Text } from "@radix-ui/themes";
 import {
   loadFishData,
-  loadShopData,
+  loadShopGameplayData,
   type FishData,
   type ShopUpgradeData,
 } from "../util/csvLoader";
@@ -19,10 +19,12 @@ export function ModelView() {
   );
 
   useEffect(() => {
-    Promise.all([loadFishData(), loadShopData()]).then(([fish, shop]) => {
-      setFishData(fish);
-      setShopData(shop);
-    });
+    Promise.all([loadFishData(), loadShopGameplayData()]).then(
+      ([fish, shop]) => {
+        setFishData(fish);
+        setShopData(shop);
+      },
+    );
   }, []);
 
   return (

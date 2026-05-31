@@ -86,7 +86,7 @@ export function EconomyTab({
     { id: "", name: "No Lure" },
     ...shopData
       .filter((u) => u.stat === StatName.LURE)
-      .map((u) => ({ id: u.id, name: u.name })),
+      .map((u) => ({ id: u.id, name: u.id })),
   ];
   const lureColorMap = Object.fromEntries(
     lures.map((l, i) => [l.id, COLORS[i % COLORS.length]]),
@@ -118,7 +118,7 @@ export function EconomyTab({
         const level = parseInt(levelStr, 10);
         const cost = upgrade.prices[level - 1];
         lureRows.push({
-          name: upgrade.name,
+          name: upgrade.id,
           cost,
           timeSincePrev:
             lastLureTime !== null
@@ -368,7 +368,7 @@ export function EconomyTab({
                       dot={false}
                       strokeWidth={2}
                       isAnimationActive={false}
-                      name={u.name}
+                      name={u.id}
                     />
                   ))}
                 </ComposedChart>
