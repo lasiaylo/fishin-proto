@@ -22,8 +22,8 @@ export async function initFish() {
 
 export function getAvailableFish(): FishData[] {
   const { allFish } = useFish.getState();
-  const { ownedLures } = usePlayer.getState();
+  const { selectedLure } = usePlayer.getState();
   return allFish.filter(
-    (f) => !f.requiredLure || ownedLures.has(f.requiredLure),
+    (f) => !f.requiredLure || f.requiredLure === selectedLure,
   );
 }

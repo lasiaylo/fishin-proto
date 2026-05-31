@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Flex, Text } from "@radix-ui/themes";
 import { MyButton } from "./MyButton";
 import { FishData } from "../util/csvLoader";
-import { getAvailableFish } from "../stores/fishStore";
+import { getAvailableFish, useFish } from "../stores/fishStore";
 import {
   addFishToInventory,
   INVENTORY_SIZE,
@@ -53,17 +53,21 @@ export function PondView() {
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      if (e.key !== "1") return;
-      caughtFishRef.current = {
-        id: "debug",
-        name: "Debug Fish",
-        basePrice: 0,
-        attack: 5,
-        defense: 5,
-        thrash: 5,
-        requiredLure: "none",
-      };
-      startFight();
+      if (e.key === "1") {
+        caughtFishRef.current = {
+          id: "debug",
+          name: "Debug Fish",
+          basePrice: 0,
+          attack: 5,
+          defense: 5,
+          thrash: 5,
+          requiredLure: "none",
+        };
+        startFight();
+      }
+      if (e.key === "=") {
+        addFishToInventory(useFish.getState().allFish[0]);
+      }
     }
 
     window.addEventListener("keydown", handleKey);
@@ -102,7 +106,7 @@ export function PondView() {
       lineHP,
     );
 
-    pushEvent(EventMsg.HOOKED(fish.name));
+    pushEvent(EventMsg.HOOKED());
     lastTimeRef.current = null;
 
     function loop(timestamp: number) {

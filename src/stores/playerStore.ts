@@ -10,6 +10,7 @@ export interface PlayerStats {
 export interface PlayerState extends PlayerStats {
   wallet: number;
   ownedLures: Set<string>;
+  selectedLure: string | null;
   inventory: FishData[];
 }
 
@@ -21,6 +22,7 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
   defense: 3,
   lineHP: 10,
   ownedLures: new Set<string>(),
+  selectedLure: null,
   inventory: [],
 };
 
@@ -54,6 +56,10 @@ export function addLure(lureId: string) {
     lures.add(lureId);
     return { ownedLures: lures };
   });
+}
+
+export function setSelectedLure(lureId: string | null) {
+  usePlayer.setState({ selectedLure: lureId });
 }
 
 export function addFishToInventory(fish: FishData) {
