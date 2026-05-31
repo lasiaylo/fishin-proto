@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { Flex, Separator, Text, Button } from "@radix-ui/themes";
 import { setMoney, usePlayer } from "../stores/playerStore";
-import { useShop, setUpgradeLevelDebug } from "../stores/shopStore";
+import {
+  useShop,
+  setUpgradeLevelDebug,
+  resetAllUpgradesDebug,
+} from "../stores/shopStore";
 import { pushEvent } from "../stores/eventLogStore";
 
 export function Debug() {
@@ -86,7 +90,17 @@ function ShopUpgradeSection() {
 
   return (
     <Flex direction="column" gap="2">
-      <Text weight="bold">Shop Upgrades</Text>
+      <Flex gap="2" align="center">
+        <Text weight="bold">Shop Upgrades</Text>
+        <Button
+          size="1"
+          variant="soft"
+          color="red"
+          onClick={resetAllUpgradesDebug}
+        >
+          Reset All
+        </Button>
+      </Flex>
       <Separator size="4" />
       <Flex gap="2" wrap="wrap" direction="column">
         {upgrades.map((u) => (

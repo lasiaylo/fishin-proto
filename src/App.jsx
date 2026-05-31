@@ -12,7 +12,9 @@ import { EventMsg } from "./util/eventMessages";
 import { InventoryView } from "./components/InventoryView.tsx";
 
 function App() {
-  const [showDebug, setShowDebug] = useState(false);
+  const [showDebug, setShowDebug] = useState(
+    () => localStorage.getItem("debug_panel_open") === "true",
+  );
 
   useEffect(() => {
     initShop();
@@ -22,7 +24,12 @@ function App() {
 
   useEffect(() => {
     function handleKey(e) {
-      if (e.key === "`") setShowDebug((prev) => !prev);
+      if (e.key === "`")
+        setShowDebug((prev) => {
+          const next = !prev;
+          localStorage.setItem("debug_panel_open", next);
+          return next;
+        });
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);

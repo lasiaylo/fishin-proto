@@ -27,10 +27,33 @@ export const useShop = create(
   })),
 );
 
+const DEBUG_LEVELS_KEY = "debug_upgrade_levels";
+
+function loadPersistedLevels(): Record<string, number> {
+  try {
+    return JSON.parse(localStorage.getItem(DEBUG_LEVELS_KEY) ?? "{}");
+  } catch {
+    return {};
+  }
+}
+
+function persistLevels(upgrades: ShopUpgrade[]) {
+  const map: Record<string, number> = {};
+  for (const u of upgrades) {
+    if (u.level > 0) map[u.id] = u.level;
+  }
+  localStorage.setItem(DEBUG_LEVELS_KEY, JSON.stringify(map));
+}
+
 export async function initShop() {
   const data = await loadShopData();
   const upgrades = data.map((d) => ({ ...d, level: 0 }));
   useShop.setState({ upgrades, loaded: true });
+
+  const saved = loadPersistedLevels();
+  for (const [id, level] of Object.entries(saved)) {
+    setUpgradeLevelDebug(id, level);
+  }
 }
 
 export function getUpgradePrice(upgrade: ShopUpgrade): number | null {
@@ -121,4 +144,32 @@ export function setUpgradeLevelDebug(id: string, newLevel: number) {
   const newUpgrades = [...state.upgrades];
   newUpgrades[idx] = { ...upgrade, level: clamped };
   useShop.setState({ upgrades: newUpgrades });
+  persistLevels(newUpgrades);
+}
+
+export function resetAllUpgradesDebug() {
+  const { upgrades } = useShop.getState();
+  for (const u of upgrades) {
+    if (u.level === 0) continue;
+    const delta = -u.level;
+    switch (u.stat) {
+      case StatName.LURE:
+        removeLure(u.id);
+        break;
+      case StatName.ATTACK:
+        addToStat("attack", delta * u.valuePerLevel);
+        break;
+      case StatName.DEFENSE:
+        addToStat("defense", delta * u.valuePerLevel);
+        break;
+      case StatName.HP:
+        addToStat("lineHP", delta * u.valuePerLevel);
+        break;
+      case StatName.INVENTORY:
+        addToStat("inventorySize", delta * u.valuePerLevel);
+        break;
+    }
+  }
+  useShop.setState({ upgrades: upgrades.map((u) => ({ ...u, level: 0 })) });
+  localStorage.removeItem(DEBUG_LEVELS_KEY);
 }
