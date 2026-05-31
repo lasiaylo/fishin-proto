@@ -27,6 +27,7 @@ export interface ShopUpgradeData {
   id: string;
   name: string;
   description: string;
+  category: string;
   prices: number[];
   stat: StatName;
   valuePerLevel: number;
@@ -71,6 +72,7 @@ export async function loadShopGameplayData(): Promise<ShopUpgradeData[]> {
     id: row[0],
     name: row[0],
     description: "",
+    category: "",
     prices: row[1].split(" ").map(Number),
     stat: parseStatName(row[2]),
     valuePerLevel: Number(row[3]),
@@ -90,7 +92,10 @@ export async function loadShopData(): Promise<ShopUpgradeData[]> {
   const displayById = new Map(
     displayRows
       .slice(1)
-      .map((row) => [row[0], { name: row[1], description: row[2] }]),
+      .map((row) => [
+        row[0],
+        { name: row[1], description: row[2], category: row[3] ?? "" },
+      ]),
   );
 
   return gameplayRows.slice(1).map((row) => {
@@ -99,6 +104,7 @@ export async function loadShopData(): Promise<ShopUpgradeData[]> {
       id: row[0],
       name: display?.name ?? row[0],
       description: display?.description ?? "",
+      category: display?.category ?? "",
       prices: row[1].split(" ").map(Number),
       stat: parseStatName(row[2]),
       valuePerLevel: Number(row[3]),
