@@ -2,7 +2,7 @@ import { randomRange } from "../util/random";
 
 const MAX_DISTANCE = 100;
 const START_DISTANCE = MAX_DISTANCE / 2;
-const IDLE_SPEED = 3;
+const IDLE_SPEED = 5;
 
 export interface FightConfig {
   restTimeRange: [number, number];

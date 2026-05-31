@@ -170,7 +170,9 @@ export function simulateEconomy(
   start: PlayerStats = {
     ...INITIAL_PLAYER_STATE,
   },
+  maxMinutes = 60,
 ): EconomyRound[] {
+  const maxTime = maxMinutes * 60;
   const player = { ...start };
   const ownedLures = new Set<string>();
   const levels: Record<string, number> = Object.fromEntries(
@@ -232,6 +234,8 @@ export function simulateEconomy(
       boughtLure,
       playerStats: { ...player },
     });
+
+    if (cumulativeTime >= maxTime) break;
 
     const allMaxed = shopData.every(
       (u) => (levels[u.id] ?? 0) >= u.prices.length,

@@ -85,6 +85,7 @@ export function EconomyTab({
   const [reelStr, setReelStr] = useState(INITIAL_PLAYER_STATE.attack);
   const [drag, setDrag] = useState(INITIAL_PLAYER_STATE.defense);
   const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
+  const [simMinutes, setSimMinutes] = useState(10);
   const [rounds, setRounds] = useState<EconomyRound[]>([]);
   const [running, setRunning] = useState(false);
   const [gridLayout, setGridLayout] = useState(true);
@@ -95,11 +96,12 @@ export function EconomyTab({
     setRunning(true);
     setTimeout(() => {
       setRounds(
-        simulateEconomy(fishData, shopData, {
-          attack: reelStr,
-          defense: drag,
-          lineHP,
-        }),
+        simulateEconomy(
+          fishData,
+          shopData,
+          { attack: reelStr, defense: drag, lineHP },
+          simMinutes,
+        ),
       );
       setRunning(false);
     }, 0);
@@ -243,6 +245,12 @@ export function EconomyTab({
         />
         <NumInput label="Defense" value={drag} onChange={setDrag} min={1} />
         <NumInput label="Line HP" value={lineHP} onChange={setLineHP} min={1} />
+        <NumInput
+          label="Sim minutes"
+          value={simMinutes}
+          onChange={setSimMinutes}
+          min={1}
+        />
         <Button onClick={runSim} disabled={running}>
           {running ? "Running…" : "Run Economy"}
         </Button>

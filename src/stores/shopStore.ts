@@ -77,5 +77,5 @@ export function buyUpgrade(id: string) {
   newUpgrades[idx] = { ...upgrade, level: newLevel };
   useShop.setState({ upgrades: newUpgrades });
 
-  pushEvent(EventMsg.BOUGHT(id, newLevel));
+  pushEvent(EventMsg.BOUGHT(upgrade.name, newLevel));
 }

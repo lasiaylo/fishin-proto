@@ -24,8 +24,7 @@ enum GameState {
 }
 
 const SPOTS = ["shallow end", "deep end", "far end"] as const;
-// const BITE_DELAY: [number, number] = [2, 8];
-const BITE_DELAY: [number, number] = [0, 0];
+const BITE_DELAY: [number, number] = [2, 6];
 const HOOK_WINDOW = 2;
 const RESULT_DURATION = 1000;
 
@@ -224,7 +223,7 @@ export function PondView() {
 
   if (gameState === GameState.Missed) {
     onClick = () => setGameState(GameState.Idle);
-    message = "return";
+    message = "go back";
   } else {
     onClick = () => {
       if (biteReady) {
