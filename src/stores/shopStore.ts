@@ -70,6 +70,9 @@ export function buyUpgrade(id: string) {
     case StatName.HP:
       addToStat("lineHP", upgrade.valuePerLevel);
       break;
+    case StatName.INVENTORY:
+      addToStat("inventorySize", upgrade.valuePerLevel);
+      break;
   }
 
   // Update upgrade level

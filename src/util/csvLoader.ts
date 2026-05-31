@@ -13,6 +13,7 @@ export enum StatName {
   DEFENSE = "DEFENSE",
   HP = "HP",
   LURE = "LURE",
+  INVENTORY = "INVENTORY",
   WIN = "win",
 }
 

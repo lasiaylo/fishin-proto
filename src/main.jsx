@@ -10,7 +10,7 @@ createRoot(document.getElementById("root")).render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<App />} />
-        <Route path="/debug" element={<ModelView />} />
+        <Route path="/model" element={<ModelView />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

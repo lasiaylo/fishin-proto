@@ -4,7 +4,6 @@ import { INITIAL_PLAYER_STATE, PlayerStats } from "../stores/playerStore";
 
 // ── Constants ──
 
-const FISH_PER_TRIP = 4;
 const SHOP_TRAVEL_TIME = 5;
 const CAST_WAIT_TIME = 5;
 const EVAL_TRIALS = 100;
@@ -161,6 +160,9 @@ function applyUpgrade(
     case StatName.HP:
       player.lineHP += upgrade.valuePerLevel;
       break;
+    case StatName.INVENTORY:
+      player.inventorySize += upgrade.valuePerLevel;
+      break;
   }
 }
 
@@ -198,8 +200,8 @@ export function simulateEconomy(
     if (!best) break;
 
     const { lureId, avgFightTime, avgEarningsPerCast } = best;
-    const roundTime = FISH_PER_TRIP * (CAST_WAIT_TIME + avgFightTime);
-    const income = FISH_PER_TRIP * avgEarningsPerCast;
+    const roundTime = player.inventorySize * (CAST_WAIT_TIME + avgFightTime);
+    const income = player.inventorySize * avgEarningsPerCast;
     wallet += income;
     cumulativeTime += roundTime;
 

@@ -6,6 +6,7 @@ export interface PlayerStats {
   attack: number;
   defense: number;
   lineHP: number;
+  inventorySize: number;
 }
 export interface PlayerState extends PlayerStats {
   wallet: number;
@@ -14,13 +15,12 @@ export interface PlayerState extends PlayerStats {
   inventory: FishData[];
 }
 
-export const INVENTORY_SIZE = 4;
-
 export const INITIAL_PLAYER_STATE: PlayerState = {
   wallet: 0,
   attack: 3,
   defense: 3,
   lineHP: 10,
+  inventorySize: 3,
   ownedLures: new Set<string>(),
   selectedLure: null,
   inventory: [],
@@ -64,7 +64,7 @@ export function setSelectedLure(lureId: string | null) {
 
 export function addFishToInventory(fish: FishData) {
   usePlayer.setState((s) => {
-    if (s.inventory.length >= INVENTORY_SIZE) return s;
+    if (s.inventory.length >= s.inventorySize) return s;
     return { inventory: [...s.inventory, fish] };
   });
 }

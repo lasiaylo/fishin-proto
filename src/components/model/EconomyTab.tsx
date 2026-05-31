@@ -85,6 +85,9 @@ export function EconomyTab({
   const [reelStr, setReelStr] = useState(INITIAL_PLAYER_STATE.attack);
   const [drag, setDrag] = useState(INITIAL_PLAYER_STATE.defense);
   const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
+  const [inventorySize, setInventorySize] = useState(
+    INITIAL_PLAYER_STATE.inventorySize,
+  );
   const [simMinutes, setSimMinutes] = useState(10);
   const [rounds, setRounds] = useState<EconomyRound[]>([]);
   const [running, setRunning] = useState(false);
@@ -99,7 +102,7 @@ export function EconomyTab({
         simulateEconomy(
           fishData,
           shopData,
-          { attack: reelStr, defense: drag, lineHP },
+          { attack: reelStr, defense: drag, lineHP, inventorySize },
           simMinutes,
         ),
       );
@@ -245,6 +248,12 @@ export function EconomyTab({
         />
         <NumInput label="Defense" value={drag} onChange={setDrag} min={1} />
         <NumInput label="Line HP" value={lineHP} onChange={setLineHP} min={1} />
+        <NumInput
+          label="Inventory"
+          value={inventorySize}
+          onChange={setInventorySize}
+          min={1}
+        />
         <NumInput
           label="Sim minutes"
           value={simMinutes}

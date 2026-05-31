@@ -5,7 +5,6 @@ import { FishData, StatName } from "../util/csvLoader";
 import { getAvailableFish, useFish } from "../stores/fishStore";
 import {
   addFishToInventory,
-  INVENTORY_SIZE,
   setSelectedLure,
   usePlayer,
 } from "../stores/playerStore";
@@ -30,6 +29,7 @@ const RESULT_DURATION = 1000;
 
 export function PondView() {
   const invCount = usePlayer((s) => s.inventory.length);
+  const inventorySize = usePlayer((s) => s.inventorySize);
   const ownedLures = usePlayer((s) => s.ownedLures);
   const shopUpgrades = useShop((s) => s.upgrades);
   const selectedLure = usePlayer((s) => s.selectedLure);
@@ -163,7 +163,7 @@ export function PondView() {
   }
 
   if (gameState === GameState.Idle) {
-    if (invCount >= INVENTORY_SIZE) {
+    if (invCount >= inventorySize) {
       return (
         <Flex className="fade-in" direction="column" gap="3" p="4">
           <Text size={"1"}>The cooler is full.</Text>
