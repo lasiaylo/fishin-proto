@@ -1,13 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Flex, Text } from "@radix-ui/themes";
 import { MyButton } from "./MyButton";
-import { FishData } from "../util/csvLoader";
+import { FishData, StatName } from "../util/csvLoader";
 import { getAvailableFish, useFish } from "../stores/fishStore";
 import {
   addFishToInventory,
   INVENTORY_SIZE,
+  setSelectedLure,
   usePlayer,
 } from "../stores/playerStore";
+import { useShop } from "../stores/shopStore";
 import { pushEvent } from "../stores/eventLogStore";
 import { EventMsg } from "../util/eventMessages";
 import { FightEngine, FightState, Outcome } from "../game/FightEngine";
@@ -29,6 +31,9 @@ const RESULT_DURATION = 1000;
 
 export function PondView() {
   const invCount = usePlayer((s) => s.inventory.length);
+  const ownedLures = usePlayer((s) => s.ownedLures);
+  const shopUpgrades = useShop((s) => s.upgrades);
+  const selectedLure = usePlayer((s) => s.selectedLure);
   const [gameState, setGameState] = useState<GameState>(GameState.Idle);
   const [biteReady, setBiteReady] = useState(false);
   const [fading, setFading] = useState(false);
@@ -135,7 +140,7 @@ export function PondView() {
       addFishToInventory(fish);
       pushEvent(EventMsg.CAUGHT(fish.name));
     } else {
-      pushEvent(EventMsg.GOT_AWAY(fish.name));
+      pushEvent(EventMsg.ESCAPED);
     }
 
     setFading(true);
@@ -166,9 +171,29 @@ export function PondView() {
         </Flex>
       );
     }
+    const ownedLureList = shopUpgrades.filter(
+      (u) => u.stat === StatName.LURE && ownedLures.has(u.id),
+    );
     return (
       <Flex className="fade-in" direction="column" gap="3" p="4">
-        <Text size={"1"}>Choose a fishing spot</Text>
+        <Flex direction="column" gap="2">
+          <Text size="1">Lure</Text>
+          <select
+            value={selectedLure ?? ""}
+            onChange={(e) => setSelectedLure(e.target.value || null)}
+          >
+            <option value="">None</option>
+            {ownedLureList.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.name}
+              </option>
+            ))}
+          </select>
+        </Flex>
+
+        <Text size={"1"} mt={"4"}>
+          Choose a fishing spot
+        </Text>
         {SPOTS.map((spot) => (
           <MyButton key={spot} onClick={() => handleSpotClick(spot)}>
             {spot}

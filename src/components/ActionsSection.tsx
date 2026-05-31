@@ -17,7 +17,7 @@ export function ActionsSection() {
         inventory.forEach((fish, i) =>
           setTimeout(
             () => pushEvent(EventMsg.SOLD_FISH(fish.name, fish.basePrice)),
-            i * 750,
+            i * 400,
           ),
         );
       }

@@ -29,7 +29,12 @@ export function MyButton({
   if (!description) return button;
 
   return (
-    <Tooltip content={description} delayDuration={0}>
+    <Tooltip
+      content={description}
+      delayDuration={0}
+      side={"right"}
+      maxWidth={"200px"}
+    >
       {button}
     </Tooltip>
   );
