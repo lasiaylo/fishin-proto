@@ -1,5 +1,6 @@
-ID, Name, BasePrice, Attack, Defense, Thrash, RequiredLure
-FISH_1, fish_1, 5, 1, 1, 1,
-FISH_2, fish_2, 8, 2, 2, 1, LURE_1
-FISH_3, fish_3, 15, 10, 10, 1, LURE_2
-FISH_4, fish_4, 20, 15, 15, 1, LURE_2
+ID, BasePrice, Attack, Defense, Thrash, RequiredLure
+FISH_1, 5, 1, 1, 1,
+FISH_2, 8, 2, 2, 1, LURE_1
+FISH_3, 10, 4, 4, 1, LURE_1
+FISH_4, 15, 10, 10, 1, LURE_2
+FISH_5, 20, 15, 15, 1, LURE_2

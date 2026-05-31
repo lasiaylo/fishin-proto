@@ -40,19 +40,27 @@ function parseCSV(text: string): string[][] {
 }
 
 export async function loadFishData(): Promise<FishData[]> {
-  const res = await fetch("/data/FishGameplay.csv");
-  const text = await res.text();
-  const rows = parseCSV(text);
-  // Skip header row
+  const [gameplayRes, displayRes] = await Promise.all([
+    fetch("/data/FishGameplay.csv"),
+    fetch("/data/FishDisplay.csv"),
+  ]);
+  const [gameplayRows, displayRows] = [
+    parseCSV(await gameplayRes.text()),
+    parseCSV(await displayRes.text()),
+  ];
 
-  return rows.slice(1).map((row) => ({
+  const displayById = new Map(
+    displayRows.slice(1).map((row) => [row[0], row[1]]),
+  );
+
+  return gameplayRows.slice(1).map((row) => ({
     id: row[0],
-    name: row[1],
-    basePrice: Number(row[2]),
-    attack: Number(row[3]),
-    defense: Number(row[4]),
-    thrash: Number(row[5]) || 0,
-    requiredLure: row[6] || "",
+    name: displayById.get(row[0]) ?? row[0],
+    basePrice: Number(row[1]),
+    attack: Number(row[2]),
+    defense: Number(row[3]),
+    thrash: Number(row[4]) || 0,
+    requiredLure: row[5] || "",
   }));
 }
 
