@@ -20,6 +20,10 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   distanceMultRange: [0.9, 1.1],
 };
 
+const STRUGGLE_GRACE = 1;
+const THRASH_MULT = 1.5;
+const REEL_DEFENSE_MULT = 0.5;
+
 export const MAX_SIM_TIME = 120;
 const SIM_DT = 1 / 60;
 
@@ -50,10 +54,6 @@ export interface FightState {
   time: number;
   outcome: Outcome | null;
 }
-
-const STRUGGLE_GRACE = 1;
-const THRASH_MULT = 1.2;
-const REEL_DEFENSE_MULT = 0.5;
 
 export class FightEngine {
   private fishAtk: number;
