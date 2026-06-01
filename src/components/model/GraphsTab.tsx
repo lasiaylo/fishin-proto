@@ -184,6 +184,7 @@ export function GraphsTab({
                 />
                 <Tooltip
                   labelStyle={{ color: "#111" }}
+                  // @ts-ignore
                   formatter={(v: number) => `${(v * 100).toFixed(1)}%`}
                   // @ts-ignore
                   labelFormatter={(v: number) => `Stat: ${v}`}

@@ -81,27 +81,49 @@ function phaseColor(phase: Phase): string {
   }
 }
 
-function buildDurationHistogram(results: FightResult[]) {
+function buildHistogram(
+  values: number[],
+  outcomes: Outcome[],
+  fmt: (v: number) => string,
+) {
   const binCount = Math.min(
     10,
-    Math.max(4, Math.ceil(Math.log2(results.length) + 1)),
+    Math.max(4, Math.ceil(Math.log2(values.length) + 1)),
   );
-  const durations = results.map((r) => r.duration);
-  const min = Math.min(...durations);
-  const max = Math.max(...durations);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
   const binWidth = min === max ? 1 : (max - min) / binCount;
   const count = min === max ? 1 : binCount;
   const bins = Array.from({ length: count }, (_, i) => ({
-    label: `${(min + i * binWidth).toFixed(1)}s`,
+    label: fmt(min + i * binWidth),
     wins: 0,
     losses: 0,
   }));
-  results.forEach((r) => {
-    const idx = Math.min(Math.floor((r.duration - min) / binWidth), count - 1);
-    if (r.outcome === Outcome.WIN) bins[idx].wins++;
+  values.forEach((v, i) => {
+    const idx = Math.min(Math.floor((v - min) / binWidth), count - 1);
+    if (outcomes[i] === Outcome.WIN) bins[idx].wins++;
     else bins[idx].losses++;
   });
   return bins;
+}
+
+function buildDurationHistogram(results: FightResult[]) {
+  return buildHistogram(
+    results.map((r) => r.duration),
+    results.map((r) => r.outcome),
+    (v) => `${v.toFixed(1)}s`,
+  );
+}
+
+function buildLineHPHistogram(results: FightResult[], lineHP: number) {
+  return buildHistogram(
+    results.map((r) => {
+      const last = r.history[r.history.length - 1];
+      return lineHP - (last?.tension ?? 0);
+    }),
+    results.map((r) => r.outcome),
+    (v) => v.toFixed(1),
+  );
 }
 
 export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
@@ -115,7 +137,7 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
   const [reelStr, setReelStr] = useState(INITIAL_PLAYER_STATE.attack);
   const [drag, setDrag] = useState(INITIAL_PLAYER_STATE.defense);
   const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
-  const [trialCount, setTrialCount] = useState(1);
+  const [trialCount, setTrialCount] = useState(20);
   const [engineCfg, setEngineCfg] = useState<FightConfig>(DEFAULT_FIGHT_CONFIG);
   const [results, setResults] = useState<FightResult[]>([]);
 
@@ -254,42 +276,84 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
           </Flex>
 
           {!single && (
-            <>
-              <Text size="2" weight="bold">
-                Fight Duration Distribution
-              </Text>
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart
-                  data={buildDurationHistogram(results)}
-                  barCategoryGap="10%"
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip
-                    // @ts-ignore
-                    formatter={(v: number, name: string) => [
-                      v,
-                      name === "wins" ? "Win" : "Loss",
-                    ]}
-                    labelStyle={{ color: "#000" }}
-                  />
-                  <Legend formatter={(v) => (v === "wins" ? "Win" : "Loss")} />
-                  <Bar
-                    dataKey="wins"
-                    stackId="a"
-                    fill="#4caf50"
-                    isAnimationActive={false}
-                  />
-                  <Bar
-                    dataKey="losses"
-                    stackId="a"
-                    fill="#f44336"
-                    isAnimationActive={false}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </>
+            <Flex gap="4" style={{ width: "100%" }}>
+              <Flex direction="column" gap="2" style={{ flex: 1, minWidth: 0 }}>
+                <Text size="2" weight="bold">
+                  Fight Duration Distribution
+                </Text>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart
+                    data={buildDurationHistogram(results)}
+                    barCategoryGap="10%"
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                    <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip
+                      // @ts-ignore
+                      formatter={(v: number, name: string) => [
+                        v,
+                        name === "wins" ? "Win" : "Loss",
+                      ]}
+                      labelStyle={{ color: "#000" }}
+                    />
+                    <Legend
+                      formatter={(v) => (v === "wins" ? "Win" : "Loss")}
+                    />
+                    <Bar
+                      dataKey="wins"
+                      stackId="a"
+                      fill="#4caf50"
+                      isAnimationActive={false}
+                    />
+                    <Bar
+                      dataKey="losses"
+                      stackId="a"
+                      fill="#f44336"
+                      isAnimationActive={false}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Flex>
+              <Flex direction="column" gap="2" style={{ flex: 1, minWidth: 0 }}>
+                <Text size="2" weight="bold">
+                  Remaining Line HP Distribution
+                </Text>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart
+                    data={buildLineHPHistogram(results, lineHP)}
+                    barCategoryGap="10%"
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                    <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip
+                      // @ts-ignore
+                      formatter={(v: number, name: string) => [
+                        v,
+                        name === "wins" ? "Win" : "Loss",
+                      ]}
+                      labelStyle={{ color: "#000" }}
+                    />
+                    <Legend
+                      formatter={(v) => (v === "wins" ? "Win" : "Loss")}
+                    />
+                    <Bar
+                      dataKey="wins"
+                      stackId="a"
+                      fill="#4caf50"
+                      isAnimationActive={false}
+                    />
+                    <Bar
+                      dataKey="losses"
+                      stackId="a"
+                      fill="#f44336"
+                      isAnimationActive={false}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Flex>
+            </Flex>
           )}
 
           <Text size="2" weight="bold">

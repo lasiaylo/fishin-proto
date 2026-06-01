@@ -61,6 +61,14 @@ export function PondView() {
   }, []);
 
   useEffect(() => {
+    const lures = shopUpgrades.filter(
+      (u) => u.stat === StatName.LURE && ownedLures.has(u.id),
+    );
+    const last = lures[lures.length - 1];
+    setSelectedLure(last?.id ?? null);
+  }, [ownedLures, shopUpgrades]);
+
+  useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === "1") {
         caughtFishRef.current = {

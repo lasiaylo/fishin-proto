@@ -9,6 +9,7 @@ export interface FightConfig {
   fightTimeRange: [number, number];
   baseSpeed: number;
   initStruggleDuration: [number, number];
+  distanceMultRange: [number, number];
 }
 
 export const DEFAULT_FIGHT_CONFIG: FightConfig = {
@@ -16,6 +17,7 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   fightTimeRange: [1.0, 4],
   initStruggleDuration: [1.8, 2.2],
   baseSpeed: 30,
+  distanceMultRange: [0.9, 1.1],
 };
 
 export const MAX_SIM_TIME = 120;
@@ -108,7 +110,10 @@ export class FightEngine {
   private setPhase(phase: Phase): void {
     this.phaseElapsed = 0;
     this.phase = phase;
-    this.distanceMult = randomRange(0.9, 1.1);
+    this.distanceMult = randomRange(
+      this.cfg.distanceMultRange[0],
+      this.cfg.distanceMultRange[1],
+    );
 
     if (phase === Phase.INIT_STRUGGLE) {
       this.phaseDuration = randomRange(

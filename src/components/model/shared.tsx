@@ -48,12 +48,14 @@ export function NumInput({
   onChange,
   min = 0,
   max = 999,
+  step,
 }: {
   label: string;
   value: number;
   onChange: (v: number) => void;
   min?: number;
   max?: number;
+  step?: number;
 }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -65,6 +67,7 @@ export function NumInput({
         value={value}
         min={min}
         max={max}
+        step={step}
         onChange={(e) => onChange(Number(e.target.value))}
         style={{ width: 68 }}
       />
@@ -160,6 +163,26 @@ export function EngineConfigRow({
               label="Base Speed"
               value={config.baseSpeed}
               onChange={(v) => onChange({ baseSpeed: v })}
+            />
+            <NumInput
+              label="Dist Mult Min"
+              value={config.distanceMultRange[0]}
+              onChange={(v) =>
+                onChange({
+                  distanceMultRange: [v, config.distanceMultRange[1]],
+                })
+              }
+              step={0.05}
+            />
+            <NumInput
+              label="Dist Mult Max"
+              value={config.distanceMultRange[1]}
+              onChange={(v) =>
+                onChange({
+                  distanceMultRange: [config.distanceMultRange[0], v],
+                })
+              }
+              step={0.05}
             />
           </Flex>
         </>
