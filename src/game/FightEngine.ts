@@ -51,7 +51,7 @@ export interface FightState {
 
 const STRUGGLE_GRACE = 1;
 const THRASH_MULT = 1.2;
-const REEL_DEFENSE_MULT = 2;
+const REEL_DEFENSE_MULT = 0.5;
 
 export class FightEngine {
   private fishAtk: number;
@@ -74,7 +74,7 @@ export class FightEngine {
 
   private cfg: FightConfig;
 
-  private atkMult: number = 1;
+  private distanceMult: number = 1;
 
   constructor(
     fishAttack: number,
@@ -108,7 +108,7 @@ export class FightEngine {
   private setPhase(phase: Phase): void {
     this.phaseElapsed = 0;
     this.phase = phase;
-    this.atkMult = randomRange(0.95, 1.05);
+    this.distanceMult = randomRange(0.9, 1.1);
 
     if (phase === Phase.INIT_STRUGGLE) {
       this.phaseDuration = randomRange(
@@ -124,27 +124,21 @@ export class FightEngine {
   }
 
   private getDelta(attack: number, defense: number): number {
-    const atk = attack * this.atkMult;
-    let delta = this.cfg.baseSpeed * (atk / (atk + defense));
-    return delta;
+    return this.cfg.baseSpeed * (attack / (attack + defense));
   }
 
   private applyMovement(dt: number, reel?: boolean): void {
     const isStruggle = this.phase !== Phase.REST;
-    const reelAtkMult = (reel ?? true) ? 1 : 0;
     const reelGrace = this.phaseElapsed <= STRUGGLE_GRACE;
     const reelThrashMult = reelGrace ? 1 : (reel ?? false) ? THRASH_MULT : 1;
     const reelDefenseMult = (reel ?? false) ? REEL_DEFENSE_MULT : 1;
     const rawDelta = isStruggle
-      ? this.getDelta(this.fishAtk, this.playerDef * reelDefenseMult)
-      : this.getDelta(
-          this.playerAtk * this.atkMult * reelAtkMult,
-          this.fishDef,
-        );
+      ? this.getDelta(this.fishAtk, this.playerDef) * reelDefenseMult
+      : -this.getDelta(this.playerAtk, this.fishDef);
 
-    const delta = rawDelta * dt;
+    const delta = rawDelta * this.distanceMult * dt;
     if (!isStruggle) {
-      this.distance += (reel ?? true) ? -delta : IDLE_SPEED * dt;
+      this.distance += (reel ?? true) ? delta : IDLE_SPEED * dt;
     } else {
       this.distance += delta;
     }
@@ -198,7 +192,7 @@ export class FightEngine {
     this.outcome = null;
     this.phaseElapsed = 0;
     this.phaseDuration = 0;
-    this.atkMult = 1;
+    this.distanceMult = 1;
     this.setPhase(Phase.INIT_STRUGGLE);
   }
 
