@@ -34,6 +34,7 @@ export function MyButton({
       delayDuration={0}
       side={"right"}
       maxWidth={"200px"}
+      disableHoverableContent
     >
       {button}
     </Tooltip>

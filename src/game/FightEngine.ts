@@ -49,6 +49,10 @@ export interface FightState {
   outcome: Outcome | null;
 }
 
+const STRUGGLE_GRACE = 1;
+const THRASH_MULT = 1.2;
+const REEL_DEFENSE_MULT = 2;
+
 export class FightEngine {
   private fishAtk: number;
   private fishDef: number;
@@ -128,9 +132,9 @@ export class FightEngine {
   private applyMovement(dt: number, reel?: boolean): void {
     const isStruggle = this.phase !== Phase.REST;
     const reelAtkMult = (reel ?? true) ? 1 : 0;
-    const reelGrace = this.phaseElapsed <= 0.5;
-    const reelThrashMult = reelGrace ? 1 : (reel ?? false) ? 1.5 : 1;
-    const reelDefenseMult = (reel ?? false) ? 1.5 : 1;
+    const reelGrace = this.phaseElapsed <= STRUGGLE_GRACE;
+    const reelThrashMult = reelGrace ? 1 : (reel ?? false) ? THRASH_MULT : 1;
+    const reelDefenseMult = (reel ?? false) ? REEL_DEFENSE_MULT : 1;
     const rawDelta = isStruggle
       ? this.getDelta(this.fishAtk, this.playerDef * reelDefenseMult)
       : this.getDelta(

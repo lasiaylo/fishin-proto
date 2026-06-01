@@ -10,7 +10,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { computeLureRates } from "../../game/EconomyModel";
+import { computeLureStats } from "../../game/EconomyModel";
 import type { FishData, ShopUpgradeData } from "../../util/csvLoader";
 import { COLORS, NumInput } from "./shared";
 import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
@@ -29,8 +29,8 @@ export function GraphsTab({
 }) {
   const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
   const [minStat, setMinStat] = useState(1);
-  const [maxStat, setMaxStat] = useState(15);
-  const [trialsPerFish, setTrialsPerFish] = useState(50);
+  const [maxStat, setMaxStat] = useState(40);
+  const [trialsPerFish, setTrialsPerFish] = useState(100);
   const [sweepData, setSweepData] = useState<object[]>([]);
   const [running, setRunning] = useState(false);
 
@@ -48,12 +48,15 @@ export function GraphsTab({
       const clampedMax = Math.max(minStat, maxStat);
 
       for (let s = clampedMin; s <= clampedMax; s++) {
-        const rates = computeLureRates(
+        const { rates, winRates } = computeLureStats(
           fishData,
           { attack: s, defense: s, lineHP, inventorySize: 3 },
           trialsPerFish,
         );
-        data.push({ stat: s, ...rates });
+        const winRateKeyed = Object.fromEntries(
+          Object.entries(winRates).map(([k, v]) => [`wr_${k}`, v]),
+        );
+        data.push({ stat: s, ...rates, ...winRateKeyed });
       }
 
       setSweepData(data);
@@ -93,47 +96,93 @@ export function GraphsTab({
       </Flex>
 
       {sweepData.length > 0 && (
-        <Flex direction="column" gap="2">
-          <Text size="2" weight="bold">
-            Lure Income Rate vs Attack & Defense
-          </Text>
-          <ResponsiveContainer width="100%" height={300}>
-            <ComposedChart data={sweepData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis
-                dataKey="stat"
-                type="number"
-                label={{
-                  value: "Attack / Defense",
-                  position: "insideBottomRight",
-                  offset: -4,
-                  fontSize: 11,
-                }}
-              />
-              <YAxis
-                allowDecimals
-                tickFormatter={(v: number) => +v.toFixed(2)}
-              />
-              <Tooltip
-                labelStyle={{ color: "#111" }}
-                // @ts-ignore
-                formatter={(v: number) => +v.toFixed(3)}
-                labelFormatter={(v: number) => `Stat: ${v}`}
-              />
-              <Legend />
-              {lureIds.map((id) => (
-                <Line
-                  key={id}
-                  dataKey={id}
-                  stroke={lureColors[id]}
-                  name={id === "" ? "No Lure" : id}
-                  {...lineProps}
-                  connectNulls={false}
+        <>
+          <Flex direction="column" gap="2">
+            <Text size="2" weight="bold">
+              Lure Income Rate vs Attack & Defense
+            </Text>
+            <ResponsiveContainer width="100%" height={300}>
+              <ComposedChart data={sweepData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                <XAxis
+                  dataKey="stat"
+                  type="number"
+                  label={{
+                    value: "Attack / Defense",
+                    position: "insideBottomRight",
+                    offset: -4,
+                    fontSize: 11,
+                  }}
                 />
-              ))}
-            </ComposedChart>
-          </ResponsiveContainer>
-        </Flex>
+                <YAxis
+                  allowDecimals
+                  // @ts-ignore
+                  tickFormatter={(v: number) => +v.toFixed(2)}
+                />
+                <Tooltip
+                  labelStyle={{ color: "#111" }}
+                  // @ts-ignore
+                  formatter={(v: number) => +v.toFixed(3)}
+                  // @ts-ignore
+                  labelFormatter={(v: number) => `Stat: ${v}`}
+                />
+                <Legend />
+                {lureIds.map((id) => (
+                  <Line
+                    key={id}
+                    dataKey={id}
+                    stroke={lureColors[id]}
+                    name={id === "" ? "No Lure" : id}
+                    {...lineProps}
+                    connectNulls={false}
+                  />
+                ))}
+              </ComposedChart>
+            </ResponsiveContainer>
+          </Flex>
+
+          <Flex direction="column" gap="2">
+            <Text size="2" weight="bold">
+              Lure Win Rate vs Attack & Defense
+            </Text>
+            <ResponsiveContainer width="100%" height={300}>
+              <ComposedChart data={sweepData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                <XAxis
+                  dataKey="stat"
+                  type="number"
+                  label={{
+                    value: "Attack / Defense",
+                    position: "insideBottomRight",
+                    offset: -4,
+                    fontSize: 11,
+                  }}
+                />
+                <YAxis
+                  domain={[0, 1]}
+                  tickFormatter={(v: number) => `${Math.round(v * 100)}%`}
+                />
+                <Tooltip
+                  labelStyle={{ color: "#111" }}
+                  formatter={(v: number) => `${(v * 100).toFixed(1)}%`}
+                  // @ts-ignore
+                  labelFormatter={(v: number) => `Stat: ${v}`}
+                />
+                <Legend />
+                {lureIds.map((id) => (
+                  <Line
+                    key={id}
+                    dataKey={`wr_${id}`}
+                    stroke={lureColors[id]}
+                    name={id === "" ? "No Lure" : id}
+                    {...lineProps}
+                    connectNulls={false}
+                  />
+                ))}
+              </ComposedChart>
+            </ResponsiveContainer>
+          </Flex>
+        </>
       )}
     </Flex>
   );
