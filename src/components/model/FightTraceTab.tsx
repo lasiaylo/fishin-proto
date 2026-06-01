@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Flex, Text, Button } from "@radix-ui/themes";
 import {
   ComposedChart,
@@ -26,21 +26,36 @@ import type { FishData } from "../../util/csvLoader";
 import { COLORS, NumInput, FishSelect, EngineConfigRow } from "./shared";
 import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
 
+const LINE_CHART_THRESHOLD = 20;
+
 interface FightResult {
   history: FrameRecord[];
   outcome: Outcome;
   duration: number;
 }
 
+function downsampleHistory(
+  history: FrameRecord[],
+  targetPoints = 300,
+): FrameRecord[] {
+  const N = Math.max(1, Math.floor(history.length / targetPoints));
+  if (N === 1) return history;
+  return history.filter((_, i) => i % N === 0 || i === history.length - 1);
+}
+
 function buildFightChartData(
   results: FightResult[],
 ): Array<Record<string, number | null>> {
   if (results.length === 0) return [];
-  const maxLen = Math.max(...results.map((r) => r.history.length));
+  const sampled = results.map((r) => ({
+    ...r,
+    history: downsampleHistory(r.history),
+  }));
+  const maxLen = Math.max(...sampled.map((r) => r.history.length));
   return Array.from({ length: maxLen }, (_, i) => {
-    const ref = results.find((r) => i < r.history.length)!;
+    const ref = sampled.find((r) => i < r.history.length)!;
     const entry: Record<string, number | null> = { time: ref.history[i].time };
-    results.forEach((r, j) => {
+    sampled.forEach((r, j) => {
       entry[`d${j}`] = i < r.history.length ? r.history[i].distance : null;
       entry[`t${j}`] = i < r.history.length ? r.history[i].tension : null;
     });
@@ -140,6 +155,9 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
   const [trialCount, setTrialCount] = useState(20);
   const [engineCfg, setEngineCfg] = useState<FightConfig>(DEFAULT_FIGHT_CONFIG);
   const [results, setResults] = useState<FightResult[]>([]);
+  const [isRunning, setIsRunning] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const cancelRef = useRef(false);
 
   useEffect(() => {
     const fish = fishData.find((f) => f.id === fishId);
@@ -151,7 +169,10 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
     }
   }, [fishId, fishData]);
 
-  function run() {
+  async function run() {
+    setIsRunning(true);
+    setProgress(0);
+    cancelRef.current = false;
     const engine = new FightEngine(
       fishSpeed,
       fishStrength,
@@ -161,30 +182,58 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
       lineHP,
       engineCfg,
     );
+    const CHUNK = 5;
     const out: FightResult[] = [];
-    for (let i = 0; i < trialCount; i++) {
-      engine.reset();
-      out.push(engine.runToCompletion(true));
+    for (let i = 0; i < trialCount; i += CHUNK) {
+      if (cancelRef.current) break;
+      const end = Math.min(i + CHUNK, trialCount);
+      for (let j = i; j < end; j++) {
+        engine.reset();
+        out.push(engine.runToCompletion(true));
+      }
+      setProgress(end);
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
     }
     setResults(out);
+    setIsRunning(false);
   }
 
-  const chartData = buildFightChartData(results);
-  const maxTime =
-    chartData.length > 0 ? (chartData[chartData.length - 1].time as number) : 0;
-  const xTicks = Array.from(
-    { length: Math.floor(maxTime / 0.5) + 1 },
-    (_, i) => +(i * 0.5).toFixed(1),
-  );
+  const showLineCharts = results.length <= LINE_CHART_THRESHOLD;
+  const showHistograms = results.length > 1;
   const single = results.length === 1;
-  const segments = single ? getPhaseSegments(results[0].history) : [];
+
+  const chartData = useMemo(
+    () => (showLineCharts ? buildFightChartData(results) : []),
+    [results, showLineCharts],
+  );
+  const xTicks = useMemo(() => {
+    const maxTime =
+      chartData.length > 0
+        ? (chartData[chartData.length - 1].time as number)
+        : 0;
+    return Array.from(
+      { length: Math.floor(maxTime / 0.5) + 1 },
+      (_, i) => +(i * 0.5).toFixed(1),
+    );
+  }, [chartData]);
+  const segments = useMemo(
+    () => (single ? getPhaseSegments(results[0].history) : []),
+    [results, single],
+  );
+  const durationHistogram = useMemo(
+    () => (results.length > 1 ? buildDurationHistogram(results) : []),
+    [results],
+  );
+  const lineHPHistogram = useMemo(
+    () => (results.length > 1 ? buildLineHPHistogram(results, lineHP) : []),
+    [results, lineHP],
+  );
+
   const wins = results.filter((r) => r.outcome === Outcome.WIN).length;
   const avgDur = results.length
     ? results.reduce((s, r) => s + r.duration, 0) / results.length
     : 0;
 
-  // @ts-ignore
-  // @ts-ignore
   return (
     <Flex direction="column" gap="4" pt="4">
       <EngineConfigRow
@@ -227,15 +276,44 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
         />
         <NumInput label="Defense" value={drag} onChange={setDrag} min={1} />
         <NumInput label="Line HP" value={lineHP} onChange={setLineHP} min={1} />
-        <NumInput
-          label="Trials"
-          value={trialCount}
-          onChange={setTrialCount}
-          min={1}
-          max={20}
-        />
-        <Button onClick={run}>Run</Button>
+        <Flex direction="column" gap="1">
+          <NumInput
+            label="Trials"
+            value={trialCount}
+            onChange={setTrialCount}
+            min={1}
+            max={500}
+          />
+          {trialCount > 50 && (
+            <Text size="1" color="orange">
+              Large count — histograms only, may take a few seconds
+            </Text>
+          )}
+        </Flex>
+        <Button onClick={run} disabled={isRunning}>
+          Run
+        </Button>
+        {isRunning && (
+          <Button
+            variant="outline"
+            color="red"
+            onClick={() => {
+              cancelRef.current = true;
+            }}
+          >
+            Stop
+          </Button>
+        )}
       </Flex>
+
+      {isRunning && (
+        <Flex gap="2" align="center">
+          <progress value={progress} max={trialCount} style={{ flex: 1 }} />
+          <Text size="1" color="gray">
+            {progress}/{trialCount}
+          </Text>
+        </Flex>
+      )}
 
       {results.length > 0 && (
         <>
@@ -275,17 +353,14 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
             )}
           </Flex>
 
-          {!single && (
+          {showHistograms && (
             <Flex gap="4" style={{ width: "100%" }}>
               <Flex direction="column" gap="2" style={{ flex: 1, minWidth: 0 }}>
                 <Text size="2" weight="bold">
                   Fight Duration Distribution
                 </Text>
                 <ResponsiveContainer width="100%" height={180}>
-                  <BarChart
-                    data={buildDurationHistogram(results)}
-                    barCategoryGap="10%"
-                  >
+                  <BarChart data={durationHistogram} barCategoryGap="10%">
                     <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                     <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                     <YAxis allowDecimals={false} />
@@ -320,10 +395,7 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
                   Remaining Line HP Distribution
                 </Text>
                 <ResponsiveContainer width="100%" height={180}>
-                  <BarChart
-                    data={buildLineHPHistogram(results, lineHP)}
-                    barCategoryGap="10%"
-                  >
+                  <BarChart data={lineHPHistogram} barCategoryGap="10%">
                     <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                     <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                     <YAxis allowDecimals={false} />
@@ -356,93 +428,106 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
             </Flex>
           )}
 
-          <Text size="2" weight="bold">
-            Line Distance
-          </Text>
-          <ResponsiveContainer width="100%" height={260}>
-            <ComposedChart data={chartData} syncId="fight">
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis
-                dataKey="time"
-                type="number"
-                unit="s"
-                ticks={xTicks}
-                domain={["dataMin", "dataMax"]}
-              />
-              <YAxis domain={[0, 100]} />
-              <Tooltip
-                // @ts-ignore
-                formatter={(v: number) => v.toFixed(2)}
-                // @ts-ignore
-                labelFormatter={(v: number) => `${v.toFixed(2)}s`}
-                labelStyle={{ color: "#000" }}
-              />
-              {segments.map((seg, i) => (
-                <ReferenceArea
-                  key={i}
-                  x1={seg.x1}
-                  x2={seg.x2}
-                  fill={phaseColor(seg.phase)}
-                  strokeOpacity={0}
-                />
-              ))}
-              <ReferenceLine y={0} stroke="#4caf50" strokeDasharray="4 2" />
-              <ReferenceLine y={100} stroke="#f44336" strokeDasharray="4 2" />
-              {results.map((_, i) => (
-                <Line
-                  key={i}
-                  dataKey={`d${i}`}
-                  stroke={COLORS[i % COLORS.length]}
-                  dot={false}
-                  strokeWidth={1.5}
-                  connectNulls={false}
-                  isAnimationActive={false}
-                  name={`Trial ${i + 1}`}
-                />
-              ))}
-            </ComposedChart>
-          </ResponsiveContainer>
+          {showLineCharts ? (
+            <>
+              <Text size="2" weight="bold">
+                Line Distance
+              </Text>
+              <ResponsiveContainer width="100%" height={260}>
+                <ComposedChart data={chartData} syncId="fight">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <XAxis
+                    dataKey="time"
+                    type="number"
+                    unit="s"
+                    ticks={xTicks}
+                    domain={["dataMin", "dataMax"]}
+                  />
+                  <YAxis domain={[0, 100]} />
+                  <Tooltip
+                    // @ts-ignore
+                    formatter={(v: number) => v.toFixed(2)}
+                    // @ts-ignore
+                    labelFormatter={(v: number) => `${v.toFixed(2)}s`}
+                    labelStyle={{ color: "#000" }}
+                  />
+                  {segments.map((seg, i) => (
+                    <ReferenceArea
+                      key={i}
+                      x1={seg.x1}
+                      x2={seg.x2}
+                      fill={phaseColor(seg.phase)}
+                      strokeOpacity={0}
+                    />
+                  ))}
+                  <ReferenceLine y={0} stroke="#4caf50" strokeDasharray="4 2" />
+                  <ReferenceLine
+                    y={100}
+                    stroke="#f44336"
+                    strokeDasharray="4 2"
+                  />
+                  {results.map((_, i) => (
+                    <Line
+                      key={i}
+                      dataKey={`d${i}`}
+                      stroke={COLORS[i % COLORS.length]}
+                      dot={false}
+                      strokeWidth={1.5}
+                      connectNulls={false}
+                      isAnimationActive={false}
+                      name={`Trial ${i + 1}`}
+                    />
+                  ))}
+                </ComposedChart>
+              </ResponsiveContainer>
 
-          <Text size="2" weight="bold">
-            Line Tension
-          </Text>
-          <ResponsiveContainer width="100%" height={180}>
-            <ComposedChart data={chartData} syncId="fight">
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis
-                dataKey="time"
-                type="number"
-                unit="s"
-                ticks={xTicks}
-                domain={["dataMin", "dataMax"]}
-              />
-              <YAxis domain={[0, lineHP]} />
-              <Tooltip
-                // @ts-ignore
-                formatter={(v: number) => v.toFixed(2)}
-                // @ts-ignore
-                labelFormatter={(v: number) => `${v.toFixed(2)}s`}
-                labelStyle={{ color: "#000" }}
-              />
-              <ReferenceLine
-                y={lineHP}
-                stroke="#f44336"
-                strokeDasharray="4 2"
-              />
-              {results.map((_, i) => (
-                <Line
-                  key={i}
-                  dataKey={`t${i}`}
-                  stroke={COLORS[i % COLORS.length]}
-                  dot={false}
-                  strokeWidth={1.5}
-                  connectNulls={false}
-                  isAnimationActive={false}
-                  name={`Trial ${i + 1}`}
-                />
-              ))}
-            </ComposedChart>
-          </ResponsiveContainer>
+              <Text size="2" weight="bold">
+                Line Tension
+              </Text>
+              <ResponsiveContainer width="100%" height={180}>
+                <ComposedChart data={chartData} syncId="fight">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <XAxis
+                    dataKey="time"
+                    type="number"
+                    unit="s"
+                    ticks={xTicks}
+                    domain={["dataMin", "dataMax"]}
+                  />
+                  <YAxis domain={[0, lineHP]} />
+                  <Tooltip
+                    // @ts-ignore
+                    formatter={(v: number) => v.toFixed(2)}
+                    // @ts-ignore
+                    labelFormatter={(v: number) => `${v.toFixed(2)}s`}
+                    labelStyle={{ color: "#000" }}
+                  />
+                  <ReferenceLine
+                    y={lineHP}
+                    stroke="#f44336"
+                    strokeDasharray="4 2"
+                  />
+                  {results.map((_, i) => (
+                    <Line
+                      key={i}
+                      dataKey={`t${i}`}
+                      stroke={COLORS[i % COLORS.length]}
+                      dot={false}
+                      strokeWidth={1.5}
+                      connectNulls={false}
+                      isAnimationActive={false}
+                      name={`Trial ${i + 1}`}
+                    />
+                  ))}
+                </ComposedChart>
+              </ResponsiveContainer>
+            </>
+          ) : (
+            <Text size="1" color="gray">
+              Line charts hidden for {results.length} trials — see aggregate
+              histograms above.
+            </Text>
+          )}
         </>
       )}
     </Flex>

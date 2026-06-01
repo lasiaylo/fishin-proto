@@ -17,8 +17,8 @@ export interface PlayerState extends PlayerStats {
 
 export const INITIAL_PLAYER_STATE: PlayerState = {
   wallet: 0,
-  attack: 3,
-  defense: 3,
+  attack: 5,
+  defense: 5,
   lineHP: 10,
   inventorySize: 3,
   ownedLures: new Set<string>(),

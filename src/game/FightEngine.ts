@@ -22,7 +22,7 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
 
 const STRUGGLE_GRACE = 1;
 const THRASH_MULT = 1.5;
-const REEL_DEFENSE_MULT = 0.5;
+const REEL_DEFENSE_MULT = 0.7;
 
 export const MAX_SIM_TIME = 120;
 const SIM_DT = 1 / 60;
