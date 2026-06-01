@@ -2,7 +2,12 @@ import React, { useEffect, useRef, useState } from "react";
 import { Flex, Text } from "@radix-ui/themes";
 import { MyButton } from "./MyButton";
 import { FishData, StatName } from "../util/csvLoader";
-import { getAvailableFish, useFish } from "../stores/fishStore";
+import { useFish } from "../stores/fishStore";
+import {
+  LocationEntry,
+  pickFishAtSpot,
+  useLocation,
+} from "../stores/locationStore";
 import {
   addFishToInventory,
   setSelectedLure,
@@ -22,12 +27,12 @@ enum GameState {
   Fighting = "fighting",
 }
 
-const SPOTS = ["shallow end", "deep end", "far end"] as const;
 const BITE_DELAY: [number, number] = [2, 6];
 const HOOK_WINDOW = 2;
 const RESULT_DURATION = 1000;
 
 export function PondView() {
+  const locations = useLocation();
   const invCount = usePlayer((s) => s.inventory.length);
   const inventorySize = usePlayer((s) => s.inventorySize);
   const ownedLures = usePlayer((s) => s.ownedLures);
@@ -149,14 +154,14 @@ export function PondView() {
     }, RESULT_DURATION);
   }
 
-  function handleSpotClick(spot: string) {
-    const fish = getAvailableFish();
-    if (fish.length === 0) {
+  function handleSpotClick(spotId: string, spot: LocationEntry) {
+    const fish = pickFishAtSpot(spotId);
+    if (!fish) {
       pushEvent(EventMsg.NO_FISH);
       return;
     }
-    caughtFishRef.current = fish[Math.floor(Math.random() * fish.length)];
-    pushEvent(EventMsg.CASTING(spot));
+    caughtFishRef.current = fish;
+    pushEvent(EventMsg.CASTING(spot.name));
     setGameState(GameState.Luring);
     setBiteReady(false);
     scheduleBite();
@@ -193,9 +198,9 @@ export function PondView() {
         <Text size={"1"} mt={"4"}>
           choose a fishing spot
         </Text>
-        {SPOTS.map((spot) => (
-          <MyButton key={spot} onClick={() => handleSpotClick(spot)}>
-            {spot}
+        {Object.entries(locations).map(([id, loc]) => (
+          <MyButton key={id} onClick={() => handleSpotClick(id, loc)}>
+            {loc.name}
           </MyButton>
         ))}
       </Flex>

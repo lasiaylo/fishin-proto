@@ -1,5 +1,5 @@
 export const EventMsg = {
-  WELCOME: "you're a ghost and you have a fishing rod.",
+  WELCOME: "you're a ghost and you must fish.",
   BITING: "something bites!",
   ESCAPED: "it got away...",
   NO_FISH: "no fish available to catch.",

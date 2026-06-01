@@ -17,13 +17,11 @@ interface ShopUpgrade extends ShopUpgradeData {
 
 interface ShopState {
   upgrades: ShopUpgrade[];
-  loaded: boolean;
 }
 
 export const useShop = create(
   subscribeWithSelector<ShopState>(() => ({
     upgrades: [],
-    loaded: false,
   })),
 );
 
@@ -48,7 +46,7 @@ function persistLevels(upgrades: ShopUpgrade[]) {
 export async function initShop() {
   const data = await loadShopData();
   const upgrades = data.map((d) => ({ ...d, level: 0 }));
-  useShop.setState({ upgrades, loaded: true });
+  useShop.setState({ upgrades });
 
   const saved = loadPersistedLevels();
   for (const [id, level] of Object.entries(saved)) {

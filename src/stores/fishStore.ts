@@ -5,25 +5,22 @@ import { usePlayer } from "./playerStore";
 
 interface FishState {
   allFish: FishData[];
-  loaded: boolean;
 }
 
 export const useFish = create(
   subscribeWithSelector<FishState>(() => ({
     allFish: [],
-    loaded: false,
   })),
 );
 
 export async function initFish() {
   const data = await loadFishData();
-  useFish.setState({ allFish: data, loaded: true });
+  useFish.setState({ allFish: data });
 }
 
 export function getAvailableFish(): FishData[] {
   const { allFish } = useFish.getState();
   const { selectedLure } = usePlayer.getState();
-  return allFish.filter(
-    (f) => !f.requiredLure || f.requiredLure === selectedLure,
-  );
+  const effectiveLure = selectedLure ?? "";
+  return allFish.filter((f) => f.requiredLure === effectiveLure);
 }

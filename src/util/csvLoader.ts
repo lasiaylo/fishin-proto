@@ -24,6 +24,18 @@ function parseStatName(value: string): StatName {
   throw new Error(`Invalid stat name in CSV: "${value}"`);
 }
 
+export interface LocationDisplayData {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface LocationFishEntry {
+  locationId: string;
+  fishId: string;
+  percent: number;
+}
+
 export interface ShopUpgradeData {
   id: string;
   name: string;
@@ -63,6 +75,28 @@ export async function loadFishData(): Promise<FishData[]> {
     defense: Number(row[3]),
     thrash: Number(row[4]) || 0,
     requiredLure: row[5] || "",
+  }));
+}
+
+export async function loadLocationDisplayData(): Promise<
+  LocationDisplayData[]
+> {
+  const res = await fetch("/data/LocationDisplay.csv");
+  const rows = parseCSV(await res.text());
+  return rows.slice(1).map((row) => ({
+    id: row[0],
+    name: row[1],
+    description: row[2] ?? "",
+  }));
+}
+
+export async function loadLocationGameplayData(): Promise<LocationFishEntry[]> {
+  const res = await fetch("/data/LocationGameplay.csv");
+  const rows = parseCSV(await res.text());
+  return rows.slice(1).map((row) => ({
+    locationId: row[0],
+    fishId: row[1],
+    percent: Number(row[2]),
   }));
 }
 
