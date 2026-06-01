@@ -1,5 +1,10 @@
 import { FightEngine, Outcome } from "./FightEngine";
-import { FishData, ShopUpgradeData, StatName } from "../util/csvLoader";
+import {
+  FishData,
+  LocationFishEntry,
+  ShopUpgradeData,
+  StatName,
+} from "../util/csvLoader";
 import { INITIAL_PLAYER_STATE, PlayerStats } from "../stores/playerStore";
 
 // ── Constants ──
@@ -62,10 +67,28 @@ function runTrials(
   };
 }
 
+function buildFishWeights(
+  fishByLure: Map<string, FishData[]>,
+  locationData: LocationFishEntry[],
+): Map<string, number> {
+  const fishPercent = new Map<string, number>(
+    locationData.map((e) => [e.fishId, e.percent]),
+  );
+  const weights = new Map<string, number>();
+  for (const pool of fishByLure.values()) {
+    const total = pool.reduce((s, f) => s + (fishPercent.get(f.id) ?? 1), 0);
+    for (const f of pool) {
+      weights.set(f.id, (fishPercent.get(f.id) ?? 1) / total);
+    }
+  }
+  return weights;
+}
+
 function evalLure(
   groups: Map<string, FishData[]>,
   player: PlayerStats,
   ownedLures: Set<string>,
+  fishWeights: Map<string, number>,
 ): {
   best: {
     lureId: string;
@@ -90,17 +113,19 @@ function evalLure(
 
     for (const fish of pool) {
       const { winCount, avgFightTime } = runTrials(fish, player, EVAL_TRIALS);
+      const weight = fishWeights.get(fish.id) ?? 1 / pool.length;
       catchTimes[fish.id] = avgFightTime;
       const avgEarnings = (fish.basePrice * winCount) / EVAL_TRIALS;
       earnings[fish.id] = avgEarnings / avgFightTime;
-      totalEarnings += avgEarnings;
-      totalFightTime += avgFightTime;
+      totalEarnings += avgEarnings * weight;
+      totalFightTime += avgFightTime * weight;
     }
 
-    const avgFightTime = totalFightTime / pool.length;
-    if (avgFightTime === 0) continue;
+    // totalFightTime and totalEarnings are already weighted averages (weights sum to 1)
+    if (totalFightTime === 0) continue;
 
-    const avgEarningsPerCast = totalEarnings / pool.length;
+    const avgFightTime = totalFightTime;
+    const avgEarningsPerCast = totalEarnings;
     const rate = avgEarningsPerCast / avgFightTime;
     lureRates[lureId] = rate;
 
@@ -193,6 +218,7 @@ function applyUpgrade(
 
 export function computeLureStats(
   fishData: FishData[],
+  locationData: LocationFishEntry[],
   player: PlayerStats,
   trialsPerFish: number,
 ): { rates: Record<string, number>; winRates: Record<string, number> } {
@@ -202,6 +228,7 @@ export function computeLureStats(
       fishByLure.set(fish.requiredLure, []);
     fishByLure.get(fish.requiredLure)!.push(fish);
   }
+  const fishWeights = buildFishWeights(fishByLure, locationData);
   const rates: Record<string, number> = {};
   const winRates: Record<string, number> = {};
 
@@ -211,15 +238,16 @@ export function computeLureStats(
     let totalWinRate = 0;
     for (const fish of pool) {
       const { winCount, avgFightTime } = runTrials(fish, player, trialsPerFish);
+      const weight = fishWeights.get(fish.id) ?? 1 / pool.length;
       const avgEarnings = (fish.basePrice * winCount) / trialsPerFish;
-      totalEarnings += avgEarnings;
-      totalFightTime += avgFightTime;
-      totalWinRate += winCount / trialsPerFish;
+      totalEarnings += avgEarnings * weight;
+      totalFightTime += avgFightTime * weight;
+      totalWinRate += (winCount / trialsPerFish) * weight;
     }
-    const avgFightTime = totalFightTime / pool.length;
-    if (avgFightTime === 0) continue;
-    rates[lureId] = totalEarnings / pool.length / avgFightTime;
-    winRates[lureId] = totalWinRate / pool.length;
+    // totalFightTime is already a weighted average (weights sum to 1)
+    if (totalFightTime === 0) continue;
+    rates[lureId] = totalEarnings / totalFightTime;
+    winRates[lureId] = totalWinRate;
   }
 
   return { rates, winRates };
@@ -228,6 +256,7 @@ export function computeLureStats(
 export function simulateEconomy(
   fishData: FishData[],
   shopData: ShopUpgradeData[],
+  locationData: LocationFishEntry[],
   start: PlayerStats = {
     ...INITIAL_PLAYER_STATE,
   },
@@ -248,6 +277,7 @@ export function simulateEconomy(
       fishByLure.set(fish.requiredLure, []);
     fishByLure.get(fish.requiredLure)!.push(fish);
   }
+  const fishWeights = buildFishWeights(fishByLure, locationData);
 
   for (let round = 1; round <= MAX_ROUNDS; round++) {
     const {
@@ -255,7 +285,7 @@ export function simulateEconomy(
       catchTimes: fishCatchTimes,
       earnings: fishEarnings,
       lureRates,
-    } = evalLure(fishByLure, player, ownedLures);
+    } = evalLure(fishByLure, player, ownedLures, fishWeights);
     if (!best) break;
 
     const { lureId, avgFightTime, avgEarningsPerCast } = best;

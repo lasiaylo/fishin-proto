@@ -3,8 +3,10 @@ import React, { useState, useEffect } from "react";
 import { Theme, Tabs, Flex, Text } from "@radix-ui/themes";
 import {
   loadFishData,
+  loadLocationGameplayData,
   loadShopGameplayData,
   type FishData,
+  type LocationFishEntry,
   type ShopUpgradeData,
 } from "../util/csvLoader";
 import { FightTraceTab } from "./model/FightTraceTab";
@@ -15,17 +17,21 @@ import { GraphsTab } from "./model/GraphsTab";
 export function ModelView() {
   const [fishData, setFishData] = useState<FishData[]>([]);
   const [shopData, setShopData] = useState<ShopUpgradeData[]>([]);
+  const [locationData, setLocationData] = useState<LocationFishEntry[]>([]);
   const [activeTab, setActiveTab] = useState(
     () => localStorage.getItem("debugTab") ?? "fight",
   );
 
   useEffect(() => {
-    Promise.all([loadFishData(), loadShopGameplayData()]).then(
-      ([fish, shop]) => {
-        setFishData(fish);
-        setShopData(shop);
-      },
-    );
+    Promise.all([
+      loadFishData(),
+      loadShopGameplayData(),
+      loadLocationGameplayData(),
+    ]).then(([fish, shop, location]) => {
+      setFishData(fish);
+      setShopData(shop);
+      setLocationData(location);
+    });
   }, []);
 
   return (
@@ -57,10 +63,18 @@ export function ModelView() {
               <ParamSweepTab fishData={fishData} />
             </Tabs.Content>
             <Tabs.Content value="economy">
-              <EconomyTab fishData={fishData} shopData={shopData} />
+              <EconomyTab
+                fishData={fishData}
+                shopData={shopData}
+                locationData={locationData}
+              />
             </Tabs.Content>
             <Tabs.Content value="graphs">
-              <GraphsTab fishData={fishData} shopData={shopData} />
+              <GraphsTab
+                fishData={fishData}
+                shopData={shopData}
+                locationData={locationData}
+              />
             </Tabs.Content>
           </Tabs.Root>
         )}

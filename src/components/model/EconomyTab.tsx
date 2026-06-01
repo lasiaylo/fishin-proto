@@ -14,7 +14,11 @@ import {
 } from "recharts";
 import { simulateEconomy, type EconomyRound } from "../../game/EconomyModel";
 import { StatName } from "../../util/csvLoader";
-import type { FishData, ShopUpgradeData } from "../../util/csvLoader";
+import type {
+  FishData,
+  LocationFishEntry,
+  ShopUpgradeData,
+} from "../../util/csvLoader";
 import { COLORS, NumInput } from "./shared";
 import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
 
@@ -78,9 +82,11 @@ function EconomyChart({
 export function EconomyTab({
   fishData,
   shopData,
+  locationData,
 }: {
   fishData: FishData[];
   shopData: ShopUpgradeData[];
+  locationData: LocationFishEntry[];
 }) {
   const [reelStr, setReelStr] = useState(INITIAL_PLAYER_STATE.attack);
   const [drag, setDrag] = useState(INITIAL_PLAYER_STATE.defense);
@@ -102,6 +108,7 @@ export function EconomyTab({
         simulateEconomy(
           fishData,
           shopData,
+          locationData,
           { attack: reelStr, defense: drag, lineHP, inventorySize },
           simMinutes,
         ),

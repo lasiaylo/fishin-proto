@@ -11,7 +11,11 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { computeLureStats } from "../../game/EconomyModel";
-import type { FishData, ShopUpgradeData } from "../../util/csvLoader";
+import type {
+  FishData,
+  LocationFishEntry,
+  ShopUpgradeData,
+} from "../../util/csvLoader";
 import { COLORS, NumInput } from "./shared";
 import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
 
@@ -23,9 +27,11 @@ const lineProps = {
 
 export function GraphsTab({
   fishData,
+  locationData,
 }: {
   fishData: FishData[];
   shopData: ShopUpgradeData[];
+  locationData: LocationFishEntry[];
 }) {
   const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
   const [minStat, setMinStat] = useState(1);
@@ -50,6 +56,7 @@ export function GraphsTab({
       for (let s = clampedMin; s <= clampedMax; s++) {
         const { rates, winRates } = computeLureStats(
           fishData,
+          locationData,
           { attack: s, defense: s, lineHP, inventorySize: 3 },
           trialsPerFish,
         );
@@ -63,7 +70,7 @@ export function GraphsTab({
       setRunning(false);
     }, 0);
     return () => clearTimeout(id);
-  }, [fishData, lineHP, minStat, maxStat, trialsPerFish]);
+  }, [fishData, locationData, lineHP, minStat, maxStat, trialsPerFish]);
 
   return (
     <Flex direction="column" gap="4" pt="4">
