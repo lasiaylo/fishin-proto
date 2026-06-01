@@ -73,6 +73,14 @@ export function GraphsTab({
     return () => clearTimeout(id);
   }, [fishData, locationData, lineHP, minStat, maxStat, trialsPerFish]);
 
+  const lureTable = lureIds.map((lureId) => {
+    const group = fishData.filter((f) => f.requiredLure === lureId);
+    const avgAtk = group.reduce((s, f) => s + f.attack, 0) / group.length;
+    const avgDef = group.reduce((s, f) => s + f.defense, 0) / group.length;
+    const avgPrice = group.reduce((s, f) => s + f.basePrice, 0) / group.length;
+    return { lureId, count: group.length, avgAtk, avgDef, avgPrice };
+  });
+
   return (
     <Flex direction="column" gap="4" pt="4">
       <Flex gap="3" wrap="wrap" align="end">
@@ -195,6 +203,69 @@ export function GraphsTab({
             </ResponsiveContainer>
           </Flex>
         </ChartGrid>
+      )}
+
+      {fishData.length > 0 && (
+        <Flex direction="column" gap="2">
+          <Text size="2" weight="bold">
+            Avg Lure Stats
+          </Text>
+          <table
+            style={{
+              borderCollapse: "collapse",
+              fontSize: 13,
+              width: "fit-content",
+            }}
+          >
+            <thead>
+              <tr>
+                {["Lure", "Fish", "Attack", "Defense", "Total", "Price"].map(
+                  (h) => (
+                    <th
+                      key={h}
+                      style={{
+                        textAlign: "left",
+                        padding: "4px 16px 4px 0",
+                        borderBottom: "1px solid #444",
+                        color: "#aaa",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ),
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {lureTable.map(({ lureId, count, avgAtk, avgDef, avgPrice }) => (
+                <tr key={lureId}>
+                  <td
+                    style={{
+                      padding: "3px 16px 3px 0",
+                      color: lureColors[lureId],
+                    }}
+                  >
+                    {lureId === "" ? "No Lure" : lureId}
+                  </td>
+                  <td style={{ padding: "3px 16px 3px 0" }}>{count}</td>
+                  <td style={{ padding: "3px 16px 3px 0" }}>
+                    {avgAtk.toFixed(1)}
+                  </td>
+                  <td style={{ padding: "3px 16px 3px 0" }}>
+                    {avgDef.toFixed(1)}
+                  </td>
+                  <td style={{ padding: "3px 16px 3px 0" }}>
+                    {(avgAtk + avgDef).toFixed(1)}
+                  </td>
+                  <td style={{ padding: "3px 16px 3px 0" }}>
+                    {avgPrice.toFixed(1)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Flex>
       )}
     </Flex>
   );
