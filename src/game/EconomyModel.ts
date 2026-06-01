@@ -117,7 +117,25 @@ function cheapestUpgrade(
   shopData: ShopUpgradeData[],
   levels: Record<string, number>,
   wallet: number,
+  player: PlayerStats,
 ): { upgrade: ShopUpgradeData; price: number } | null {
+  const statValue = (stat: StatName): number => {
+    switch (stat) {
+      case StatName.ATTACK:
+        return player.attack;
+      case StatName.DEFENSE:
+        return player.defense;
+      case StatName.HP:
+        return player.lineHP;
+      case StatName.INVENTORY:
+        return player.inventorySize;
+      case StatName.LURE:
+        return 0;
+      default:
+        return Infinity;
+    }
+  };
+
   let best: { upgrade: ShopUpgradeData; price: number } | null = null;
 
   for (const upgrade of shopData) {
@@ -125,12 +143,19 @@ function cheapestUpgrade(
     if (level >= upgrade.prices.length) continue;
     const price = upgrade.prices[level];
     if (price > wallet) continue;
-    if (upgrade.stat === StatName.LURE) {
-      return { upgrade, price };
+
+    if (upgrade.stat === StatName.LURE) return { upgrade, price };
+
+    if (best === null) {
+      best = { upgrade, price };
+      continue;
     }
-    if (
-      best === null ||
-      (price < best.price && best.upgrade.stat !== StatName.LURE)
+
+    if (price < best.price) {
+      best = { upgrade, price };
+    } else if (
+      price === best.price &&
+      statValue(upgrade.stat) < statValue(best.upgrade.stat)
     ) {
       best = { upgrade, price };
     }
@@ -177,7 +202,6 @@ export function computeLureRates(
       fishByLure.set(fish.requiredLure, []);
     fishByLure.get(fish.requiredLure)!.push(fish);
   }
-  const allLures = new Set(fishData.map((f) => f.requiredLure));
   const rates: Record<string, number> = {};
 
   for (const [lureId, pool] of fishByLure) {
@@ -240,14 +264,14 @@ export function simulateEconomy(
     const upgradesBought: string[] = [];
     let boughtLure = false;
 
-    let cheapUpgrade = cheapestUpgrade(shopData, levels, wallet);
+    let cheapUpgrade = cheapestUpgrade(shopData, levels, wallet, player);
     while (cheapUpgrade !== null) {
       const { upgrade, price } = cheapUpgrade;
       wallet -= price;
       applyUpgrade(upgrade, player, ownedLures, levels);
       upgradesBought.push(`${upgrade.id} L${levels[upgrade.id]}`);
       if (upgrade.stat === StatName.LURE) boughtLure = true;
-      cheapUpgrade = cheapestUpgrade(shopData, levels, wallet);
+      cheapUpgrade = cheapestUpgrade(shopData, levels, wallet, player);
     }
 
     rounds.push({
