@@ -126,7 +126,12 @@ export function PondView() {
       const state = fightRef.current!.tick(dt, reelRef.current);
       setFightState({ ...state });
       if (state.outcome !== null) {
-        console.log("Finished!", state.outcome, state.time);
+        console.log(
+          "Finished!",
+          state.outcome,
+          caughtFishRef.current?.name,
+          +state.time.toFixed(2),
+        );
         finishFight(state.outcome!);
         return;
       }

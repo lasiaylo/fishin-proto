@@ -50,6 +50,7 @@ function parseCSV(text: string): string[][] {
   return text
     .trim()
     .split("\n")
+    .filter((line) => line.trim() !== "")
     .map((line) => line.split(",").map((cell) => cell.trim()));
 }
 

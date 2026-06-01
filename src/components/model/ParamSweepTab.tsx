@@ -22,6 +22,7 @@ interface SweepCell {
   drag: number;
   winPct: number;
   avgTime: number;
+  avgRemainingHP: number;
 }
 
 function winPctToColor(pct: number): string {
@@ -30,6 +31,10 @@ function winPctToColor(pct: number): string {
 
 function avgTimeToColor(t: number): string {
   return `hsl(${240 - Math.min(t / 60, 1) * 240}, 60%, 40%)`;
+}
+
+function remainingHPToColor(pct: number): string {
+  return `hsl(${pct * 1.2}, 70%, 35%)`;
 }
 
 function Heatmap({
@@ -161,7 +166,7 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
     const acc = new Map(
       pairs.map(({ reel, drag }) => [
         `${reel}-${drag}`,
-        { wins: 0, totalTime: 0 },
+        { wins: 0, totalTime: 0, totalRemainingHP: 0 },
       ]),
     );
     const engines = new Map(
@@ -192,17 +197,21 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
           a.wins++;
         }
         a.totalTime += duration;
+        a.totalRemainingHP += lineHP - engine.tension;
       }
 
       const count = t + 1;
       setCells(
         pairs.map(({ reel, drag }) => {
-          const { wins, totalTime } = acc.get(`${reel}-${drag}`)!;
+          const { wins, totalTime, totalRemainingHP } = acc.get(
+            `${reel}-${drag}`,
+          )!;
           return {
             reel,
             drag,
             winPct: (wins / count) * 100,
             avgTime: totalTime / count,
+            avgRemainingHP: (totalRemainingHP / count / lineHP) * 100,
           };
         }),
       );
@@ -302,6 +311,15 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
             getValue={(c) => c.avgTime}
             format={(v) => (v >= MAX_SIM_TIME ? "—" : v.toFixed(1))}
             toColor={avgTimeToColor}
+          />
+          <Heatmap
+            title="Avg Remaining Line HP (%)"
+            reelVals={reelVals}
+            dragVals={dragVals}
+            cells={cells}
+            getValue={(c) => c.avgRemainingHP}
+            format={(v) => `${v.toFixed(0)}%`}
+            toColor={remainingHPToColor}
           />
         </Flex>
       )}
