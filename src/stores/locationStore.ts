@@ -4,9 +4,8 @@ import {
   loadLocationDisplayData,
   loadLocationGameplayData,
 } from "../util/csvLoader";
-import { useFish } from "./fishStore";
+import { randomizeFishStats, useFish } from "./fishStore";
 import { usePlayer } from "./playerStore";
-import { randomRange } from "../util/random";
 
 export interface LocationEntry {
   name: string;
@@ -38,8 +37,6 @@ export async function initLocations() {
   useLocation.setState(locations, true);
 }
 
-const HOOK_ROLL: [number, number] = [0.9, 1.1];
-
 export function pickFishAtSpot(locationId: string): FishData | null {
   const location = useLocation.getState()[locationId];
   if (!location) return null;
@@ -68,11 +65,5 @@ export function pickFishAtSpot(locationId: string): FishData | null {
     }
   }
 
-  const multiplier = randomRange(...HOOK_ROLL);
-  return {
-    ...selected,
-    attack: parseFloat((selected.attack * multiplier).toFixed(2)),
-    defense: parseFloat((selected.defense * multiplier).toFixed(2)),
-    basePrice: Math.round(selected.basePrice * multiplier),
-  };
+  return randomizeFishStats(selected);
 }

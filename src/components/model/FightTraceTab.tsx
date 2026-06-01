@@ -25,6 +25,7 @@ import {
 import type { FishData } from "../../util/csvLoader";
 import { COLORS, NumInput, FishSelect, EngineConfigRow } from "./shared";
 import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
+import { randomizeFishStats } from "../../stores/fishStore";
 
 const LINE_CHART_THRESHOLD = 20;
 
@@ -153,6 +154,7 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
   const [drag, setDrag] = useState(INITIAL_PLAYER_STATE.defense);
   const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
   const [trialCount, setTrialCount] = useState(20);
+  const [randomize, setRandomize] = useState(false);
   const [engineCfg, setEngineCfg] = useState<FightConfig>(DEFAULT_FIGHT_CONFIG);
   const [results, setResults] = useState<FightResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
@@ -173,23 +175,41 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
     setIsRunning(true);
     setProgress(0);
     cancelRef.current = false;
-    const engine = new FightEngine(
-      fishSpeed,
-      fishStrength,
-      fishThrash,
-      reelStr,
-      drag,
-      lineHP,
-      engineCfg,
-    );
+    const baseFish = fishData.find((f) => f.id === fishId);
+    const baseEngine = randomize
+      ? null
+      : new FightEngine(
+          fishSpeed,
+          fishStrength,
+          fishThrash,
+          reelStr,
+          drag,
+          lineHP,
+          engineCfg,
+        );
     const CHUNK = 5;
     const out: FightResult[] = [];
     for (let i = 0; i < trialCount; i += CHUNK) {
       if (cancelRef.current) break;
       const end = Math.min(i + CHUNK, trialCount);
       for (let j = i; j < end; j++) {
-        engine.reset();
-        out.push(engine.runToCompletion(true));
+        if (randomize && baseFish) {
+          const rf = randomizeFishStats(baseFish);
+          out.push(
+            new FightEngine(
+              rf.attack,
+              rf.defense,
+              rf.thrash,
+              reelStr,
+              drag,
+              lineHP,
+              engineCfg,
+            ).runToCompletion(true),
+          );
+        } else {
+          baseEngine!.reset();
+          out.push(baseEngine!.runToCompletion(true));
+        }
       }
       setProgress(end);
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
@@ -266,6 +286,17 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
           onChange={setFishBasePrice}
           min={0}
         />
+        <Flex align="center" gap="1">
+          <input
+            id="randomize-stats"
+            type="checkbox"
+            checked={randomize}
+            onChange={(e) => setRandomize(e.target.checked)}
+          />
+          <label htmlFor="randomize-stats">
+            <Text size="1">Randomize stats</Text>
+          </label>
+        </Flex>
       </Flex>
       <Flex gap="3" wrap="wrap" align="end">
         <NumInput

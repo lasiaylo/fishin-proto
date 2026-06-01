@@ -2,6 +2,19 @@ import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { FishData, loadFishData } from "../util/csvLoader";
 import { usePlayer } from "./playerStore";
+import { randomRange } from "../util/random";
+
+const HOOK_ROLL: [number, number] = [0.9, 1.1];
+
+export function randomizeFishStats(fish: FishData): FishData {
+  const multiplier = randomRange(...HOOK_ROLL);
+  return {
+    ...fish,
+    attack: parseFloat((fish.attack * multiplier).toFixed(2)),
+    defense: parseFloat((fish.defense * multiplier).toFixed(2)),
+    basePrice: Math.round(fish.basePrice * multiplier),
+  };
+}
 
 interface FishState {
   allFish: FishData[];

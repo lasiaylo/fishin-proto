@@ -13,6 +13,7 @@ import {
   setSelectedLure,
   usePlayer,
 } from "../stores/playerStore";
+import { randomizeFishStats } from "../stores/fishStore";
 import { useShop } from "../stores/shopStore";
 import { pushEvent } from "../stores/eventLogStore";
 import { EventMsg } from "../util/eventMessages";
@@ -70,17 +71,13 @@ export function PondView() {
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      if (e.key === "1") {
-        caughtFishRef.current = {
-          id: "debug",
-          name: "Debug Fish",
-          basePrice: 0,
-          attack: 5,
-          defense: 5,
-          thrash: 5,
-          requiredLure: "none",
-        };
-        startFight();
+      const digit = parseInt(e.key);
+      if (digit >= 1 && digit <= 7) {
+        const fish = useFish.getState().allFish[digit - 1];
+        if (fish) {
+          caughtFishRef.current = randomizeFishStats(fish);
+          startFight();
+        }
       }
       if (e.key === "=") {
         addFishToInventory(useFish.getState().allFish[0]);
