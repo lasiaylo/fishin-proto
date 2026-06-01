@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Flex, Text } from "@radix-ui/themes";
+import { Button, Flex, Grid, Text } from "@radix-ui/themes";
 import type { FishData } from "../../util/csvLoader";
 import type { FightConfig } from "../../game/FightEngine";
 
@@ -13,6 +13,34 @@ export const COLORS = [
   "#ff922b",
   "#a9e34b",
 ];
+
+export function ChartGrid({
+  gridLayout,
+  children,
+}: {
+  gridLayout: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Grid columns={gridLayout ? "2" : "1"} gap="4">
+      {children}
+    </Grid>
+  );
+}
+
+export function GridToggleButton({
+  gridLayout,
+  onToggle,
+}: {
+  gridLayout: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <Button variant="soft" onClick={onToggle}>
+      {gridLayout ? "List" : "Grid"}
+    </Button>
+  );
+}
 
 export function NumInput({
   label,

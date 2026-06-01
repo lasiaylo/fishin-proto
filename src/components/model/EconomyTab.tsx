@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Flex, Text, Button, Table } from "@radix-ui/themes";
+import { Flex, Text, Table, Button } from "@radix-ui/themes";
 import {
   ComposedChart,
   Line,
@@ -19,7 +19,7 @@ import type {
   LocationFishEntry,
   ShopUpgradeData,
 } from "../../util/csvLoader";
-import { COLORS, NumInput } from "./shared";
+import { ChartGrid, COLORS, GridToggleButton, NumInput } from "./shared";
 import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
 
 const lineProps = {
@@ -270,9 +270,10 @@ export function EconomyTab({
         <Button onClick={runSim} disabled={running}>
           {running ? "Running…" : "Run Economy"}
         </Button>
-        <Button variant="soft" onClick={() => setGridLayout((g) => !g)}>
-          {gridLayout ? "List" : "Grid"}
-        </Button>
+        <GridToggleButton
+          gridLayout={gridLayout}
+          onToggle={() => setGridLayout((g) => !g)}
+        />
       </Flex>
 
       {rounds.length > 0 && (
@@ -281,13 +282,7 @@ export function EconomyTab({
             {rounds.length} rounds simulated
           </Text>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: gridLayout ? "1fr 1fr" : "1fr",
-              gap: 16,
-            }}
-          >
+          <ChartGrid gridLayout={gridLayout}>
             <EconomyChart
               title="Income Rate ($/s)"
               data={rateData}
@@ -466,7 +461,7 @@ export function EconomyTab({
                 </Table.Root>
               </Flex>
             )}
-          </div>
+          </ChartGrid>
         </>
       )}
     </Flex>

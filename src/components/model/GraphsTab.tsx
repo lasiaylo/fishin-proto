@@ -16,7 +16,7 @@ import type {
   LocationFishEntry,
   ShopUpgradeData,
 } from "../../util/csvLoader";
-import { COLORS, NumInput } from "./shared";
+import { ChartGrid, COLORS, GridToggleButton, NumInput } from "./shared";
 import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
 
 const lineProps = {
@@ -39,6 +39,7 @@ export function GraphsTab({
   const [trialsPerFish, setTrialsPerFish] = useState(100);
   const [sweepData, setSweepData] = useState<object[]>([]);
   const [running, setRunning] = useState(false);
+  const [gridLayout, setGridLayout] = useState(true);
 
   const lureIds = [...new Set(fishData.map((f) => f.requiredLure))];
   const lureColors = Object.fromEntries(
@@ -100,10 +101,14 @@ export function GraphsTab({
             Running…
           </Text>
         )}
+        <GridToggleButton
+          gridLayout={gridLayout}
+          onToggle={() => setGridLayout((g) => !g)}
+        />
       </Flex>
 
       {sweepData.length > 0 && (
-        <>
+        <ChartGrid gridLayout={gridLayout}>
           <Flex direction="column" gap="2">
             <Text size="2" weight="bold">
               Lure Income Rate vs Attack & Defense
@@ -189,7 +194,7 @@ export function GraphsTab({
               </ComposedChart>
             </ResponsiveContainer>
           </Flex>
-        </>
+        </ChartGrid>
       )}
     </Flex>
   );
