@@ -125,7 +125,11 @@ function Heatmap({
 }
 
 export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
-  const [fishId, setFishId] = useState(fishData[0]?.id ?? "");
+  const [fishId, setFishId] = useState(() => {
+    const stored = localStorage.getItem("debug_selectedFishId");
+    if (stored && fishData.some((f) => f.id === stored)) return stored;
+    return fishData[0]?.id ?? "";
+  });
   const [fishSpeed, setFishSpeed] = useState(fishData[0]?.attack ?? 0);
   const [fishStrength, setFishStrength] = useState(fishData[0]?.defense ?? 0);
   const [fishThrash, setFishThrash] = useState(fishData[0]?.thrash ?? 0);
@@ -134,14 +138,18 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
   );
   const [lineHP, setLineHP] = useState(10);
   const [reelMin, setReelMin] = useState(INITIAL_PLAYER_STATE.attack);
-  const [reelMax, setReelMax] = useState(INITIAL_PLAYER_STATE.attack + 8);
+  const [reelMax, setReelMax] = useState(INITIAL_PLAYER_STATE.attack + 10);
   const dragMin = reelMin;
   const dragMax = reelMax;
-  const [trialsPerCell, setTrialsPerCell] = useState(100);
+  const [trialsPerCell, setTrialsPerCell] = useState(400);
   const [engineCfg, setEngineCfg] = useState<FightConfig>(DEFAULT_FIGHT_CONFIG);
   const [cells, setCells] = useState<SweepCell[]>([]);
   const [running, setRunning] = useState(false);
   const cancelRef = useRef(false);
+
+  useEffect(() => {
+    localStorage.setItem("debug_selectedFishId", fishId);
+  }, [fishId]);
 
   useEffect(() => {
     const fish = fishData.find((f) => f.id === fishId);

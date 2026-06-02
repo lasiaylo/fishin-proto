@@ -2,27 +2,33 @@ import { randomRange } from "../util/random";
 
 const MAX_DISTANCE = 100;
 const START_DISTANCE = MAX_DISTANCE / 2;
-const IDLE_SPEED = 5;
+const IDLE_SPEED = 8;
 
 export interface FightConfig {
   restTimeRange: [number, number];
   fightTimeRange: [number, number];
   baseSpeed: number;
-  initStruggleDuration: [number, number];
+  startStruggleWeight: number;
+  minStruggleDistance: number;
   distanceMultRange: [number, number];
+  critChance: number;
+  critMult: number;
 }
 
 export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   restTimeRange: [2, 4],
   fightTimeRange: [1.0, 4],
-  initStruggleDuration: [1.8, 2.2],
-  baseSpeed: 30,
+  startStruggleWeight: 0.5,
+  minStruggleDistance: 5,
+  baseSpeed: 22.5,
   distanceMultRange: [0.9, 1.1],
+  critChance: 0.15,
+  critMult: 1.5,
 };
 
 const STRUGGLE_GRACE = 1;
-const THRASH_MULT = 1.5;
-const REEL_DEFENSE_MULT = 0.6;
+const THRASH_MULT = 1.2;
+const REEL_DEFENSE_MULT = 0.5;
 
 export const MAX_SIM_TIME = 120;
 const SIM_DT = 1 / 60;
@@ -30,7 +36,6 @@ const SIM_DT = 1 / 60;
 export enum Phase {
   REST = "REST",
   STRUGGLE = "STRUGGLE",
-  INIT_STRUGGLE = "INIT_STRUGGLE",
 }
 
 export enum Outcome {
@@ -45,6 +50,7 @@ export interface FrameRecord {
   distance: number;
   tension: number;
   phase: Phase;
+  crit: boolean;
 }
 
 export interface FightState {
@@ -77,6 +83,7 @@ export class FightEngine {
   private cfg: FightConfig;
 
   private distanceMult: number = 1;
+  private critActive: boolean = false;
 
   constructor(
     fishAttack: number,
@@ -104,7 +111,13 @@ export class FightEngine {
     this.phaseDuration = 0;
     this.outcome = null;
 
-    this.setPhase(Phase.INIT_STRUGGLE);
+    this.setPhase(this.randomStartPhase());
+  }
+
+  private randomStartPhase(): Phase {
+    return Math.random() < this.cfg.startStruggleWeight
+      ? Phase.STRUGGLE
+      : Phase.REST;
   }
 
   private setPhase(phase: Phase): void {
@@ -115,16 +128,21 @@ export class FightEngine {
       this.cfg.distanceMultRange[1],
     );
 
-    if (phase === Phase.INIT_STRUGGLE) {
-      this.phaseDuration = randomRange(
-        this.cfg.initStruggleDuration[0],
-        this.cfg.initStruggleDuration[1],
+    if (phase === Phase.REST) {
+      this.critActive =
+        Math.random() < (this.cfg.critChance * this.tension) / this.lineHp;
+      console.log(
+        "critchance",
+        this.tension,
+        this.lineHp,
+        (this.tension / this.lineHp) * this.cfg.critChance,
       );
-      return;
+    } else {
+      this.critActive = false;
     }
+
     const range =
       phase === Phase.REST ? this.cfg.restTimeRange : this.cfg.fightTimeRange;
-
     this.phaseDuration = randomRange(range[0], range[1]);
   }
 
@@ -141,7 +159,8 @@ export class FightEngine {
       ? this.getDelta(this.fishAtk, this.playerDef) * reelDefenseMult
       : -this.getDelta(this.playerAtk, this.fishDef);
 
-    const delta = rawDelta * this.distanceMult * dt;
+    const critMult = !isStruggle && this.critActive ? this.cfg.critMult : 1;
+    const delta = rawDelta * this.distanceMult * critMult * dt;
     if (!isStruggle) {
       this.distance += (reel ?? true) ? delta : IDLE_SPEED * dt;
     } else {
@@ -164,7 +183,13 @@ export class FightEngine {
 
       this.applyMovement(dt1, reel);
 
-      const next = this.phase === Phase.REST ? Phase.STRUGGLE : Phase.REST;
+      const wouldStruggle = this.phase === Phase.REST;
+      const next =
+        wouldStruggle && this.distance < this.cfg.minStruggleDistance
+          ? Phase.REST
+          : wouldStruggle
+            ? Phase.STRUGGLE
+            : Phase.REST;
       this.setPhase(next);
 
       this.applyMovement(dt2, reel);
@@ -198,7 +223,8 @@ export class FightEngine {
     this.phaseElapsed = 0;
     this.phaseDuration = 0;
     this.distanceMult = 1;
-    this.setPhase(Phase.INIT_STRUGGLE);
+    this.critActive = false;
+    this.setPhase(this.randomStartPhase());
   }
 
   runToCompletion(recordHistory = false): {
@@ -214,6 +240,7 @@ export class FightEngine {
         distance: this.distance,
         tension: this.tension,
         phase: this.phase,
+        crit: this.critActive,
       });
     }
 
@@ -226,6 +253,7 @@ export class FightEngine {
           distance: this.distance,
           tension: this.tension,
           phase: this.phase,
+          crit: this.critActive,
         });
       }
 

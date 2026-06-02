@@ -92,8 +92,6 @@ function phaseColor(phase: Phase): string {
       return "rgba(0,255,0,0.08)";
     case Phase.STRUGGLE:
       return "rgba(255,0,0,0.12)";
-    case Phase.INIT_STRUGGLE:
-      return "rgba(255,140,0,0.40)";
   }
 }
 
@@ -143,7 +141,11 @@ function buildLineHPHistogram(results: FightResult[], lineHP: number) {
 }
 
 export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
-  const [fishId, setFishId] = useState(fishData[0]?.id ?? "");
+  const [fishId, setFishId] = useState(() => {
+    const stored = localStorage.getItem("debug_selectedFishId");
+    if (stored && fishData.some((f) => f.id === stored)) return stored;
+    return fishData[0]?.id ?? "";
+  });
   const [fishSpeed, setFishSpeed] = useState(fishData[0]?.attack ?? 0);
   const [fishStrength, setFishStrength] = useState(fishData[0]?.defense ?? 0);
   const [fishThrash, setFishThrash] = useState(fishData[0]?.thrash ?? 0);
@@ -160,6 +162,10 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const cancelRef = useRef(false);
+
+  useEffect(() => {
+    localStorage.setItem("debug_selectedFishId", fishId);
+  }, [fishId]);
 
   useEffect(() => {
     const fish = fishData.find((f) => f.id === fishId);
@@ -250,6 +256,9 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
   );
 
   const wins = results.filter((r) => r.outcome === Outcome.WIN).length;
+  const critWins = results.filter(
+    (r) => r.outcome === Outcome.WIN && r.history[r.history.length - 1]?.crit,
+  ).length;
   const avgDur = results.length
     ? results.reduce((s, r) => s + r.duration, 0) / results.length
     : 0;
@@ -351,8 +360,8 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
           <Flex gap="4" align="center" wrap="wrap">
             <Text size="2" color="gray">
               {single
-                ? `${results[0].outcome} · ${results[0].duration.toFixed(1)}s`
-                : `${wins}/${results.length} wins (${((wins / results.length) * 100).toFixed(0)}%) · avg ${avgDur.toFixed(1)}s`}
+                ? `${results[0].outcome}${results[0].history[results[0].history.length - 1]?.crit ? " · crit" : ""} · ${results[0].duration.toFixed(1)}s`
+                : `${wins}/${results.length} wins (${((wins / results.length) * 100).toFixed(0)}%) · ${wins ? ((critWins / wins) * 100).toFixed(0) : 0}% crit wins · avg ${avgDur.toFixed(1)}s`}
             </Text>
             {single && (
               <Flex gap="3" align="center">
@@ -360,7 +369,6 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
                   [
                     { phase: Phase.REST, label: "Rest" },
                     { phase: Phase.STRUGGLE, label: "Struggle" },
-                    { phase: Phase.INIT_STRUGGLE, label: "Init Struggle" },
                   ] as const
                 ).map(({ phase, label }) => (
                   <Flex key={phase} gap="1" align="center">
@@ -398,7 +406,7 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
                     <Tooltip
                       // @ts-ignore
                       formatter={(v: number, name: string) => [
-                        v,
+                        `${v} (${((v / results.length) * 100).toFixed(1)}%)`,
                         name === "wins" ? "Win" : "Loss",
                       ]}
                       labelStyle={{ color: "#000" }}
@@ -433,7 +441,7 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
                     <Tooltip
                       // @ts-ignore
                       formatter={(v: number, name: string) => [
-                        v,
+                        `${v} (${((v / results.length) * 100).toFixed(1)}%)`,
                         name === "wins" ? "Win" : "Loss",
                       ]}
                       labelStyle={{ color: "#000" }}

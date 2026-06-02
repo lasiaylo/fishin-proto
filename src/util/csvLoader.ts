@@ -71,10 +71,10 @@ export async function loadFishData(): Promise<FishData[]> {
   return gameplayRows.slice(1).map((row) => ({
     id: row[0],
     name: displayById.get(row[0]) ?? row[0],
-    basePrice: Number(row[1]),
-    attack: Number(row[2]),
-    defense: Number(row[3]),
-    thrash: Number(row[4]) || 0,
+    attack: Number(row[1]),
+    defense: Number(row[2]),
+    thrash: Number(row[3]) || 0,
+    basePrice: Number(row[4]),
     requiredLure: row[5] || "",
   }));
 }
