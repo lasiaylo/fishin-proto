@@ -248,7 +248,11 @@ export function computeLureStats(
   locationData: LocationFishEntry[],
   player: PlayerStats,
   trialsPerFish: number,
-): { rates: Record<string, number>; winRates: Record<string, number> } {
+): {
+  rates: Record<string, number>;
+  winRates: Record<string, number>;
+  remainingHPs: Record<string, number>;
+} {
   const fishByLure = new Map<string, FishData[]>();
   for (const fish of fishData) {
     if (!fishByLure.has(fish.requiredLure))
@@ -258,26 +262,40 @@ export function computeLureStats(
   const fishWeights = buildFishWeights(fishByLure, locationData);
   const rates: Record<string, number> = {};
   const winRates: Record<string, number> = {};
+  const remainingHPs: Record<string, number> = {};
 
   for (const [lureId, pool] of fishByLure) {
     let totalEarnings = 0;
     let totalFightTime = 0;
     let totalWinRate = 0;
+    let totalRemainingHP = 0;
+    let totalWinWeight = 0;
     for (const fish of pool) {
-      const { winCount, avgFightTime } = runTrials(fish, player, trialsPerFish);
+      const { winCount, avgFightTime, avgWinTension } = runTrials(
+        fish,
+        player,
+        trialsPerFish,
+      );
       const weight = fishWeights.get(fish.id) ?? 1 / pool.length;
       const avgEarnings = (fish.basePrice * winCount) / trialsPerFish;
       totalEarnings += avgEarnings * weight;
       totalFightTime += avgFightTime * weight;
       totalWinRate += (winCount / trialsPerFish) * weight;
+      if (winCount > 0) {
+        totalRemainingHP +=
+          ((player.lineHP - avgWinTension) / player.lineHP) * 100 * weight;
+        totalWinWeight += weight;
+      }
     }
     // totalFightTime is already a weighted average (weights sum to 1)
     if (totalFightTime === 0) continue;
     rates[lureId] = totalEarnings / totalFightTime;
     winRates[lureId] = totalWinRate;
+    if (totalWinWeight > 0)
+      remainingHPs[lureId] = totalRemainingHP / totalWinWeight;
   }
 
-  return { rates, winRates };
+  return { rates, winRates, remainingHPs };
 }
 
 export function simulateEconomy(
