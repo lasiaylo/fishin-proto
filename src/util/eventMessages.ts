@@ -4,6 +4,7 @@ export const EventMsg = {
   ESCAPED: "it got away...",
   NO_FISH: "no fish available to catch.",
 
+  CRIT: "crit!",
   HOOKED: () => `hooked a fish!`,
   CAUGHT: (name: string) => `caught a ${name}!`,
   SOLD_FISH: (name: string, price: number) => `sold ${name} for $${price}`,

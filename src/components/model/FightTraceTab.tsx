@@ -20,7 +20,7 @@ import {
   Outcome,
   DEFAULT_FIGHT_CONFIG,
   type FightConfig,
-  type FrameRecord,
+  type FightState,
 } from "../../game/FightEngine";
 import type { FishData } from "../../util/csvLoader";
 import { COLORS, NumInput, FishSelect, EngineConfigRow } from "./shared";
@@ -30,15 +30,15 @@ import { randomizeFishStats } from "../../stores/fishStore";
 const LINE_CHART_THRESHOLD = 20;
 
 interface FightResult {
-  history: FrameRecord[];
+  history: FightState[];
   outcome: Outcome;
   duration: number;
 }
 
 function downsampleHistory(
-  history: FrameRecord[],
+  history: FightState[],
   targetPoints = 300,
-): FrameRecord[] {
+): FightState[] {
   const N = Math.max(1, Math.floor(history.length / targetPoints));
   if (N === 1) return history;
   return history.filter((_, i) => i % N === 0 || i === history.length - 1);
@@ -65,7 +65,7 @@ function buildFightChartData(
 }
 
 function getPhaseSegments(
-  history: FrameRecord[],
+  history: FightState[],
 ): Array<{ x1: number; x2: number; phase: Phase }> {
   if (history.length < 2) return [];
   const segments: Array<{ x1: number; x2: number; phase: Phase }> = [];

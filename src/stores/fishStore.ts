@@ -8,11 +8,15 @@ const HOOK_ROLL: [number, number] = [0.9, 1.1];
 
 export function randomizeFishStats(fish: FishData): FishData {
   const multiplier = randomRange(...HOOK_ROLL);
+  const randomizedPrice = Math.round(fish.basePrice * multiplier);
   return {
     ...fish,
     attack: parseFloat((fish.attack * multiplier).toFixed(2)),
     defense: parseFloat((fish.defense * multiplier).toFixed(2)),
-    basePrice: Math.round(fish.basePrice * multiplier),
+    basePrice:
+      fish.id === "FISH_1"
+        ? Math.max(fish.basePrice, randomizedPrice)
+        : randomizedPrice,
   };
 }
 

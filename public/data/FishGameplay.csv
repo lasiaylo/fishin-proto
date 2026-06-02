@@ -1,8 +1,8 @@
 ID, Attack, Defense, Thrash, BasePrice, RequiredLure
-FISH_1, 2, 4, 1, 2,
+FISH_1, 2, 4, 0.8, 4,
 
-FISH_2, 7, 7, 1.1, 6, LURE_1
-FISH_3, 8, 8, 1.1, 10, LURE_1
+FISH_2, 6, 6, 0.8, 10, LURE_1
+FISH_3, 7, 7, 1.1, 15, LURE_1
 
 FISH_4, 10, 10, 1.5, 20, LURE_2
 FISH_5, 8, 10, 1, 30, LURE_2

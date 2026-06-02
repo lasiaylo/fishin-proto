@@ -50,6 +50,7 @@ export function PondView() {
   const rafRef = useRef<number>(0);
   const lastTimeRef = useRef<number | null>(null);
   const reelRef = useRef<boolean>(false);
+  const prevCritRef = useRef<boolean>(false);
   const biteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hookWindowRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -122,6 +123,7 @@ export function PondView() {
 
     pushEvent(EventMsg.HOOKED());
     lastTimeRef.current = null;
+    prevCritRef.current = false;
 
     function loop(timestamp: number) {
       if (lastTimeRef.current === null) lastTimeRef.current = timestamp;
@@ -129,6 +131,8 @@ export function PondView() {
       lastTimeRef.current = timestamp;
 
       const state = fightRef.current!.tick(dt, reelRef.current);
+      if (state.crit && !prevCritRef.current) pushEvent(EventMsg.CRIT);
+      prevCritRef.current = state.crit;
       setFightState({ ...state });
       if (state.outcome !== null) {
         console.log(

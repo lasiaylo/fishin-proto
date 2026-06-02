@@ -19,7 +19,7 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   restTimeRange: [2, 4],
   fightTimeRange: [1.0, 4],
   startStruggleWeight: 0.5,
-  minStruggleDistance: 5,
+  minStruggleDistance: 10,
   baseSpeed: 22.5,
   distanceMultRange: [0.9, 1.1],
   critChance: 0.15,
@@ -45,20 +45,13 @@ export enum Outcome {
   TIMEOUT = "TIMEOUT",
 }
 
-export interface FrameRecord {
-  time: number;
-  distance: number;
-  tension: number;
-  phase: Phase;
-  crit: boolean;
-}
-
 export interface FightState {
   distance: number;
   tension: number;
   phase: Phase;
   time: number;
   outcome: Outcome | null;
+  crit: boolean;
 }
 
 export class FightEngine {
@@ -131,12 +124,6 @@ export class FightEngine {
     if (phase === Phase.REST) {
       this.critActive =
         Math.random() < (this.cfg.critChance * this.tension) / this.lineHp;
-      console.log(
-        "critchance",
-        this.tension,
-        this.lineHp,
-        (this.tension / this.lineHp) * this.cfg.critChance,
-      );
     } else {
       this.critActive = false;
     }
@@ -228,33 +215,21 @@ export class FightEngine {
   }
 
   runToCompletion(recordHistory = false): {
-    history: FrameRecord[];
+    history: FightState[];
     outcome: Outcome;
     duration: number;
   } {
-    const history: FrameRecord[] = [];
+    const history: FightState[] = [];
 
     if (recordHistory) {
-      history.push({
-        time: this.fightElapsed,
-        distance: this.distance,
-        tension: this.tension,
-        phase: this.phase,
-        crit: this.critActive,
-      });
+      history.push(this.getState());
     }
 
     while (this.fightElapsed < MAX_SIM_TIME) {
       this.step(SIM_DT);
 
       if (recordHistory) {
-        history.push({
-          time: this.fightElapsed,
-          distance: this.distance,
-          tension: this.tension,
-          phase: this.phase,
-          crit: this.critActive,
-        });
+        history.push(this.getState());
       }
 
       if (this.outcome !== null) {
@@ -272,6 +247,7 @@ export class FightEngine {
       phase: this.phase,
       time: this.fightElapsed,
       outcome: this.outcome,
+      crit: this.critActive,
     };
   }
 }
