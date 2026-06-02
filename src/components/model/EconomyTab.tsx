@@ -158,6 +158,26 @@ export function EconomyTab({
     ),
   }));
 
+  const lureWinRateData = rounds.map((r) => ({
+    time: r.cumulativeTime,
+    ...Object.fromEntries(
+      Object.entries(r.lureWinRates).map(([id, wr]) => [
+        id,
+        parseFloat((wr * 100).toFixed(2)),
+      ]),
+    ),
+  }));
+
+  const lureRemainingHPData = rounds.map((r) => ({
+    time: r.cumulativeTime,
+    ...Object.fromEntries(
+      Object.entries(r.lureRemainingHP).map(([id, hp]) => [
+        id,
+        parseFloat(hp.toFixed(1)),
+      ]),
+    ),
+  }));
+
   const levelData = rounds.map((r) => ({
     time: r.cumulativeTime,
     ...Object.fromEntries(
@@ -329,6 +349,42 @@ export function EconomyTab({
             <EconomyChart
               title="Lure Income Rates ($/s)"
               data={lureRateData}
+              {...chartProps}
+            >
+              <Legend />
+              {lures.map((l) => (
+                <Line
+                  key={l.id}
+                  dataKey={l.id}
+                  stroke={lureColorMap[l.id]}
+                  {...lineProps}
+                  name={l.name}
+                  connectNulls={false}
+                />
+              ))}
+            </EconomyChart>
+
+            <EconomyChart
+              title="Lure Win % by Lure"
+              data={lureWinRateData}
+              {...chartProps}
+            >
+              <Legend />
+              {lures.map((l) => (
+                <Line
+                  key={l.id}
+                  dataKey={l.id}
+                  stroke={lureColorMap[l.id]}
+                  {...lineProps}
+                  name={l.name}
+                  connectNulls={false}
+                />
+              ))}
+            </EconomyChart>
+
+            <EconomyChart
+              title="Avg Remaining Line HP by Lure (%)"
+              data={lureRemainingHPData}
               {...chartProps}
             >
               <Legend />

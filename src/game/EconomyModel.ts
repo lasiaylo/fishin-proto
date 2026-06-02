@@ -28,6 +28,8 @@ export interface EconomyRound {
   fishCatchTimes: Record<string, number>; // fishId → avgFightTime (all fish in chosen lure pool)
   fishEarnings: Record<string, number>; // fishId → avgEarnings considering win rate
   lureRates: Record<string, number>; // lureId → $/s for each accessible lure
+  lureWinRates: Record<string, number>; // lureId → win % (0–1)
+  lureRemainingHP: Record<string, number>; // lureId → avg remaining line HP on wins
   upgradesBought: string[];
   upgradeLevels: Record<string, number>;
   boughtLure: boolean;
@@ -40,7 +42,7 @@ function runTrials(
   fish: FishData,
   player: PlayerStats,
   n: number,
-): { winCount: number; avgFightTime: number } {
+): { winCount: number; avgFightTime: number; avgWinTension: number } {
   const engine = new FightEngine(
     fish.attack,
     fish.defense,
@@ -51,12 +53,14 @@ function runTrials(
   );
   let winCount = 0;
   let totalWinTime = 0;
+  let totalWinTension = 0;
 
   for (let i = 0; i < n; i++) {
     engine.reset();
     const { outcome, duration } = engine.runToCompletion();
     if (outcome === Outcome.WIN) {
       winCount++;
+      totalWinTension += engine.tension;
     }
     totalWinTime += duration;
   }
@@ -64,6 +68,7 @@ function runTrials(
   return {
     winCount,
     avgFightTime: totalWinTime / n,
+    avgWinTension: winCount > 0 ? totalWinTension / winCount : 0,
   };
 }
 
@@ -98,27 +103,40 @@ function evalLure(
   catchTimes: Record<string, number>;
   earnings: Record<string, number>;
   lureRates: Record<string, number>;
+  lureWinRates: Record<string, number>;
+  lureRemainingHP: Record<string, number>;
 } {
   let bestRate;
   let best = null;
   const catchTimes: Record<string, number> = {};
   const earnings: Record<string, number> = {};
   const lureRates: Record<string, number> = {};
+  const lureWinRates: Record<string, number> = {};
+  const lureRemainingHP: Record<string, number> = {};
 
   for (const [lureId, pool] of groups) {
     if (lureId && !ownedLures.has(lureId)) continue;
 
     let totalEarnings = 0;
     let totalFightTime = 0;
+    let totalWinRate = 0;
+    let totalRemainingHP = 0;
 
     for (const fish of pool) {
-      const { winCount, avgFightTime } = runTrials(fish, player, EVAL_TRIALS);
+      const { winCount, avgFightTime, avgWinTension } = runTrials(
+        fish,
+        player,
+        EVAL_TRIALS,
+      );
       const weight = fishWeights.get(fish.id) ?? 1 / pool.length;
       catchTimes[fish.id] = avgFightTime;
       const avgEarnings = (fish.basePrice * winCount) / EVAL_TRIALS;
       earnings[fish.id] = avgEarnings / avgFightTime;
       totalEarnings += avgEarnings * weight;
       totalFightTime += avgFightTime * weight;
+      totalWinRate += (winCount / EVAL_TRIALS) * weight;
+      totalRemainingHP +=
+        ((player.lineHP - avgWinTension) / player.lineHP) * 100 * weight;
     }
 
     // totalFightTime and totalEarnings are already weighted averages (weights sum to 1)
@@ -128,6 +146,8 @@ function evalLure(
     const avgEarningsPerCast = totalEarnings;
     const rate = avgEarningsPerCast / avgFightTime;
     lureRates[lureId] = rate;
+    lureWinRates[lureId] = totalWinRate;
+    lureRemainingHP[lureId] = totalRemainingHP;
 
     if (bestRate === undefined || rate >= bestRate) {
       bestRate = rate;
@@ -135,7 +155,14 @@ function evalLure(
     }
   }
 
-  return { best, catchTimes, earnings, lureRates };
+  return {
+    best,
+    catchTimes,
+    earnings,
+    lureRates,
+    lureWinRates,
+    lureRemainingHP,
+  };
 }
 
 function cheapestUpgrade(
@@ -285,6 +312,8 @@ export function simulateEconomy(
       catchTimes: fishCatchTimes,
       earnings: fishEarnings,
       lureRates,
+      lureWinRates,
+      lureRemainingHP,
     } = evalLure(fishByLure, player, ownedLures, fishWeights);
     if (!best) break;
 
@@ -320,6 +349,8 @@ export function simulateEconomy(
       fishCatchTimes,
       fishEarnings,
       lureRates,
+      lureWinRates,
+      lureRemainingHP,
       upgradesBought,
       upgradeLevels: { ...levels },
       boughtLure,
