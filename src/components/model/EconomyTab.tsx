@@ -36,14 +36,22 @@ function EconomyChart({
   integerYAxis,
   header,
   children,
+  xDataKey = "time",
+  xDomain,
+  xTickFormatter,
+  syncId = "economy",
 }: {
   title: string;
   data: object[];
   maxTime: number;
-  xTicks: number[];
+  xTicks?: number[];
   integerYAxis?: boolean;
   header?: React.ReactNode;
   children: React.ReactNode;
+  xDataKey?: string;
+  xDomain?: [number, number];
+  xTickFormatter?: (v: number) => string;
+  syncId?: string;
 }) {
   // @ts-ignore
   return (
@@ -55,14 +63,14 @@ function EconomyChart({
         {header}
       </Flex>
       <ResponsiveContainer width="100%" height={200}>
-        <ComposedChart data={data} syncId="economy">
+        <ComposedChart data={data} syncId={syncId}>
           <CartesianGrid strokeDasharray="3 3" stroke="#333" />
           <XAxis
-            dataKey="time"
+            dataKey={xDataKey}
             type="number"
-            domain={[0, maxTime]}
+            domain={xDomain ?? [0, maxTime]}
             ticks={xTicks}
-            tickFormatter={(v: number) => `${v / 60}`}
+            tickFormatter={xTickFormatter ?? ((v: number) => `${v / 60}`)}
           />
           <YAxis allowDecimals={!integerYAxis} />
           <Tooltip
@@ -121,6 +129,13 @@ export function EconomyTab({
     time: r.cumulativeTime,
     rate: parseFloat(r.rate.toFixed(4)),
     upgrade: r.upgradesBought.length > 0 ? parseFloat(r.rate.toFixed(4)) : null,
+  }));
+
+  const ratePerRoundData = rounds.map((r) => ({
+    round: r.round,
+    income: parseFloat(r.income.toFixed(4)),
+    upgrade:
+      r.upgradesBought.length > 0 ? parseFloat(r.income.toFixed(4)) : null,
   }));
 
   const maxTime =
@@ -249,6 +264,22 @@ export function EconomyTab({
     }
   }
 
+  const lureRegionsByRound: { x1: number; x2: number; lureId: string }[] = [];
+  if (rounds.length > 0) {
+    let regionStart = rounds[0].round;
+    for (let i = 0; i < rounds.length; i++) {
+      const r = rounds[i];
+      if (i === rounds.length - 1 || rounds[i + 1].lureId !== r.lureId) {
+        lureRegionsByRound.push({
+          x1: regionStart,
+          x2: r.round,
+          lureId: r.lureId,
+        });
+        regionStart = r.round;
+      }
+    }
+  }
+
   const activeLureIds = [...new Set(rounds.map((r) => r.lureId))];
 
   const chartProps = { maxTime, xTicks };
@@ -259,6 +290,17 @@ export function EconomyTab({
       <ReferenceLine
         key={r.round}
         x={r.cumulativeTime}
+        stroke="#4caf50"
+        strokeDasharray="4 2"
+      />
+    ));
+
+  const lurePurchaseLinesByRound = rounds
+    .filter((r) => r.boughtLure)
+    .map((r) => (
+      <ReferenceLine
+        key={r.round}
+        x={r.round}
         stroke="#4caf50"
         strokeDasharray="4 2"
       />
@@ -336,6 +378,58 @@ export function EconomyTab({
               ))}
               {lurePurchaseLines}
               <Line dataKey="rate" stroke="#60cdff" {...lineProps} name="$/s" />
+              <Line
+                dataKey="upgrade"
+                stroke="#ffd43b"
+                dot={{ fill: "#ffd43b", r: 4 }}
+                strokeWidth={0}
+                isAnimationActive={false}
+                name="upgrade"
+              />
+            </EconomyChart>
+
+            <EconomyChart
+              title="Income Rate ($/round)"
+              data={ratePerRoundData}
+              maxTime={maxTime}
+              xDataKey="round"
+              xDomain={[1, rounds.length]}
+              xTickFormatter={(v) => `${v}`}
+              syncId="economy-round"
+              header={activeLureIds.map((id) => (
+                <Flex key={id} align="center" gap="1">
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: 2,
+                      backgroundColor: lureColorMap[id],
+                      opacity: 0.8,
+                    }}
+                  />
+                  <Text size="1" color="gray">
+                    {lureNameMap[id]}
+                  </Text>
+                </Flex>
+              ))}
+            >
+              {lureRegionsByRound.map((region, i) => (
+                <ReferenceArea
+                  key={i}
+                  x1={region.x1}
+                  x2={region.x2}
+                  fill={lureColorMap[region.lureId]}
+                  fillOpacity={0.12}
+                  ifOverflow="hidden"
+                />
+              ))}
+              {lurePurchaseLinesByRound}
+              <Line
+                dataKey="income"
+                stroke="#60cdff"
+                {...lineProps}
+                name="$/round"
+              />
               <Line
                 dataKey="upgrade"
                 stroke="#ffd43b"
