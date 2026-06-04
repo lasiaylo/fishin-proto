@@ -22,7 +22,7 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   minStruggleDistance: 10,
   baseSpeed: 22.5,
   distanceMultRange: [0.9, 1.1],
-  critChance: 0.15,
+  critChance: 0.125,
   critMult: 1.5,
 };
 
