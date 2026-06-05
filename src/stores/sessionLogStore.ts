@@ -15,15 +15,7 @@ interface LossRecord {
   lureId: string;
 }
 
-interface FishStat {
-  wins: number;
-  losses: number;
-  totalTime: number;
-  totalEarnings: number;
-  totalRemainingHP: number;
-}
-
-interface LureStat {
+interface CombatStat {
   wins: number;
   losses: number;
   totalTime: number;
@@ -40,8 +32,8 @@ interface SessionLogState {
   pendingUpgrades: string[];
   pendingLureBought: boolean;
   upgradeLevels: Record<string, number>;
-  fishStats: Record<string, FishStat>;
-  lureStats: Record<string, LureStat>;
+  fishStats: Record<string, CombatStat>;
+  lureStats: Record<string, CombatStat>;
   completedRounds: EconomyRound[];
 
   logFishResult: (
@@ -61,7 +53,7 @@ interface SessionLogState {
   reset: () => void;
 }
 
-function emptyFishStat(): FishStat {
+function emptyCombatStat(): CombatStat {
   return {
     wins: 0,
     losses: 0,
@@ -71,13 +63,26 @@ function emptyFishStat(): FishStat {
   };
 }
 
-function emptyLureStat(): LureStat {
+function applyWin(
+  stat: CombatStat,
+  duration: number,
+  earnings: number,
+  remainingHP: number,
+): CombatStat {
   return {
-    wins: 0,
-    losses: 0,
-    totalTime: 0,
-    totalEarnings: 0,
-    totalRemainingHP: 0,
+    ...stat,
+    wins: stat.wins + 1,
+    totalTime: stat.totalTime + duration,
+    totalEarnings: stat.totalEarnings + earnings,
+    totalRemainingHP: stat.totalRemainingHP + remainingHP,
+  };
+}
+
+function applyLoss(stat: CombatStat, duration: number): CombatStat {
+  return {
+    ...stat,
+    losses: stat.losses + 1,
+    totalTime: stat.totalTime + duration,
   };
 }
 
@@ -101,43 +106,33 @@ export const useSessionLog = create<SessionLogState>((set, get) => ({
       const fishStats = { ...s.fishStats };
       const lureStats = { ...s.lureStats };
 
-      if (!fishStats[fish.id]) fishStats[fish.id] = emptyFishStat();
-      if (!lureStats[lureId]) lureStats[lureId] = emptyLureStat();
+      if (!fishStats[fish.id]) fishStats[fish.id] = emptyCombatStat();
+      if (!lureStats[lureId]) lureStats[lureId] = emptyCombatStat();
 
       const remainingHP =
         lineHP > 0 ? Math.max(0, 1 - finalTension / lineHP) : 0;
 
       if (won) {
-        fishStats[fish.id] = {
-          ...fishStats[fish.id],
-          wins: fishStats[fish.id].wins + 1,
-          totalTime: fishStats[fish.id].totalTime + duration,
-          totalEarnings: fishStats[fish.id].totalEarnings + fish.basePrice,
-          totalRemainingHP: fishStats[fish.id].totalRemainingHP + remainingHP,
-        };
-        lureStats[lureId] = {
-          ...lureStats[lureId],
-          wins: lureStats[lureId].wins + 1,
-          totalTime: lureStats[lureId].totalTime + duration,
-          totalEarnings: lureStats[lureId].totalEarnings + fish.basePrice,
-          totalRemainingHP: lureStats[lureId].totalRemainingHP + remainingHP,
-        };
+        fishStats[fish.id] = applyWin(
+          fishStats[fish.id],
+          duration,
+          fish.basePrice,
+          remainingHP,
+        );
+        lureStats[lureId] = applyWin(
+          lureStats[lureId],
+          duration,
+          fish.basePrice,
+          remainingHP,
+        );
         return {
           catches: [...s.catches, { fish, duration, remainingHP, lureId }],
           fishStats,
           lureStats,
         };
       } else {
-        fishStats[fish.id] = {
-          ...fishStats[fish.id],
-          losses: fishStats[fish.id].losses + 1,
-          totalTime: fishStats[fish.id].totalTime + duration,
-        };
-        lureStats[lureId] = {
-          ...lureStats[lureId],
-          losses: lureStats[lureId].losses + 1,
-          totalTime: lureStats[lureId].totalTime + duration,
-        };
+        fishStats[fish.id] = applyLoss(fishStats[fish.id], duration);
+        lureStats[lureId] = applyLoss(lureStats[lureId], duration);
         return {
           losses: [...s.losses, { fish, lureId }],
           fishStats,

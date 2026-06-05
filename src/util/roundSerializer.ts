@@ -102,6 +102,8 @@ export function csvToRounds(csv: string): EconomyRound[] {
   return lines.slice(1).map((line) => {
     const c = parseCSVRow(line);
     const get = (key: string) => c[idx[key]] ?? "";
+    const arr = (key: string) => JSON.parse(get(key) || "[]");
+    const obj = (key: string) => JSON.parse(get(key) || "{}");
     return {
       round: Number(get("round")),
       cumulativeTime: Number(get("cumulativeTime")),
@@ -118,13 +120,13 @@ export function csvToRounds(csv: string): EconomyRound[] {
         lineHP: Number(get("lineHP")),
         inventorySize: Number(get("inventorySize")),
       },
-      upgradesBought: JSON.parse(get("upgradesBought") || "[]"),
-      upgradeLevels: JSON.parse(get("upgradeLevels") || "{}"),
-      fishCatchTimes: JSON.parse(get("fishCatchTimes") || "{}"),
-      fishEarnings: JSON.parse(get("fishEarnings") || "{}"),
-      lureRates: JSON.parse(get("lureRates") || "{}"),
-      lureWinRates: JSON.parse(get("lureWinRates") || "{}"),
-      lureRemainingHP: JSON.parse(get("lureRemainingHP") || "{}"),
+      upgradesBought: arr("upgradesBought"),
+      upgradeLevels: obj("upgradeLevels"),
+      fishCatchTimes: obj("fishCatchTimes"),
+      fishEarnings: obj("fishEarnings"),
+      lureRates: obj("lureRates"),
+      lureWinRates: obj("lureWinRates"),
+      lureRemainingHP: obj("lureRemainingHP"),
     };
   });
 }
