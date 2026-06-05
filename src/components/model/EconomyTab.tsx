@@ -104,6 +104,7 @@ export function EconomyTab({
     INITIAL_PLAYER_STATE.inventorySize,
   );
   const [simMinutes, setSimMinutes] = useState(10);
+  const [evalTrials, setEvalTrials] = useState(200);
   const [rounds, setRounds] = useState<EconomyRound[]>([]);
   const [running, setRunning] = useState(false);
   const [gridLayout, setGridLayout] = useState(true);
@@ -138,6 +139,7 @@ export function EconomyTab({
           locationData,
           { attack: reelStr, defense: drag, lineHP, inventorySize },
           simMinutes,
+          evalTrials,
         ),
       );
       setRunning(false);
@@ -354,6 +356,12 @@ export function EconomyTab({
           label="Sim minutes"
           value={simMinutes}
           onChange={setSimMinutes}
+          min={1}
+        />
+        <NumInput
+          label="Eval trials"
+          value={evalTrials}
+          onChange={setEvalTrials}
           min={1}
         />
         <Button onClick={runSim} disabled={running}>
