@@ -15,9 +15,19 @@ export function ShopView() {
   const upgrades = useShop((s) => s.upgrades);
   const wallet = usePlayer((s) => s.wallet);
 
+  const upgradeById = new Map(upgrades.map((u) => [u.id, u]));
+  const meetsRequirements = (u: (typeof upgrades)[number]) =>
+    u.requirements.length === 0 ||
+    u.requirements.every((id) => {
+      const req = upgradeById.get(id);
+      return req ? isMaxed(req) : true;
+    });
+
   const groups = CATEGORY_ORDER.map((cat) => ({
     label: cat,
-    upgrades: upgrades.filter((u) => u.category === cat),
+    upgrades: upgrades.filter(
+      (u) => u.category === cat && meetsRequirements(u),
+    ),
   })).filter((g) => g.upgrades.length > 0);
 
   return (

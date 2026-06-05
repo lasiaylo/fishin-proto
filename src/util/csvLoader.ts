@@ -44,6 +44,7 @@ export interface ShopUpgradeData {
   prices: number[];
   stat: StatName;
   valuePerLevel: number;
+  requirements: string[];
 }
 
 function parseCSV(text: string): string[][] {
@@ -112,6 +113,7 @@ export async function loadShopGameplayData(): Promise<ShopUpgradeData[]> {
     prices: row[1].split(" ").map(Number),
     stat: parseStatName(row[2]),
     valuePerLevel: Number(row[3]),
+    requirements: row[4] ? row[4].split(" ").filter(Boolean) : [],
   }));
 }
 
@@ -144,6 +146,7 @@ export async function loadShopData(): Promise<ShopUpgradeData[]> {
       prices: row[1].split(" ").map(Number),
       stat: parseStatName(row[2]),
       valuePerLevel: Number(row[3]),
+      requirements: row[4] ? row[4].split(" ").filter(Boolean) : [],
     };
   });
 }
