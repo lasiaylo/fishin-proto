@@ -18,6 +18,7 @@ import { useShop } from "../stores/shopStore";
 import { pushEvent } from "../stores/eventLogStore";
 import { EventMsg } from "../util/eventMessages";
 import { FightEngine, FightState, Outcome } from "../game/FightEngine";
+import { useSessionLog } from "../stores/sessionLogStore";
 import { randomRange } from "../util/random";
 import { FightView } from "./FightView";
 
@@ -142,7 +143,7 @@ export function PondView() {
           caughtFishRef.current?.defense.toFixed(2),
           +state.time.toFixed(2),
         );
-        finishFight(state.outcome!);
+        finishFight(state.outcome!, state);
         return;
       }
       rafRef.current = requestAnimationFrame(loop);
@@ -151,9 +152,22 @@ export function PondView() {
     rafRef.current = requestAnimationFrame(loop);
   }
 
-  function finishFight(result: Outcome) {
+  function finishFight(result: Outcome, finalState: FightState) {
     cancelAnimationFrame(rafRef.current);
     const fish = caughtFishRef.current!;
+    const { lineHP, selectedLure } = usePlayer.getState();
+    const lureId = selectedLure ?? "";
+
+    useSessionLog
+      .getState()
+      .logFishResult(
+        fish,
+        result === Outcome.WIN,
+        finalState.time,
+        finalState.tension,
+        lineHP,
+        lureId,
+      );
 
     if (result === Outcome.WIN) {
       addFishToInventory(fish);

@@ -7,14 +7,49 @@ import {
   resetAllUpgradesDebug,
 } from "../stores/shopStore";
 import { pushEvent } from "../stores/eventLogStore";
+import { useSessionLog } from "../stores/sessionLogStore";
+import { downloadCSV } from "../util/roundSerializer";
 
 export function Debug() {
   return (
     <Flex direction="row" gap="4" p="4" wrap="wrap">
+      <SessionLogSection />
       <ShopUpgradeSection />
       <StoreView />
       <MoneySection />
       <EventLogSection />
+    </Flex>
+  );
+}
+
+function SessionLogSection() {
+  const roundCount = useSessionLog((s) => s.completedRounds.length);
+
+  function handleExport() {
+    const rounds = useSessionLog.getState().completedRounds;
+    downloadCSV(rounds, "session.csv");
+  }
+
+  return (
+    <Flex direction="column" gap="2">
+      <Text weight="bold">Session Log</Text>
+      <Separator size="4" />
+      <Text size="1" color="gray">
+        {roundCount} round{roundCount !== 1 ? "s" : ""} recorded
+      </Text>
+      <Flex gap="2">
+        <Button size="1" onClick={handleExport} disabled={roundCount === 0}>
+          Export CSV
+        </Button>
+        <Button
+          size="1"
+          variant="soft"
+          color="red"
+          onClick={() => useSessionLog.getState().reset()}
+        >
+          Reset Log
+        </Button>
+      </Flex>
     </Flex>
   );
 }

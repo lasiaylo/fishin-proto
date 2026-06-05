@@ -5,14 +5,19 @@ import { PondView } from "./PondView";
 import { sellAllFish, usePlayer } from "../stores/playerStore";
 import { pushEvent } from "../stores/eventLogStore";
 import { EventMsg } from "../util/eventMessages";
+import { useSessionLog } from "../stores/sessionLogStore";
 
 export function ActionsSection() {
   const [tab, setTab] = useState("pond");
 
   function handleTabChange(value: string) {
     if (value === "shop") {
-      const inventory = usePlayer.getState().inventory;
+      const { inventory, wallet, attack, defense, lineHP, inventorySize } =
+        usePlayer.getState();
       if (inventory.length > 0) {
+        useSessionLog
+          .getState()
+          .finalizeRound(wallet, { attack, defense, lineHP, inventorySize });
         sellAllFish();
         inventory.forEach((fish, i) =>
           setTimeout(

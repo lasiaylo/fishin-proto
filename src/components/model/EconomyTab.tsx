@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { Flex, Text, Table, Button } from "@radix-ui/themes";
+import React, { useRef, useState } from "react";
+import { Flex, Text, Table, Button, SegmentedControl } from "@radix-ui/themes";
+import { csvToRounds } from "../../util/roundSerializer";
 import {
   ComposedChart,
   Line,
@@ -106,6 +107,24 @@ export function EconomyTab({
   const [rounds, setRounds] = useState<EconomyRound[]>([]);
   const [running, setRunning] = useState(false);
   const [gridLayout, setGridLayout] = useState(true);
+  const [mode, setMode] = useState<"simulation" | "recorded">("simulation");
+  const [recordedRounds, setRecordedRounds] = useState<EconomyRound[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const activeRounds = mode === "recorded" ? recordedRounds : rounds;
+
+  function handleFileLoad(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      setRecordedRounds(csvToRounds(text));
+      setMode("recorded");
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }
 
   const nonLureUpgrades = shopData.filter((u) => u.stat !== StatName.LURE);
 
@@ -125,13 +144,13 @@ export function EconomyTab({
     }, 0);
   }
 
-  const rateData = rounds.map((r) => ({
+  const rateData = activeRounds.map((r) => ({
     time: r.cumulativeTime,
     rate: parseFloat(r.rate.toFixed(4)),
     upgrade: r.upgradesBought.length > 0 ? parseFloat(r.rate.toFixed(4)) : null,
   }));
 
-  const ratePerRoundData = rounds.map((r) => ({
+  const ratePerRoundData = activeRounds.map((r) => ({
     round: r.round,
     income: parseFloat(r.income.toFixed(4)),
     upgrade:
@@ -139,41 +158,43 @@ export function EconomyTab({
   }));
 
   const maxTime =
-    rounds.length > 0 ? rounds[rounds.length - 1].cumulativeTime : 0;
+    activeRounds.length > 0
+      ? activeRounds[activeRounds.length - 1].cumulativeTime
+      : 0;
   const xTicks = Array.from(
     { length: Math.floor(maxTime / 60) + 1 },
     (_, i) => i * 60,
   );
 
-  const catchTimeData = rounds.map((r) => ({
+  const catchTimeData = activeRounds.map((r) => ({
     time: r.cumulativeTime,
     ...Object.fromEntries(
       fishData.map((f) => [f.id, r.fishCatchTimes[f.id] ?? null]),
     ),
   }));
 
-  const earningsData = rounds.map((r) => ({
+  const earningsData = activeRounds.map((r) => ({
     time: r.cumulativeTime,
     ...Object.fromEntries(
       fishData.map((f) => [`${f.id}_earn`, r.fishEarnings[f.id] ?? null]),
     ),
   }));
 
-  const playerStatData = rounds.map((r) => ({
+  const playerStatData = activeRounds.map((r) => ({
     time: r.cumulativeTime,
     attack: r.playerStats.attack,
     defense: r.playerStats.defense,
     lineHP: r.playerStats.lineHP,
   }));
 
-  const lureRateData = rounds.map((r) => ({
+  const lureRateData = activeRounds.map((r) => ({
     time: r.cumulativeTime,
     ...Object.fromEntries(
       Object.entries(r.lureRates).map(([id, rate]) => [id, rate]),
     ),
   }));
 
-  const lureWinRateData = rounds.map((r) => ({
+  const lureWinRateData = activeRounds.map((r) => ({
     time: r.cumulativeTime,
     ...Object.fromEntries(
       Object.entries(r.lureWinRates).map(([id, wr]) => [
@@ -183,7 +204,7 @@ export function EconomyTab({
     ),
   }));
 
-  const lureRemainingHPData = rounds.map((r) => ({
+  const lureRemainingHPData = activeRounds.map((r) => ({
     time: r.cumulativeTime,
     ...Object.fromEntries(
       Object.entries(r.lureRemainingHP).map(([id, hp]) => [
@@ -193,7 +214,7 @@ export function EconomyTab({
     ),
   }));
 
-  const levelData = rounds.map((r) => ({
+  const levelData = activeRounds.map((r) => ({
     time: r.cumulativeTime,
     ...Object.fromEntries(
       nonLureUpgrades.map((u) => [u.id, r.upgradeLevels[u.id] ?? 0]),
@@ -225,7 +246,7 @@ export function EconomyTab({
   }[] = [];
   {
     let lastLureTime: number | null = null;
-    for (const r of rounds) {
+    for (const r of activeRounds) {
       if (!r.boughtLure) continue;
       for (const entry of r.upgradesBought) {
         const match = entry.match(/^(.+) L(\d+)$/);
@@ -249,11 +270,14 @@ export function EconomyTab({
   }
 
   const lureRegions: { x1: number; x2: number; lureId: string }[] = [];
-  if (rounds.length > 0) {
+  if (activeRounds.length > 0) {
     let regionStart = 0;
-    for (let i = 0; i < rounds.length; i++) {
-      const r = rounds[i];
-      if (i === rounds.length - 1 || rounds[i + 1].lureId !== r.lureId) {
+    for (let i = 0; i < activeRounds.length; i++) {
+      const r = activeRounds[i];
+      if (
+        i === activeRounds.length - 1 ||
+        activeRounds[i + 1].lureId !== r.lureId
+      ) {
         lureRegions.push({
           x1: regionStart,
           x2: r.cumulativeTime,
@@ -265,11 +289,14 @@ export function EconomyTab({
   }
 
   const lureRegionsByRound: { x1: number; x2: number; lureId: string }[] = [];
-  if (rounds.length > 0) {
-    let regionStart = rounds[0].round;
-    for (let i = 0; i < rounds.length; i++) {
-      const r = rounds[i];
-      if (i === rounds.length - 1 || rounds[i + 1].lureId !== r.lureId) {
+  if (activeRounds.length > 0) {
+    let regionStart = activeRounds[0].round;
+    for (let i = 0; i < activeRounds.length; i++) {
+      const r = activeRounds[i];
+      if (
+        i === activeRounds.length - 1 ||
+        activeRounds[i + 1].lureId !== r.lureId
+      ) {
         lureRegionsByRound.push({
           x1: regionStart,
           x2: r.round,
@@ -280,11 +307,11 @@ export function EconomyTab({
     }
   }
 
-  const activeLureIds = [...new Set(rounds.map((r) => r.lureId))];
+  const activeLureIds = [...new Set(activeRounds.map((r) => r.lureId))];
 
   const chartProps = { maxTime, xTicks };
 
-  const lurePurchaseLines = rounds
+  const lurePurchaseLines = activeRounds
     .filter((r) => r.boughtLure)
     .map((r) => (
       <ReferenceLine
@@ -295,7 +322,7 @@ export function EconomyTab({
       />
     ));
 
-  const lurePurchaseLinesByRound = rounds
+  const lurePurchaseLinesByRound = activeRounds
     .filter((r) => r.boughtLure)
     .map((r) => (
       <ReferenceLine
@@ -338,10 +365,44 @@ export function EconomyTab({
         />
       </Flex>
 
-      {rounds.length > 0 && (
+      <Flex gap="3" align="center">
+        <SegmentedControl.Root
+          value={mode}
+          onValueChange={(v) => setMode(v as "simulation" | "recorded")}
+          size="1"
+        >
+          <SegmentedControl.Item value="simulation">
+            Simulation
+          </SegmentedControl.Item>
+          <SegmentedControl.Item value="recorded">
+            Recorded
+          </SegmentedControl.Item>
+        </SegmentedControl.Root>
+        {mode === "recorded" && (
+          <>
+            <Button
+              size="1"
+              variant="soft"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Load CSV…
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              style={{ display: "none" }}
+              onChange={handleFileLoad}
+            />
+          </>
+        )}
+      </Flex>
+
+      {activeRounds.length > 0 && (
         <>
           <Text size="2" color="gray">
-            {rounds.length} rounds simulated
+            {activeRounds.length}{" "}
+            {mode === "recorded" ? "rounds recorded" : "rounds simulated"}
           </Text>
 
           <ChartGrid gridLayout={gridLayout}>
@@ -393,7 +454,7 @@ export function EconomyTab({
               data={ratePerRoundData}
               maxTime={maxTime}
               xDataKey="round"
-              xDomain={[1, rounds.length]}
+              xDomain={[1, activeRounds.length]}
               xTickFormatter={(v) => `${v}`}
               syncId="economy-round"
               header={activeLureIds.map((id) => (

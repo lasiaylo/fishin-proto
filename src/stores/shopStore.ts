@@ -10,6 +10,7 @@ import {
 } from "./playerStore";
 import { pushEvent } from "./eventLogStore";
 import { EventMsg } from "../util/eventMessages";
+import { useSessionLog } from "./sessionLogStore";
 
 interface ShopUpgrade extends ShopUpgradeData {
   level: number;
@@ -108,6 +109,9 @@ export function buyUpgrade(id: string) {
   useShop.setState({ upgrades: newUpgrades });
 
   pushEvent(EventMsg.BOUGHT(upgrade.name, newLevel));
+  useSessionLog
+    .getState()
+    .logUpgradeBought(upgrade.id, newLevel, upgrade.stat === StatName.LURE);
 }
 
 export function setUpgradeLevelDebug(id: string, newLevel: number) {
