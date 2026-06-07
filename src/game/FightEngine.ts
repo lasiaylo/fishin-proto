@@ -11,17 +11,19 @@ export interface FightConfig {
   startStruggleWeight: number;
   minStruggleDistance: number;
   distanceMultRange: [number, number];
+  thrashMultRange: [number, number];
   critChance: number;
   critMult: number;
 }
 
 export const DEFAULT_FIGHT_CONFIG: FightConfig = {
-  restTimeRange: [2, 4],
-  fightTimeRange: [1.0, 4],
+  restTimeRange: [3, 4],
+  fightTimeRange: [2.0, 3],
   startStruggleWeight: 0.5,
   minStruggleDistance: 10,
-  baseSpeed: 22.5,
+  baseSpeed: 20,
   distanceMultRange: [0.9, 1.1],
+  thrashMultRange: [0.95, 1.05],
   critChance: 0.125,
   critMult: 1.5,
 };
@@ -76,6 +78,7 @@ export class FightEngine {
   private cfg: FightConfig;
 
   private distanceMult: number = 1;
+  private thrashMult: number = 1;
   private critActive: boolean = false;
 
   constructor(
@@ -121,6 +124,10 @@ export class FightEngine {
       this.cfg.distanceMultRange[1],
     );
 
+    this.thrashMult = randomRange(
+      this.cfg.thrashMultRange[0],
+      this.cfg.thrashMultRange[1],
+    );
     if (phase === Phase.REST) {
       this.critActive =
         Math.random() < (this.cfg.critChance * this.tension) / this.lineHp;
@@ -154,7 +161,11 @@ export class FightEngine {
       this.distance += delta;
     }
 
-    this.tension += this.fishThrash * (isStruggle ? reelThrashMult : 0.5) * dt;
+    this.tension +=
+      this.fishThrash *
+      (isStruggle ? reelThrashMult : 0.5) *
+      this.thrashMult *
+      dt;
     this.fightElapsed += dt;
   }
 
