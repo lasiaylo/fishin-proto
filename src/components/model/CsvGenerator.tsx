@@ -14,9 +14,34 @@ interface FunctionConfig {
   growthRate: number;
 }
 
+const DEFAULT_STATS_FN: FunctionConfig = {
+  type: "LINEAR",
+  startValue: 2,
+  scaleFactor: 4,
+  growthRate: 0.8,
+};
+const DEFAULT_PRICE_FN: FunctionConfig = {
+  type: "LINEAR",
+  startValue: 4,
+  scaleFactor: 4,
+  growthRate: 0.8,
+};
+const DEFAULT_STAT_FN: FunctionConfig = {
+  type: "LINEAR",
+  startValue: 20,
+  scaleFactor: 4,
+  growthRate: 0.8,
+};
+const DEFAULT_LURE_FN: FunctionConfig = {
+  type: "LINEAR",
+  startValue: 10,
+  scaleFactor: 4,
+  growthRate: 0.8,
+};
+
 function evalFn(cfg: FunctionConfig, lvl: number): number {
   return cfg.type === "LINEAR"
-    ? cfg.startValue + cfg.growthRate * lvl
+    ? cfg.startValue + cfg.scaleFactor * lvl
     : cfg.startValue + cfg.scaleFactor * Math.pow(lvl, cfg.growthRate);
 }
 
@@ -107,7 +132,7 @@ function generateShopRows(
 
 function fnConfigStr(cfg: FunctionConfig): string {
   return cfg.type === "LINEAR"
-    ? `LINEAR startValue=${cfg.startValue} growthRate=${cfg.growthRate}`
+    ? `LINEAR startValue=${cfg.startValue} scaleFactor=${cfg.scaleFactor}`
     : `EXPONENTIAL startValue=${cfg.startValue} scaleFactor=${cfg.scaleFactor} growthRate=${cfg.growthRate}`;
 }
 
@@ -159,24 +184,24 @@ function FunctionSelect({
           max={99999}
           step={1}
         />
+        <NumInput
+          label="ScaleFactor"
+          value={value.scaleFactor}
+          onChange={(v) => onChange({ ...value, scaleFactor: v })}
+          min={-999}
+          max={99999}
+          step={0.5}
+        />
         {value.type === "EXPONENTIAL" && (
           <NumInput
-            label="ScaleFactor"
-            value={value.scaleFactor}
-            onChange={(v) => onChange({ ...value, scaleFactor: v })}
-            min={-999}
-            max={99999}
-            step={0.5}
+            label="GrowthRate"
+            value={value.growthRate}
+            onChange={(v) => onChange({ ...value, growthRate: v })}
+            min={0}
+            max={1}
+            step={0.01}
           />
         )}
-        <NumInput
-          label="GrowthRate"
-          value={value.growthRate}
-          onChange={(v) => onChange({ ...value, growthRate: v })}
-          min={0}
-          max={1}
-          step={0.01}
-        />
       </Flex>
     </Flex>
   );
@@ -206,19 +231,6 @@ function PreviewTable({ rows }: { rows: string[][] }) {
     </Table.Root>
   );
 }
-
-const DEFAULT_STATS_FN: FunctionConfig = {
-  type: "LINEAR",
-  startValue: 2,
-  scaleFactor: 1,
-  growthRate: 1,
-};
-const DEFAULT_PRICE_FN: FunctionConfig = {
-  type: "LINEAR",
-  startValue: 4,
-  scaleFactor: 1,
-  growthRate: 1,
-};
 
 function FishGenerator({
   onChange,
@@ -287,19 +299,6 @@ function FishGenerator({
     </Flex>
   );
 }
-
-const DEFAULT_STAT_FN: FunctionConfig = {
-  type: "LINEAR",
-  startValue: 20,
-  scaleFactor: 1,
-  growthRate: 0.8,
-};
-const DEFAULT_LURE_FN: FunctionConfig = {
-  type: "LINEAR",
-  startValue: 10,
-  scaleFactor: 1,
-  growthRate: 0.8,
-};
 
 function ShopGenerator({
   onChange,
