@@ -448,7 +448,7 @@ export function CsvGeneratorPanel({
   onOpenChange?: (open: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
 
   function toggle() {
     const next = !open;
