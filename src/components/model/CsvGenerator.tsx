@@ -105,8 +105,15 @@ function generateShopRows(
   return rows;
 }
 
-function downloadCsv(rows: string[][], filename: string) {
-  const csv = rows.map((r) => r.join(",")).join("\n");
+function fnConfigStr(cfg: FunctionConfig): string {
+  return cfg.type === "LINEAR"
+    ? `LINEAR startValue=${cfg.startValue} growthRate=${cfg.growthRate}`
+    : `EXPONENTIAL startValue=${cfg.startValue} scaleFactor=${cfg.scaleFactor} growthRate=${cfg.growthRate}`;
+}
+
+function downloadCsv(rows: string[][], filename: string, comment?: string) {
+  const body = rows.map((r) => r.join(",")).join("\n");
+  const csv = comment ? `${comment}\n${body}` : body;
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
   const a = document.createElement("a");
   a.href = url;
@@ -269,7 +276,14 @@ function FishGenerator({
         size="1"
         variant="soft"
         style={{ width: "fit-content" }}
-        onClick={() => downloadCsv(rows, "FishGameplay.csv")}
+        onClick={() => {
+          const comment = [
+            `# Attack/Defense curve: ${fnConfigStr(statsFn)}`,
+            `# Base Price curve: ${fnConfigStr(priceFn)}`,
+            `# Variance: ${variance} | Levels: ${levels}`,
+          ].join("\n");
+          downloadCsv(rows, "FishGameplay.csv", comment);
+        }}
       >
         Download FishGameplay.csv
       </Button>
@@ -413,7 +427,14 @@ function ShopGenerator({
         size="1"
         variant="soft"
         style={{ width: "fit-content" }}
-        onClick={() => downloadCsv(rows, "ShopGameplay.csv")}
+        onClick={() => {
+          const comment = [
+            `# ATTACK price curve: ${fnConfigStr(attackFn)} | ValuePerLevel=${attackVPL} | Upgrades=${attackCount}`,
+            `# DEFENSE price curve: ${fnConfigStr(defenseFn)} | ValuePerLevel=${defenseVPL} | Upgrades=${defenseCount}`,
+            `# LURE price curve: ${fnConfigStr(lureFn)} | Lures=${lureCount}`,
+          ].join("\n");
+          downloadCsv(rows, "ShopGameplay.csv", comment);
+        }}
       >
         Download ShopGameplay.csv
       </Button>

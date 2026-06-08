@@ -51,7 +51,7 @@ function parseCSV(text: string): string[][] {
   return text
     .trim()
     .split("\n")
-    .filter((line) => line.trim() !== "")
+    .filter((line) => line.trim() !== "" && !line.trim().startsWith("#"))
     .map((line) => line.split(",").map((cell) => cell.trim()));
 }
 
