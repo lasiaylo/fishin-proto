@@ -113,15 +113,17 @@ The LurePurchases table pivots to one row per lure name (unioned across all pair
 
 ### Model Economy Tab — CSV Generation
 
-Add a collapsible **Generate CSVs** panel below the existing Economy controls with two sub-sections: **Fish** and **Shop**.
+A collapsible **▸ Generate CSVs** toggle sits below the mode selector. Opening it automatically adds a "Generated" CSV pair to the CSV Pairs list (if one is not already present); the pair persists when the panel is closed. A single **Show preview** checkbox in the panel header controls preview table visibility for both generators.
+
+The panel renders two columns side by side separated by a vertical divider: **Fish** on the left, **Shop** on the right.
 
 **FUNCTION_SELECT component**: A `<select>` toggling between `LINEAR` and `EXPONENTIAL`. Visible numeric inputs change based on the selection (StartValue + GrowthRate for LINEAR; StartValue + ScaleFactor + GrowthRate for EXPONENTIAL).
 
-**Fish Generator**: Two FUNCTION_SELECTs (Attack/Defense curve; BasePrice curve), a variance input (0–1, e.g. `0.1` → ±10%), and a level count. A live preview table shows generated rows following the layout from the Requirements section (one fish at level 0, three fish per subsequent level). A **Download FishGameplay.csv** button writes the result.
+**Fish Generator**: Attack/Defense and Base Price FUNCTION_SELECTs shown side by side, a variance input (0–1), and a level count. A row count summary stays always visible. The preview table (toggled by the shared checkbox) shows the generated rows. A **Download FishGameplay.csv** button triggers a browser download.
 
-**Shop Generator**: Per-stat controls — ATTACK (price curve + ValuePerLevel + upgrade count), DEFENSE (same), LURE (price curve + lure count). A live preview table shows the generated rows with the correct Requirement chain for lures. A **Download ShopGameplay.csv** button writes the result.
+**Shop Generator**: ATTACK and DEFENSE control groups shown side by side (each: price FUNCTION_SELECT, ValuePerLevel, upgrade count), with LURE controls (price FUNCTION_SELECT, lure count) below. Preview table and **Download ShopGameplay.csv** follow the same pattern.
 
-Generated CSVs match the existing column format exactly so they can be dropped into `public/data/` and used immediately via the CSV switcher.
+Generated rows are exposed as in-memory data via `GENERATED_FISH_CSV` / `GENERATED_SHOP_CSV` sentinels. The CSV Pairs dropdowns show a **Generated** option once the panel has been opened. Selecting it loads data via `parseFishGameplayRows` / `parseShopGameplayRows` directly from the current generator state — no file write needed. Any change to the generator inputs immediately invalidates and reloads cached pair data for pairs using the generated CSV.
 
 ## Implementation Plan
 
@@ -149,9 +151,12 @@ Generated CSVs match the existing column format exactly so they can be dropped i
 
 ### Phase 3 — Model Economy Tab: CSV Generation
 
-1. **`FunctionSelect` component** — A self-contained input group: a `<select>` for `LINEAR` / `EXPONENTIAL`, then the matching numeric inputs. Exposes `(lvl: number) => number` via a prop callback or derived value. Lives in `shared.tsx` or a new `CsvGenerator.tsx`.
-2. **`generateFishCSV` utility** — Pure function taking two `FunctionConfig` objects, variance, and level count. Returns a `string[][]` row array following the PRD layout (1 fish at level 0, 3 fish per subsequent level with Min/Middle/Max multipliers, `LURE_N` requirement per level).
-3. **`generateShopCSV` utility** — Pure function taking ATTACK config (price curve, ValuePerLevel, upgrade count), DEFENSE config (same), and LURE config (price curve, lure count). Returns rows with space-separated prices and chained lure Requirements.
-4. **Fish Generator UI section** — Two `FunctionSelect` inputs, a variance `NumInput`, a level count `NumInput`. Preview table updates live by calling `generateFishCSV`. Download button serializes to CSV and triggers a browser file download.
-5. **Shop Generator UI section** — Per-stat control groups for ATTACK, DEFENSE, LURE. Preview table + Download button, same pattern as Fish Generator.
-6. **Wire into `EconomyTab.tsx`** — Wrap both generators in a collapsible panel below the existing simulation controls.
+1. **`src/components/model/CsvGenerator.tsx`** — New file containing all generation logic and UI: `FunctionConfig` type, `evalFn`, `generateFishRows`, `generateShopRows`, `downloadCsv`, `FunctionSelect`, `PreviewTable`, `FishGenerator`, `ShopGenerator`, `CsvGeneratorPanel`.
+2. **`evalFn`** — Evaluates `LINEAR` (`StartValue + GrowthRate * LVL`) or `EXPONENTIAL` (`StartValue + ScaleFactor * LVL^GrowthRate`). All output values are rounded to integers.
+3. **`generateFishRows`** — Takes two `FunctionConfig` objects, variance, and level count. Produces 1 fish at level 0 (no lure), then 3 fish per subsequent level using `L * (1 - variance)`, `L`, and `L * (1 + variance)` as the LVL input, with `LURE_N` as the requirement.
+4. **`generateShopRows`** — Takes ATTACK, DEFENSE, and LURE configs. Produces space-separated upgrade price lists for ATTACK and DEFENSE, then chained LURE rows.
+5. **`FishGenerator` / `ShopGenerator`** — Stateful form components. Each fires an `onChange` callback via `useEffect` whenever any input changes, keeping `EconomyTab`'s `generatedFishRows` / `generatedShopRows` state in sync.
+6. **`CsvGeneratorPanel`** — Collapsible toggle with a shared **Show preview** checkbox. Fish and Shop generators rendered in two columns. Fires `onOpenChange` when toggled.
+7. **`csvLoader.ts` — `parseFishGameplayRows` / `parseShopGameplayRows`** — Synchronous functions that parse `string[][]` directly into `FishData[]` / `ShopUpgradeData[]`, used in place of file fetches for generated pairs.
+8. **Generated pair integration in `EconomyTab.tsx`** — Export `GENERATED_FISH_CSV` / `GENERATED_SHOP_CSV` sentinels from `CsvGenerator.tsx`. The CSV Pairs dropdowns show a **Generated** option when the respective rows are available. The loading `useEffect` checks for the sentinels and calls the parse functions instead of `loadFishData` / `loadShopGameplayData`. Two `useEffect` hooks invalidate and reload pair data whenever generated rows change.
+9. **Auto-add generated pair** — `onOpenChange` handler in `EconomyTab` appends a "Generated" pair (fishCSV = `GENERATED_FISH_CSV`, shopCSV = `GENERATED_SHOP_CSV`) when the panel opens, if one does not already exist. The pair is never auto-removed.

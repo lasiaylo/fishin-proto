@@ -18,6 +18,8 @@ import {
   StatName,
   loadFishData,
   loadShopGameplayData,
+  parseFishGameplayRows,
+  parseShopGameplayRows,
 } from "../../util/csvLoader";
 import type {
   FishData,
@@ -27,6 +29,11 @@ import type {
 import { ChartGrid, COLORS, GridToggleButton, NumInput } from "./shared";
 import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
 import { FISH_CSVS, SHOP_CSVS } from "../../stores/csvConfigStore";
+import {
+  CsvGeneratorPanel,
+  GENERATED_FISH_CSV,
+  GENERATED_SHOP_CSV,
+} from "./CsvGenerator";
 
 // ── Types ──
 
@@ -154,12 +161,16 @@ function PairRow({
   pair,
   color,
   removable,
+  generatedFish,
+  generatedShop,
   onUpdate,
   onRemove,
 }: {
   pair: CsvPair;
   color: string;
   removable: boolean;
+  generatedFish: boolean;
+  generatedShop: boolean;
   onUpdate: (patch: Partial<Omit<CsvPair, "id">>) => void;
   onRemove: () => void;
 }) {
@@ -192,6 +203,9 @@ function PairRow({
               {f}
             </option>
           ))}
+          {generatedFish && (
+            <option value={GENERATED_FISH_CSV}>Generated</option>
+          )}
         </select>
       </label>
       <label style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -207,6 +221,9 @@ function PairRow({
               {f}
             </option>
           ))}
+          {generatedShop && (
+            <option value={GENERATED_SHOP_CSV}>Generated</option>
+          )}
         </select>
       </label>
       {removable && (
@@ -252,19 +269,89 @@ export function EconomyTab({
   const [pairRounds, setPairRounds] = useState<Record<string, EconomyRound[]>>(
     {},
   );
+  const [generatedFishRows, setGeneratedFishRows] = useState<string[][] | null>(
+    null,
+  );
+  const [generatedShopRows, setGeneratedShopRows] = useState<string[][] | null>(
+    null,
+  );
 
   // Load data for each pair that doesn't have it yet
   useEffect(() => {
     for (const pair of pairs) {
       if (pairData[pair.id]) continue;
-      Promise.all([
-        loadFishData(pair.fishCSV),
-        loadShopGameplayData(pair.shopCSV),
-      ]).then(([fish, shop]) => {
+      const fishIsGenerated = pair.fishCSV === GENERATED_FISH_CSV;
+      const shopIsGenerated = pair.shopCSV === GENERATED_SHOP_CSV;
+      if (fishIsGenerated && !generatedFishRows) continue;
+      if (shopIsGenerated && !generatedShopRows) continue;
+      const fishPromise = fishIsGenerated
+        ? Promise.resolve(parseFishGameplayRows(generatedFishRows!))
+        : loadFishData(pair.fishCSV);
+      const shopPromise = shopIsGenerated
+        ? Promise.resolve(parseShopGameplayRows(generatedShopRows!))
+        : loadShopGameplayData(pair.shopCSV);
+      Promise.all([fishPromise, shopPromise]).then(([fish, shop]) => {
         setPairData((prev) => ({ ...prev, [pair.id]: { fish, shop } }));
       });
     }
-  }, [pairs, pairData]);
+  }, [pairs, pairData, generatedFishRows, generatedShopRows]);
+
+  // Invalidate cached data for generated pairs when generated rows change
+  useEffect(() => {
+    const affected = pairs.filter((p) => p.fishCSV === GENERATED_FISH_CSV);
+    if (affected.length === 0) return;
+    setPairData((prev) => {
+      const next = { ...prev };
+      for (const p of affected) delete next[p.id];
+      return next;
+    });
+    setPairRounds((prev) => {
+      const next = { ...prev };
+      for (const p of affected) delete next[p.id];
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generatedFishRows]);
+
+  useEffect(() => {
+    const affected = pairs.filter((p) => p.shopCSV === GENERATED_SHOP_CSV);
+    if (affected.length === 0) return;
+    setPairData((prev) => {
+      const next = { ...prev };
+      for (const p of affected) delete next[p.id];
+      return next;
+    });
+    setPairRounds((prev) => {
+      const next = { ...prev };
+      for (const p of affected) delete next[p.id];
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generatedShopRows]);
+
+  function handleGeneratorOpenChange(isOpen: boolean) {
+    if (isOpen) {
+      setPairs((prev) => {
+        if (
+          prev.some(
+            (p) =>
+              p.fishCSV === GENERATED_FISH_CSV &&
+              p.shopCSV === GENERATED_SHOP_CSV,
+          )
+        )
+          return prev;
+        return [
+          ...prev,
+          {
+            id: newPairId(),
+            fishCSV: GENERATED_FISH_CSV,
+            shopCSV: GENERATED_SHOP_CSV,
+            label: "Generated",
+          },
+        ];
+      });
+    }
+  }
 
   function addPair() {
     setPairs((prev) => [
@@ -308,7 +395,11 @@ export function EconomyTab({
     }
   }
 
-  const allPairsLoaded = pairs.every((p) => pairData[p.id] !== undefined);
+  const allPairsLoaded = pairs.every((p) => {
+    if (p.fishCSV === GENERATED_FISH_CSV && !generatedFishRows) return false;
+    if (p.shopCSV === GENERATED_SHOP_CSV && !generatedShopRows) return false;
+    return pairData[p.id] !== undefined;
+  });
 
   // Primary pair — used for single-series charts
   const primaryData = pairData[pairs[0]?.id];
@@ -574,15 +665,14 @@ export function EconomyTab({
       {/* CSV Pairs */}
       {mode === "simulation" && (
         <Flex direction="column" gap="2">
-          <Text size="2" weight="bold">
-            CSV Pairs
-          </Text>
           {pairs.map((pair, i) => (
             <PairRow
               key={pair.id}
               pair={pair}
               color={COLORS[i % COLORS.length]}
               removable={pairs.length > 1}
+              generatedFish={!!generatedFishRows}
+              generatedShop={!!generatedShopRows}
               onUpdate={(patch) => updatePair(pair.id, patch)}
               onRemove={() => removePair(pair.id)}
             />
@@ -597,6 +687,11 @@ export function EconomyTab({
           </Button>
         </Flex>
       )}
+      <CsvGeneratorPanel
+        onFishRowsChange={setGeneratedFishRows}
+        onShopRowsChange={setGeneratedShopRows}
+        onOpenChange={handleGeneratorOpenChange}
+      />
 
       {/* Simulation controls */}
       <Flex gap="3" wrap="wrap" align="end">

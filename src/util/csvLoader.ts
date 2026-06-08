@@ -121,6 +121,31 @@ export async function loadShopGameplayData(
   }));
 }
 
+export function parseFishGameplayRows(rows: string[][]): FishData[] {
+  return rows.slice(1).map((row) => ({
+    id: row[0],
+    name: row[0],
+    attack: Number(row[1]),
+    defense: Number(row[2]),
+    thrash: Number(row[3]) || 0,
+    basePrice: Number(row[4]),
+    requiredLure: row[5] || "",
+  }));
+}
+
+export function parseShopGameplayRows(rows: string[][]): ShopUpgradeData[] {
+  return rows.slice(1).map((row) => ({
+    id: row[0],
+    name: row[0],
+    description: "",
+    category: "",
+    prices: row[1].split(" ").map(Number),
+    stat: parseStatName(row[2]),
+    valuePerLevel: Number(row[3]),
+    requirements: row[4] ? row[4].split(" ").filter(Boolean) : [],
+  }));
+}
+
 export async function loadShopData(
   shopFile = "ShopGameplay.csv",
 ): Promise<ShopUpgradeData[]> {
