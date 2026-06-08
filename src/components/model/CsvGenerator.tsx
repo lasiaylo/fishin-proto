@@ -173,9 +173,9 @@ function FunctionSelect({
           label="GrowthRate"
           value={value.growthRate}
           onChange={(v) => onChange({ ...value, growthRate: v })}
-          min={-999}
-          max={99999}
-          step={0.5}
+          min={0}
+          max={1}
+          step={0.01}
         />
       </Flex>
     </Flex>
@@ -211,13 +211,13 @@ const DEFAULT_STATS_FN: FunctionConfig = {
   type: "LINEAR",
   startValue: 2,
   scaleFactor: 1,
-  growthRate: 4,
+  growthRate: 1,
 };
 const DEFAULT_PRICE_FN: FunctionConfig = {
   type: "LINEAR",
   startValue: 4,
   scaleFactor: 1,
-  growthRate: 15,
+  growthRate: 1,
 };
 
 function FishGenerator({
@@ -268,9 +268,6 @@ function FishGenerator({
         />
         <NumInput label="Levels" value={levels} onChange={setLevels} min={1} />
       </Flex>
-      <Text size="1" color="gray">
-        {rows.length - 1} fish · {levels} lure{levels !== 1 ? "s" : ""} required
-      </Text>
       {showPreview && <PreviewTable rows={rows} />}
       <Button
         size="1"
@@ -295,13 +292,13 @@ const DEFAULT_STAT_FN: FunctionConfig = {
   type: "LINEAR",
   startValue: 20,
   scaleFactor: 1,
-  growthRate: 20,
+  growthRate: 0.8,
 };
 const DEFAULT_LURE_FN: FunctionConfig = {
   type: "LINEAR",
   startValue: 10,
   scaleFactor: 1,
-  growthRate: 25,
+  growthRate: 0.8,
 };
 
 function ShopGenerator({
