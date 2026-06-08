@@ -5,6 +5,18 @@ import { NumInput } from "./shared";
 export const GENERATED_FISH_CSV = "__generated_fish__";
 export const GENERATED_SHOP_CSV = "__generated_shop__";
 
+const FISH_STORAGE_KEY = "csvgen_fish";
+const SHOP_STORAGE_KEY = "csvgen_shop";
+const SHARED_STORAGE_KEY = "csvgen_shared";
+
+function loadStored<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw) as T;
+  } catch {}
+  return fallback;
+}
+
 type FnType = "LINEAR" | "EXPONENTIAL";
 
 interface FunctionConfig {
@@ -232,31 +244,54 @@ function PreviewTable({ rows }: { rows: string[][] }) {
   );
 }
 
+const FISH_DEFAULTS = {
+  statsFn: DEFAULT_STATS_FN,
+  priceFn: DEFAULT_PRICE_FN,
+  variance: 0.1,
+};
+
 function FishGenerator({
   onChange,
   showPreview,
+  levels,
 }: {
   onChange?: (rows: string[][]) => void;
   showPreview: boolean;
+  levels: number;
 }) {
-  const [statsFn, setStatsFn] = useState<FunctionConfig>(DEFAULT_STATS_FN);
-  const [priceFn, setPriceFn] = useState<FunctionConfig>(DEFAULT_PRICE_FN);
-  const [variance, setVariance] = useState(0.1);
-  const [levels, setLevels] = useState(3);
+  const stored = loadStored(FISH_STORAGE_KEY, FISH_DEFAULTS);
+  const [statsFn, setStatsFn] = useState<FunctionConfig>(() => stored.statsFn);
+  const [priceFn, setPriceFn] = useState<FunctionConfig>(() => stored.priceFn);
+  const [variance, setVariance] = useState(() => stored.variance);
 
   const rows = generateFishRows(statsFn, priceFn, variance, levels);
 
   useEffect(() => {
+    localStorage.setItem(
+      FISH_STORAGE_KEY,
+      JSON.stringify({ statsFn, priceFn, variance }),
+    );
     onChange?.(rows);
     // onChange is a stable useState setter — safe to omit from deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statsFn, priceFn, variance, levels]);
 
+  function reset() {
+    setStatsFn(FISH_DEFAULTS.statsFn);
+    setPriceFn(FISH_DEFAULTS.priceFn);
+    setVariance(FISH_DEFAULTS.variance);
+  }
+
   return (
     <Flex direction="column" gap="3">
-      <Text size="2" weight="bold">
-        Fish
-      </Text>
+      <Flex align="center" gap="3">
+        <Text size="2" weight="bold">
+          Fish
+        </Text>
+        <Button size="1" variant="ghost" color="gray" onClick={reset}>
+          Reset to defaults
+        </Button>
+      </Flex>
       <Flex direction="row" gap="4" align="start">
         <FunctionSelect
           label="Attack / Defense curve"
@@ -278,9 +313,15 @@ function FishGenerator({
           max={1}
           step={0.01}
         />
-        <NumInput label="Levels" value={levels} onChange={setLevels} min={1} />
       </Flex>
-      {showPreview && <PreviewTable rows={rows} />}
+      {showPreview && (
+        <PreviewTable
+          rows={[
+            rows[0],
+            ...rows.slice(1).filter((_, i) => i === 0 || (i - 2) % 3 === 0),
+          ]}
+        />
+      )}
       <Button
         size="1"
         variant="soft"
@@ -300,23 +341,56 @@ function FishGenerator({
   );
 }
 
+const SHOP_DEFAULTS = {
+  attackFn: DEFAULT_STAT_FN,
+  attackVPL: 1,
+  attackCount: 10,
+  defenseFn: DEFAULT_STAT_FN,
+  defenseVPL: 1,
+  defenseCount: 10,
+  lureFn: DEFAULT_LURE_FN,
+  mergeStats: false,
+};
+
 function ShopGenerator({
   onChange,
   showPreview,
+  lureCount,
 }: {
   onChange?: (rows: string[][]) => void;
   showPreview: boolean;
+  lureCount: number;
 }) {
-  const [attackFn, setAttackFn] = useState<FunctionConfig>(DEFAULT_STAT_FN);
-  const [attackVPL, setAttackVPL] = useState(1);
-  const [attackCount, setAttackCount] = useState(4);
+  const stored = loadStored(SHOP_STORAGE_KEY, SHOP_DEFAULTS);
+  const [attackFn, setAttackFn] = useState<FunctionConfig>(
+    () => stored.attackFn,
+  );
+  const [attackVPL, setAttackVPL] = useState(() => stored.attackVPL);
+  const [attackCount, setAttackCount] = useState(() => stored.attackCount);
 
-  const [defenseFn, setDefenseFn] = useState<FunctionConfig>(DEFAULT_STAT_FN);
-  const [defenseVPL, setDefenseVPL] = useState(1);
-  const [defenseCount, setDefenseCount] = useState(4);
+  const [defenseFn, setDefenseFn] = useState<FunctionConfig>(
+    () => stored.defenseFn,
+  );
+  const [defenseVPL, setDefenseVPL] = useState(() => stored.defenseVPL);
+  const [defenseCount, setDefenseCount] = useState(() => stored.defenseCount);
 
-  const [lureFn, setLureFn] = useState<FunctionConfig>(DEFAULT_LURE_FN);
-  const [lureCount, setLureCount] = useState(3);
+  const [lureFn, setLureFn] = useState<FunctionConfig>(() => stored.lureFn);
+  const [mergeStats, setMergeStats] = useState(
+    () => stored.mergeStats ?? false,
+  );
+
+  function handleAttackFnChange(v: FunctionConfig) {
+    setAttackFn(v);
+    if (mergeStats) setDefenseFn(v);
+  }
+  function handleAttackVPLChange(v: number) {
+    setAttackVPL(v);
+    if (mergeStats) setDefenseVPL(v);
+  }
+  function handleAttackCountChange(v: number) {
+    setAttackCount(v);
+    if (mergeStats) setDefenseCount(v);
+  }
 
   const rows = generateShopRows(
     attackFn,
@@ -330,6 +404,19 @@ function ShopGenerator({
   );
 
   useEffect(() => {
+    localStorage.setItem(
+      SHOP_STORAGE_KEY,
+      JSON.stringify({
+        attackFn,
+        attackVPL,
+        attackCount,
+        defenseFn,
+        defenseVPL,
+        defenseCount,
+        lureFn,
+        mergeStats,
+      }),
+    );
     onChange?.(rows);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -341,82 +428,161 @@ function ShopGenerator({
     defenseCount,
     lureFn,
     lureCount,
+    mergeStats,
   ]);
+
+  function reset() {
+    setAttackFn(SHOP_DEFAULTS.attackFn);
+    setAttackVPL(SHOP_DEFAULTS.attackVPL);
+    setAttackCount(SHOP_DEFAULTS.attackCount);
+    setDefenseFn(SHOP_DEFAULTS.defenseFn);
+    setDefenseVPL(SHOP_DEFAULTS.defenseVPL);
+    setDefenseCount(SHOP_DEFAULTS.defenseCount);
+    setLureFn(SHOP_DEFAULTS.lureFn);
+    setMergeStats(SHOP_DEFAULTS.mergeStats);
+  }
 
   return (
     <Flex direction="column" gap="3">
-      <Text size="2" weight="bold">
-        Shop
-      </Text>
-
-      <Flex direction="row" gap="4" align="start">
-        <Flex direction="column" gap="2">
-          <Text size="1" weight="bold">
-            ATTACK
-          </Text>
-          <FunctionSelect
-            label="Price curve"
-            value={attackFn}
-            onChange={setAttackFn}
-          />
-          <Flex gap="3" wrap="wrap" align="end">
-            <NumInput
-              label="ValuePerLevel"
-              value={attackVPL}
-              onChange={setAttackVPL}
-              min={1}
-            />
-            <NumInput
-              label="Upgrades"
-              value={attackCount}
-              onChange={setAttackCount}
-              min={1}
-            />
-          </Flex>
-        </Flex>
-
-        <Flex direction="column" gap="2">
-          <Text size="1" weight="bold">
-            DEFENSE
-          </Text>
-          <FunctionSelect
-            label="Price curve"
-            value={defenseFn}
-            onChange={setDefenseFn}
-          />
-          <Flex gap="3" wrap="wrap" align="end">
-            <NumInput
-              label="ValuePerLevel"
-              value={defenseVPL}
-              onChange={setDefenseVPL}
-              min={1}
-            />
-            <NumInput
-              label="Upgrades"
-              value={defenseCount}
-              onChange={setDefenseCount}
-              min={1}
-            />
-          </Flex>
-        </Flex>
-      </Flex>
-
-      <Flex direction="column" gap="2">
-        <Text size="1" weight="bold">
-          LURE
+      <Flex align="center" gap="3">
+        <Text size="2" weight="bold">
+          Shop
         </Text>
-        <FunctionSelect
-          label="Price curve"
-          value={lureFn}
-          onChange={setLureFn}
-        />
-        <NumInput
-          label="Lures"
-          value={lureCount}
-          onChange={setLureCount}
-          min={1}
-        />
+        <Button size="1" variant="ghost" color="gray" onClick={reset}>
+          Reset to defaults
+        </Button>
       </Flex>
+
+      <label
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          cursor: "pointer",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={mergeStats}
+          onChange={(e) => {
+            const checked = e.target.checked;
+            setMergeStats(checked);
+            if (checked) {
+              setDefenseFn(attackFn);
+              setDefenseVPL(attackVPL);
+              setDefenseCount(attackCount);
+            }
+          }}
+        />
+        <Text size="1" color="gray">
+          Merge Attack / Defense
+        </Text>
+      </label>
+
+      {mergeStats ? (
+        <Flex direction="row" gap="4" align="start">
+          <Flex direction="column" gap="2">
+            <Text size="1" weight="bold">
+              ATTACK / DEFENSE
+            </Text>
+            <FunctionSelect
+              label="Price curve"
+              value={attackFn}
+              onChange={handleAttackFnChange}
+            />
+            <Flex gap="3" wrap="wrap" align="end">
+              <NumInput
+                label="ValuePerLevel"
+                value={attackVPL}
+                onChange={handleAttackVPLChange}
+                min={1}
+              />
+              <NumInput
+                label="Upgrades"
+                value={attackCount}
+                onChange={handleAttackCountChange}
+                min={1}
+              />
+            </Flex>
+          </Flex>
+
+          <Flex direction="column" gap="2">
+            <Text size="1" weight="bold">
+              LURE
+            </Text>
+            <FunctionSelect
+              label="Price curve"
+              value={lureFn}
+              onChange={setLureFn}
+            />
+          </Flex>
+        </Flex>
+      ) : (
+        <>
+          <Flex direction="row" gap="4" align="start">
+            <Flex direction="column" gap="2">
+              <Text size="1" weight="bold">
+                ATTACK
+              </Text>
+              <FunctionSelect
+                label="Price curve"
+                value={attackFn}
+                onChange={setAttackFn}
+              />
+              <Flex gap="3" wrap="wrap" align="end">
+                <NumInput
+                  label="ValuePerLevel"
+                  value={attackVPL}
+                  onChange={setAttackVPL}
+                  min={1}
+                />
+                <NumInput
+                  label="Upgrades"
+                  value={attackCount}
+                  onChange={setAttackCount}
+                  min={1}
+                />
+              </Flex>
+            </Flex>
+
+            <Flex direction="column" gap="2">
+              <Text size="1" weight="bold">
+                DEFENSE
+              </Text>
+              <FunctionSelect
+                label="Price curve"
+                value={defenseFn}
+                onChange={setDefenseFn}
+              />
+              <Flex gap="3" wrap="wrap" align="end">
+                <NumInput
+                  label="ValuePerLevel"
+                  value={defenseVPL}
+                  onChange={setDefenseVPL}
+                  min={1}
+                />
+                <NumInput
+                  label="Upgrades"
+                  value={defenseCount}
+                  onChange={setDefenseCount}
+                  min={1}
+                />
+              </Flex>
+            </Flex>
+          </Flex>
+
+          <Flex direction="column" gap="2">
+            <Text size="1" weight="bold">
+              LURE
+            </Text>
+            <FunctionSelect
+              label="Price curve"
+              value={lureFn}
+              onChange={setLureFn}
+            />
+          </Flex>
+        </>
+      )}
 
       {showPreview && <PreviewTable rows={rows} />}
       <Button
@@ -449,6 +615,14 @@ export function CsvGeneratorPanel({
 }) {
   const [open, setOpen] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const [levels, setLevels] = useState<number>(
+    () => loadStored(SHARED_STORAGE_KEY, { levels: 3 }).levels,
+  );
+
+  function handleLevelsChange(v: number) {
+    setLevels(v);
+    localStorage.setItem(SHARED_STORAGE_KEY, JSON.stringify({ levels: v }));
+  }
 
   function toggle() {
     const next = !open;
@@ -476,23 +650,31 @@ export function CsvGeneratorPanel({
           </Text>
         </button>
         {open && (
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              cursor: "pointer",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={showPreview}
-              onChange={(e) => setShowPreview(e.target.checked)}
+          <>
+            <NumInput
+              label="Levels"
+              value={levels}
+              onChange={handleLevelsChange}
+              min={1}
             />
-            <Text size="1" color="gray">
-              Show preview
-            </Text>
-          </label>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={showPreview}
+                onChange={(e) => setShowPreview(e.target.checked)}
+              />
+              <Text size="1" color="gray">
+                Show preview
+              </Text>
+            </label>
+          </>
         )}
       </Flex>
       {open && (
@@ -501,6 +683,7 @@ export function CsvGeneratorPanel({
             <FishGenerator
               onChange={onFishRowsChange}
               showPreview={showPreview}
+              levels={levels}
             />
           </Flex>
           <Separator orientation="vertical" size="4" />
@@ -508,6 +691,7 @@ export function CsvGeneratorPanel({
             <ShopGenerator
               onChange={onShopRowsChange}
               showPreview={showPreview}
+              lureCount={levels}
             />
           </Flex>
         </Flex>
