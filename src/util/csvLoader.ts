@@ -55,9 +55,11 @@ function parseCSV(text: string): string[][] {
     .map((line) => line.split(",").map((cell) => cell.trim()));
 }
 
-export async function loadFishData(): Promise<FishData[]> {
+export async function loadFishData(
+  fishFile = "FishGameplay.csv",
+): Promise<FishData[]> {
   const [gameplayRes, displayRes] = await Promise.all([
-    fetch("/data/FishGameplay.csv"),
+    fetch(`/data/Fish/${fishFile}`),
     fetch("/data/FishDisplay.csv"),
   ]);
   const [gameplayRows, displayRows] = [
@@ -102,8 +104,10 @@ export async function loadLocationGameplayData(): Promise<LocationFishEntry[]> {
   }));
 }
 
-export async function loadShopGameplayData(): Promise<ShopUpgradeData[]> {
-  const res = await fetch("/data/ShopGameplay.csv");
+export async function loadShopGameplayData(
+  shopFile = "ShopGameplay.csv",
+): Promise<ShopUpgradeData[]> {
+  const res = await fetch(`/data/Shop/${shopFile}`);
   const rows = parseCSV(await res.text());
   return rows.slice(1).map((row) => ({
     id: row[0],
@@ -117,9 +121,11 @@ export async function loadShopGameplayData(): Promise<ShopUpgradeData[]> {
   }));
 }
 
-export async function loadShopData(): Promise<ShopUpgradeData[]> {
+export async function loadShopData(
+  shopFile = "ShopGameplay.csv",
+): Promise<ShopUpgradeData[]> {
   const [gameplayRes, displayRes] = await Promise.all([
-    fetch("/data/ShopGameplay.csv"),
+    fetch(`/data/Shop/${shopFile}`),
     fetch("/data/ShopDisplay.csv"),
   ]);
   const [gameplayRows, displayRows] = [

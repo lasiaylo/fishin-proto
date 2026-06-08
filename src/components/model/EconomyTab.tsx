@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Flex, Text, Table, Button, SegmentedControl } from "@radix-ui/themes";
 import { csvToRounds } from "../../util/roundSerializer";
 import {
@@ -14,7 +14,11 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { simulateEconomy, type EconomyRound } from "../../game/EconomyModel";
-import { StatName } from "../../util/csvLoader";
+import {
+  StatName,
+  loadFishData,
+  loadShopGameplayData,
+} from "../../util/csvLoader";
 import type {
   FishData,
   LocationFishEntry,
@@ -22,6 +26,62 @@ import type {
 } from "../../util/csvLoader";
 import { ChartGrid, COLORS, GridToggleButton, NumInput } from "./shared";
 import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
+import { FISH_CSVS, SHOP_CSVS } from "../../stores/csvConfigStore";
+
+// ── Types ──
+
+interface CsvPair {
+  id: string;
+  fishCSV: string;
+  shopCSV: string;
+  label: string;
+}
+
+interface PairData {
+  fish: FishData[];
+  shop: ShopUpgradeData[];
+}
+
+// ── Helpers ──
+
+let _pairCounter = 0;
+function newPairId(): string {
+  return String(++_pairCounter);
+}
+
+function buildLureRows(
+  rounds: EconomyRound[],
+  shopData: ShopUpgradeData[],
+): { name: string; cost: number; timeSincePrev: number }[] {
+  const lureShopMap = Object.fromEntries(
+    shopData.filter((u) => u.stat === StatName.LURE).map((u) => [u.id, u]),
+  );
+  const rows: { name: string; cost: number; timeSincePrev: number }[] = [];
+  let lastLureTime: number | null = null;
+  for (const r of rounds) {
+    if (!r.boughtLure) continue;
+    for (const entry of r.upgradesBought) {
+      const match = entry.match(/^(.+) L(\d+)$/);
+      if (!match) continue;
+      const [, id, levelStr] = match;
+      const upgrade = lureShopMap[id];
+      if (!upgrade) continue;
+      const level = parseInt(levelStr, 10);
+      rows.push({
+        name: upgrade.id,
+        cost: upgrade.prices[level - 1],
+        timeSincePrev:
+          lastLureTime !== null
+            ? r.cumulativeTime - lastLureTime
+            : r.cumulativeTime,
+      });
+      lastLureTime = r.cumulativeTime;
+    }
+  }
+  return rows;
+}
+
+// ── EconomyChart ──
 
 const lineProps = {
   dot: false as const,
@@ -88,13 +148,81 @@ function EconomyChart({
   );
 }
 
+// ── CSV Pair row ──
+
+function PairRow({
+  pair,
+  color,
+  removable,
+  onUpdate,
+  onRemove,
+}: {
+  pair: CsvPair;
+  color: string;
+  removable: boolean;
+  onUpdate: (patch: Partial<Omit<CsvPair, "id">>) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <Flex gap="2" align="center" wrap="wrap">
+      <div
+        style={{
+          width: 10,
+          height: 10,
+          borderRadius: 2,
+          background: color,
+          flexShrink: 0,
+        }}
+      />
+      <input
+        value={pair.label}
+        onChange={(e) => onUpdate({ label: e.target.value })}
+        style={{ width: 80 }}
+      />
+      <label style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <Text size="1" color="gray">
+          Fish CSV
+        </Text>
+        <select
+          value={pair.fishCSV}
+          onChange={(e) => onUpdate({ fishCSV: e.target.value })}
+        >
+          {FISH_CSVS.map((f) => (
+            <option key={f} value={f}>
+              {f}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <Text size="1" color="gray">
+          Shop CSV
+        </Text>
+        <select
+          value={pair.shopCSV}
+          onChange={(e) => onUpdate({ shopCSV: e.target.value })}
+        >
+          {SHOP_CSVS.map((f) => (
+            <option key={f} value={f}>
+              {f}
+            </option>
+          ))}
+        </select>
+      </label>
+      {removable && (
+        <Button size="1" variant="soft" color="red" onClick={onRemove}>
+          Remove
+        </Button>
+      )}
+    </Flex>
+  );
+}
+
+// ── EconomyTab ──
+
 export function EconomyTab({
-  fishData,
-  shopData,
   locationData,
 }: {
-  fishData: FishData[];
-  shopData: ShopUpgradeData[];
   locationData: LocationFishEntry[];
 }) {
   const [reelStr, setReelStr] = useState(INITIAL_PLAYER_STATE.attack);
@@ -105,98 +233,192 @@ export function EconomyTab({
   );
   const [simMinutes, setSimMinutes] = useState(10);
   const [evalTrials, setEvalTrials] = useState(200);
-  const [rounds, setRounds] = useState<EconomyRound[]>([]);
   const [running, setRunning] = useState(false);
   const [gridLayout, setGridLayout] = useState(true);
   const [mode, setMode] = useState<"simulation" | "recorded">("simulation");
   const [recordedRounds, setRecordedRounds] = useState<EconomyRound[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const activeRounds = mode === "recorded" ? recordedRounds : rounds;
+  // CSV pairs
+  const [pairs, setPairs] = useState<CsvPair[]>([
+    {
+      id: newPairId(),
+      fishCSV: FISH_CSVS[0] ?? "FishGameplay.csv",
+      shopCSV: SHOP_CSVS[0] ?? "ShopGameplay.csv",
+      label: "Default",
+    },
+  ]);
+  const [pairData, setPairData] = useState<Record<string, PairData>>({});
+  const [pairRounds, setPairRounds] = useState<Record<string, EconomyRound[]>>(
+    {},
+  );
+
+  // Load data for each pair that doesn't have it yet
+  useEffect(() => {
+    for (const pair of pairs) {
+      if (pairData[pair.id]) continue;
+      Promise.all([
+        loadFishData(pair.fishCSV),
+        loadShopGameplayData(pair.shopCSV),
+      ]).then(([fish, shop]) => {
+        setPairData((prev) => ({ ...prev, [pair.id]: { fish, shop } }));
+      });
+    }
+  }, [pairs, pairData]);
+
+  function addPair() {
+    setPairs((prev) => [
+      ...prev,
+      {
+        id: newPairId(),
+        fishCSV: FISH_CSVS[0] ?? "FishGameplay.csv",
+        shopCSV: SHOP_CSVS[0] ?? "ShopGameplay.csv",
+        label: `Pair ${prev.length + 1}`,
+      },
+    ]);
+  }
+
+  function removePair(id: string) {
+    setPairs((prev) => prev.filter((p) => p.id !== id));
+    setPairData((prev) => {
+      const n = { ...prev };
+      delete n[id];
+      return n;
+    });
+    setPairRounds((prev) => {
+      const n = { ...prev };
+      delete n[id];
+      return n;
+    });
+  }
+
+  function updatePair(id: string, patch: Partial<Omit<CsvPair, "id">>) {
+    setPairs((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+    if (patch.fishCSV !== undefined || patch.shopCSV !== undefined) {
+      setPairData((prev) => {
+        const n = { ...prev };
+        delete n[id];
+        return n;
+      });
+      setPairRounds((prev) => {
+        const n = { ...prev };
+        delete n[id];
+        return n;
+      });
+    }
+  }
+
+  const allPairsLoaded = pairs.every((p) => pairData[p.id] !== undefined);
+
+  // Primary pair — used for single-series charts
+  const primaryData = pairData[pairs[0]?.id];
+  const primaryFishData = primaryData?.fish ?? [];
+  const primaryShopData = primaryData?.shop ?? [];
 
   function handleFileLoad(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const text = ev.target?.result as string;
-      setRecordedRounds(csvToRounds(text));
+      setRecordedRounds(csvToRounds(ev.target?.result as string));
       setMode("recorded");
     };
     reader.readAsText(file);
     e.target.value = "";
   }
 
-  const nonLureUpgrades = shopData.filter((u) => u.stat !== StatName.LURE);
-
   function runSim() {
     setRunning(true);
     setTimeout(() => {
-      setRounds(
-        simulateEconomy(
-          fishData,
-          shopData,
+      const results: Record<string, EconomyRound[]> = {};
+      for (const pair of pairs) {
+        const data = pairData[pair.id];
+        if (!data) continue;
+        results[pair.id] = simulateEconomy(
+          data.fish,
+          data.shop,
           locationData,
           { attack: reelStr, defense: drag, lineHP, inventorySize },
           simMinutes,
           evalTrials,
-        ),
-      );
+        );
+      }
+      setPairRounds(results);
       setRunning(false);
     }, 0);
   }
 
-  const rateData = activeRounds.map((r) => ({
-    time: r.cumulativeTime,
-    rate: parseFloat(r.rate.toFixed(4)),
-    upgrade: r.upgradesBought.length > 0 ? parseFloat(r.rate.toFixed(4)) : null,
-  }));
+  // Rounds for single-series charts (primary pair or recorded)
+  const primaryRounds =
+    mode === "recorded" ? recordedRounds : (pairRounds[pairs[0]?.id] ?? []);
 
-  const ratePerRoundData = activeRounds.map((r) => ({
-    round: r.round,
-    income: parseFloat(r.income.toFixed(4)),
-    upgrade:
-      r.upgradesBought.length > 0 ? parseFloat(r.income.toFixed(4)) : null,
-  }));
+  // All pair results for multi-series Income Rate charts
+  const activePairResults =
+    mode === "recorded"
+      ? [
+          {
+            pair: {
+              id: "recorded",
+              label: "Recorded",
+              fishCSV: "",
+              shopCSV: "",
+            },
+            rounds: recordedRounds,
+          },
+        ]
+      : pairs
+          .map((p) => ({ pair: p, rounds: pairRounds[p.id] ?? [] }))
+          .filter((r) => r.rounds.length > 0);
 
-  const maxTime =
-    activeRounds.length > 0
-      ? activeRounds[activeRounds.length - 1].cumulativeTime
-      : 0;
+  const hasResults = activePairResults.some((r) => r.rounds.length > 0);
+
+  // ── Chart data (primary rounds) ──
+
+  const multiMaxTime = Math.max(
+    0,
+    ...activePairResults.map((r) =>
+      r.rounds.length > 0 ? r.rounds[r.rounds.length - 1].cumulativeTime : 0,
+    ),
+  );
   const xTicks = Array.from(
-    { length: Math.floor(maxTime / 60) + 1 },
+    { length: Math.floor(multiMaxTime / 60) + 1 },
     (_, i) => i * 60,
   );
+  const maxRound = Math.max(
+    0,
+    ...activePairResults.map((r) => r.rounds.length),
+  );
 
-  const catchTimeData = activeRounds.map((r) => ({
+  const catchTimeData = primaryRounds.map((r) => ({
     time: r.cumulativeTime,
     ...Object.fromEntries(
-      fishData.map((f) => [f.id, r.fishCatchTimes[f.id] ?? null]),
+      primaryFishData.map((f) => [f.id, r.fishCatchTimes[f.id] ?? null]),
     ),
   }));
 
-  const earningsData = activeRounds.map((r) => ({
+  const earningsData = primaryRounds.map((r) => ({
     time: r.cumulativeTime,
     ...Object.fromEntries(
-      fishData.map((f) => [`${f.id}_earn`, r.fishEarnings[f.id] ?? null]),
+      primaryFishData.map((f) => [
+        `${f.id}_earn`,
+        r.fishEarnings[f.id] ?? null,
+      ]),
     ),
   }));
 
-  const playerStatData = activeRounds.map((r) => ({
+  const playerStatData = primaryRounds.map((r) => ({
     time: r.cumulativeTime,
     attack: r.playerStats.attack,
     defense: r.playerStats.defense,
     lineHP: r.playerStats.lineHP,
   }));
 
-  const lureRateData = activeRounds.map((r) => ({
+  const lureRateData = primaryRounds.map((r) => ({
     time: r.cumulativeTime,
-    ...Object.fromEntries(
-      Object.entries(r.lureRates).map(([id, rate]) => [id, rate]),
-    ),
+    ...Object.fromEntries(Object.entries(r.lureRates)),
   }));
 
-  const lureWinRateData = activeRounds.map((r) => ({
+  const lureWinRateData = primaryRounds.map((r) => ({
     time: r.cumulativeTime,
     ...Object.fromEntries(
       Object.entries(r.lureWinRates).map(([id, wr]) => [
@@ -206,7 +428,7 @@ export function EconomyTab({
     ),
   }));
 
-  const lureRemainingHPData = activeRounds.map((r) => ({
+  const lureRemainingHPData = primaryRounds.map((r) => ({
     time: r.cumulativeTime,
     ...Object.fromEntries(
       Object.entries(r.lureRemainingHP).map(([id, hp]) => [
@@ -216,7 +438,11 @@ export function EconomyTab({
     ),
   }));
 
-  const levelData = activeRounds.map((r) => ({
+  const nonLureUpgrades = primaryShopData.filter(
+    (u) => u.stat !== StatName.LURE,
+  );
+
+  const levelData = primaryRounds.map((r) => ({
     time: r.cumulativeTime,
     ...Object.fromEntries(
       nonLureUpgrades.map((u) => [u.id, r.upgradeLevels[u.id] ?? 0]),
@@ -225,7 +451,7 @@ export function EconomyTab({
 
   const lures = [
     { id: "", name: "No Lure" },
-    ...shopData
+    ...primaryShopData
       .filter((u) => u.stat === StatName.LURE)
       .map((u) => ({ id: u.id, name: u.id })),
   ];
@@ -233,52 +459,19 @@ export function EconomyTab({
     lures.map((l, i) => [l.id, COLORS[i % COLORS.length]]),
   );
   const lureNameMap = Object.fromEntries(lures.map((l) => [l.id, l.name]));
-
   const fishColorMap = Object.fromEntries(
-    fishData.map((f, i) => [f.id, COLORS[i % COLORS.length]]),
+    primaryFishData.map((f, i) => [f.id, COLORS[i % COLORS.length]]),
   );
 
-  const lureShopMap = Object.fromEntries(
-    shopData.filter((u) => u.stat === StatName.LURE).map((u) => [u.id, u]),
-  );
-  const lureRows: {
-    name: string;
-    cost: number;
-    timeSincePrev: number | null;
-  }[] = [];
-  {
-    let lastLureTime: number | null = null;
-    for (const r of activeRounds) {
-      if (!r.boughtLure) continue;
-      for (const entry of r.upgradesBought) {
-        const match = entry.match(/^(.+) L(\d+)$/);
-        if (!match) continue;
-        const [, id, levelStr] = match;
-        const upgrade = lureShopMap[id];
-        if (!upgrade) continue;
-        const level = parseInt(levelStr, 10);
-        const cost = upgrade.prices[level - 1];
-        lureRows.push({
-          name: upgrade.id,
-          cost,
-          timeSincePrev:
-            lastLureTime !== null
-              ? r.cumulativeTime - lastLureTime
-              : r.cumulativeTime,
-        });
-        lastLureTime = r.cumulativeTime;
-      }
-    }
-  }
-
+  // Lure regions (primary pair only)
   const lureRegions: { x1: number; x2: number; lureId: string }[] = [];
-  if (activeRounds.length > 0) {
+  if (primaryRounds.length > 0) {
     let regionStart = 0;
-    for (let i = 0; i < activeRounds.length; i++) {
-      const r = activeRounds[i];
+    for (let i = 0; i < primaryRounds.length; i++) {
+      const r = primaryRounds[i];
       if (
-        i === activeRounds.length - 1 ||
-        activeRounds[i + 1].lureId !== r.lureId
+        i === primaryRounds.length - 1 ||
+        primaryRounds[i + 1].lureId !== r.lureId
       ) {
         lureRegions.push({
           x1: regionStart,
@@ -289,15 +482,14 @@ export function EconomyTab({
       }
     }
   }
-
   const lureRegionsByRound: { x1: number; x2: number; lureId: string }[] = [];
-  if (activeRounds.length > 0) {
-    let regionStart = activeRounds[0].round;
-    for (let i = 0; i < activeRounds.length; i++) {
-      const r = activeRounds[i];
+  if (primaryRounds.length > 0) {
+    let regionStart = primaryRounds[0].round;
+    for (let i = 0; i < primaryRounds.length; i++) {
+      const r = primaryRounds[i];
       if (
-        i === activeRounds.length - 1 ||
-        activeRounds[i + 1].lureId !== r.lureId
+        i === primaryRounds.length - 1 ||
+        primaryRounds[i + 1].lureId !== r.lureId
       ) {
         lureRegionsByRound.push({
           x1: regionStart,
@@ -308,35 +500,105 @@ export function EconomyTab({
       }
     }
   }
+  const activeLureIds = [...new Set(primaryRounds.map((r) => r.lureId))];
 
-  const activeLureIds = [...new Set(activeRounds.map((r) => r.lureId))];
+  const lurePurchaseLinesTime = activePairResults.flatMap(
+    ({ pair, rounds }, i) =>
+      rounds
+        .filter((r) => r.boughtLure)
+        .map((r) => (
+          <ReferenceLine
+            key={`${pair.id}-${r.round}`}
+            x={r.cumulativeTime}
+            stroke={COLORS[i % COLORS.length]}
+            strokeDasharray="4 2"
+          />
+        )),
+  );
+  const lurePurchaseLinesRound = activePairResults.flatMap(
+    ({ pair, rounds }, i) =>
+      rounds
+        .filter((r) => r.boughtLure)
+        .map((r) => (
+          <ReferenceLine
+            key={`${pair.id}-${r.round}`}
+            x={r.round}
+            stroke={COLORS[i % COLORS.length]}
+            strokeDasharray="4 2"
+          />
+        )),
+  );
 
-  const chartProps = { maxTime, xTicks };
+  // Single-pair: upgrade dots; multi-pair: omit
+  const isSinglePair = activePairResults.length === 1;
+  const singlePairRateData = isSinglePair
+    ? activePairResults[0].rounds.map((r) => ({
+        time: r.cumulativeTime,
+        rate: parseFloat(r.rate.toFixed(4)),
+        upgrade:
+          r.upgradesBought.length > 0 ? parseFloat(r.rate.toFixed(4)) : null,
+      }))
+    : [];
+  const singlePairRoundData = isSinglePair
+    ? activePairResults[0].rounds.map((r) => ({
+        round: r.round,
+        income: parseFloat(r.income.toFixed(4)),
+        upgrade:
+          r.upgradesBought.length > 0 ? parseFloat(r.income.toFixed(4)) : null,
+      }))
+    : [];
 
-  const lurePurchaseLines = activeRounds
-    .filter((r) => r.boughtLure)
-    .map((r) => (
-      <ReferenceLine
-        key={r.round}
-        x={r.cumulativeTime}
-        stroke="#4caf50"
-        strokeDasharray="4 2"
-      />
-    ));
+  // ── LurePurchases (multi-pair) ──
 
-  const lurePurchaseLinesByRound = activeRounds
-    .filter((r) => r.boughtLure)
-    .map((r) => (
-      <ReferenceLine
-        key={r.round}
-        x={r.round}
-        stroke="#4caf50"
-        strokeDasharray="4 2"
-      />
-    ));
+  const allPairLureRows = activePairResults.map(({ pair, rounds }) => {
+    const shopData =
+      pair.id === "recorded"
+        ? primaryShopData
+        : (pairData[pair.id]?.shop ?? primaryShopData);
+    return { pair, rows: buildLureRows(rounds, shopData) };
+  });
+  const allLureNames = [
+    ...new Set(allPairLureRows.flatMap(({ rows }) => rows.map((r) => r.name))),
+  ];
+  const pairLureMaps = allPairLureRows.map(
+    ({ rows }) => new Map(rows.map((r) => [r.name, r.timeSincePrev])),
+  );
+  const lureCostMap = new Map(
+    allPairLureRows.flatMap(({ rows }) => rows.map((r) => [r.name, r.cost])),
+  );
+
+  const chartProps = { maxTime: multiMaxTime, xTicks };
 
   return (
     <Flex direction="column" gap="4" pt="4">
+      {/* CSV Pairs */}
+      {mode === "simulation" && (
+        <Flex direction="column" gap="2">
+          <Text size="2" weight="bold">
+            CSV Pairs
+          </Text>
+          {pairs.map((pair, i) => (
+            <PairRow
+              key={pair.id}
+              pair={pair}
+              color={COLORS[i % COLORS.length]}
+              removable={pairs.length > 1}
+              onUpdate={(patch) => updatePair(pair.id, patch)}
+              onRemove={() => removePair(pair.id)}
+            />
+          ))}
+          <Button
+            size="1"
+            variant="soft"
+            onClick={addPair}
+            style={{ width: "fit-content" }}
+          >
+            + Add Pair
+          </Button>
+        </Flex>
+      )}
+
+      {/* Simulation controls */}
       <Flex gap="3" wrap="wrap" align="end">
         <NumInput
           label="Attack"
@@ -364,8 +626,8 @@ export function EconomyTab({
           onChange={setEvalTrials}
           min={1}
         />
-        <Button onClick={runSim} disabled={running}>
-          {running ? "Running…" : "Run Economy"}
+        <Button onClick={runSim} disabled={running || !allPairsLoaded}>
+          {running ? "Running…" : !allPairsLoaded ? "Loading…" : "Run Economy"}
         </Button>
         <GridToggleButton
           gridLayout={gridLayout}
@@ -373,6 +635,7 @@ export function EconomyTab({
         />
       </Flex>
 
+      {/* Mode selector */}
       <Flex gap="3" align="center">
         <SegmentedControl.Root
           value={mode}
@@ -406,250 +669,321 @@ export function EconomyTab({
         )}
       </Flex>
 
-      {activeRounds.length > 0 && (
+      {hasResults && (
         <>
           <Text size="2" color="gray">
-            {activeRounds.length}{" "}
-            {mode === "recorded" ? "rounds recorded" : "rounds simulated"}
+            {mode === "recorded"
+              ? `${recordedRounds.length} rounds recorded`
+              : `${activePairResults.map((r) => `${r.pair.label}: ${r.rounds.length}`).join(" · ")} rounds simulated`}
           </Text>
 
           <ChartGrid gridLayout={gridLayout}>
+            {/* Income Rate ($/s) — one line per pair */}
             <EconomyChart
               title="Income Rate ($/s)"
-              data={rateData}
+              data={isSinglePair ? singlePairRateData : []}
               {...chartProps}
-              header={activeLureIds.map((id) => (
-                <Flex key={id} align="center" gap="1">
-                  <div
-                    style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: 2,
-                      backgroundColor: lureColorMap[id],
-                      opacity: 0.8,
-                    }}
-                  />
-                  <Text size="1" color="gray">
-                    {lureNameMap[id]}
-                  </Text>
-                </Flex>
-              ))}
+              header={
+                isSinglePair
+                  ? activeLureIds.map((id) => (
+                      <Flex key={id} align="center" gap="1">
+                        <div
+                          style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: 2,
+                            backgroundColor: lureColorMap[id],
+                            opacity: 0.8,
+                          }}
+                        />
+                        <Text size="1" color="gray">
+                          {lureNameMap[id]}
+                        </Text>
+                      </Flex>
+                    ))
+                  : undefined
+              }
             >
-              {lureRegions.map((region, i) => (
-                <ReferenceArea
-                  key={i}
-                  x1={region.x1}
-                  x2={region.x2}
-                  fill={lureColorMap[region.lureId]}
-                  fillOpacity={0.12}
-                  ifOverflow="hidden"
-                />
-              ))}
-              {lurePurchaseLines}
-              <Line dataKey="rate" stroke="#60cdff" {...lineProps} name="$/s" />
-              <Line
-                dataKey="upgrade"
-                stroke="#ffd43b"
-                dot={{ fill: "#ffd43b", r: 4 }}
-                strokeWidth={0}
-                isAnimationActive={false}
-                name="upgrade"
-              />
+              {isSinglePair &&
+                lureRegions.map((region, i) => (
+                  <ReferenceArea
+                    key={i}
+                    x1={region.x1}
+                    x2={region.x2}
+                    fill={lureColorMap[region.lureId]}
+                    fillOpacity={0.12}
+                    ifOverflow="hidden"
+                  />
+                ))}
+              {lurePurchaseLinesTime}
+              {isSinglePair ? (
+                <>
+                  <Line
+                    dataKey="rate"
+                    stroke={COLORS[0]}
+                    {...lineProps}
+                    name="$/s"
+                  />
+                  <Line
+                    dataKey="upgrade"
+                    stroke="#ffd43b"
+                    dot={{ fill: "#ffd43b", r: 4 }}
+                    strokeWidth={0}
+                    isAnimationActive={false}
+                    name="upgrade"
+                  />
+                </>
+              ) : (
+                activePairResults.map((result, i) => (
+                  <Line
+                    key={result.pair.id}
+                    data={result.rounds.map((r) => ({
+                      time: r.cumulativeTime,
+                      rate: parseFloat(r.rate.toFixed(4)),
+                    }))}
+                    dataKey="rate"
+                    stroke={COLORS[i % COLORS.length]}
+                    name={result.pair.label}
+                    {...lineProps}
+                  />
+                ))
+              )}
+              {!isSinglePair && <Legend />}
             </EconomyChart>
 
+            {/* Income Rate ($/round) — one line per pair */}
             <EconomyChart
               title="Income Rate ($/round)"
-              data={ratePerRoundData}
-              maxTime={maxTime}
+              data={isSinglePair ? singlePairRoundData : []}
+              maxTime={multiMaxTime}
               xDataKey="round"
-              xDomain={[1, activeRounds.length]}
+              xDomain={[1, maxRound]}
               xTickFormatter={(v) => `${v}`}
               syncId="economy-round"
-              header={activeLureIds.map((id) => (
-                <Flex key={id} align="center" gap="1">
-                  <div
-                    style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: 2,
-                      backgroundColor: lureColorMap[id],
-                      opacity: 0.8,
-                    }}
+              header={
+                isSinglePair
+                  ? activeLureIds.map((id) => (
+                      <Flex key={id} align="center" gap="1">
+                        <div
+                          style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: 2,
+                            backgroundColor: lureColorMap[id],
+                            opacity: 0.8,
+                          }}
+                        />
+                        <Text size="1" color="gray">
+                          {lureNameMap[id]}
+                        </Text>
+                      </Flex>
+                    ))
+                  : undefined
+              }
+            >
+              {isSinglePair &&
+                lureRegionsByRound.map((region, i) => (
+                  <ReferenceArea
+                    key={i}
+                    x1={region.x1}
+                    x2={region.x2}
+                    fill={lureColorMap[region.lureId]}
+                    fillOpacity={0.12}
+                    ifOverflow="hidden"
                   />
-                  <Text size="1" color="gray">
-                    {lureNameMap[id]}
-                  </Text>
-                </Flex>
-              ))}
-            >
-              {lureRegionsByRound.map((region, i) => (
-                <ReferenceArea
-                  key={i}
-                  x1={region.x1}
-                  x2={region.x2}
-                  fill={lureColorMap[region.lureId]}
-                  fillOpacity={0.12}
-                  ifOverflow="hidden"
-                />
-              ))}
-              {lurePurchaseLinesByRound}
-              <Line
-                dataKey="income"
-                stroke="#60cdff"
-                {...lineProps}
-                name="$/round"
-              />
-              <Line
-                dataKey="upgrade"
-                stroke="#ffd43b"
-                dot={{ fill: "#ffd43b", r: 4 }}
-                strokeWidth={0}
-                isAnimationActive={false}
-                name="upgrade"
-              />
+                ))}
+              {lurePurchaseLinesRound}
+              {isSinglePair ? (
+                <>
+                  <Line
+                    dataKey="income"
+                    stroke={COLORS[0]}
+                    {...lineProps}
+                    name="$/round"
+                  />
+                  <Line
+                    dataKey="upgrade"
+                    stroke="#ffd43b"
+                    dot={{ fill: "#ffd43b", r: 4 }}
+                    strokeWidth={0}
+                    isAnimationActive={false}
+                    name="upgrade"
+                  />
+                </>
+              ) : (
+                activePairResults.map((result, i) => (
+                  <Line
+                    key={result.pair.id}
+                    data={result.rounds.map((r) => ({
+                      round: r.round,
+                      income: parseFloat(r.income.toFixed(4)),
+                    }))}
+                    dataKey="income"
+                    stroke={COLORS[i % COLORS.length]}
+                    name={result.pair.label}
+                    {...lineProps}
+                  />
+                ))
+              )}
+              {!isSinglePair && <Legend />}
             </EconomyChart>
 
-            <EconomyChart
-              title="Lure Income Rates ($/s)"
-              data={lureRateData}
-              {...chartProps}
-            >
-              <Legend />
-              {lures.map((l) => (
+            {isSinglePair && (
+              <EconomyChart
+                title="Lure Income Rates ($/s)"
+                data={lureRateData}
+                {...chartProps}
+              >
+                <Legend />
+                {lures.map((l) => (
+                  <Line
+                    key={l.id}
+                    dataKey={l.id}
+                    stroke={lureColorMap[l.id]}
+                    {...lineProps}
+                    name={l.name}
+                    connectNulls={false}
+                  />
+                ))}
+              </EconomyChart>
+            )}
+
+            {isSinglePair && (
+              <EconomyChart
+                title="Lure Win % by Lure"
+                data={lureWinRateData}
+                {...chartProps}
+              >
+                <Legend />
+                {lures.map((l) => (
+                  <Line
+                    key={l.id}
+                    dataKey={l.id}
+                    stroke={lureColorMap[l.id]}
+                    {...lineProps}
+                    name={l.name}
+                    connectNulls={false}
+                  />
+                ))}
+              </EconomyChart>
+            )}
+
+            {isSinglePair && (
+              <EconomyChart
+                title="Avg Remaining Line HP by Lure (%)"
+                data={lureRemainingHPData}
+                {...chartProps}
+              >
+                <Legend />
+                {lures.map((l) => (
+                  <Line
+                    key={l.id}
+                    dataKey={l.id}
+                    stroke={lureColorMap[l.id]}
+                    {...lineProps}
+                    name={l.name}
+                    connectNulls={false}
+                  />
+                ))}
+              </EconomyChart>
+            )}
+
+            {isSinglePair && (
+              <EconomyChart
+                title="Fish Income Rate ($)"
+                data={earningsData}
+                {...chartProps}
+              >
+                <Legend />
+                {primaryFishData.map((f) => (
+                  <Line
+                    key={`${f.id}_earn`}
+                    dataKey={`${f.id}_earn`}
+                    stroke={fishColorMap[f.id]}
+                    {...lineProps}
+                    name={f.name}
+                    connectNulls={false}
+                  />
+                ))}
+              </EconomyChart>
+            )}
+
+            {isSinglePair && (
+              <EconomyChart
+                title="Catch Time (s)"
+                data={catchTimeData}
+                {...chartProps}
+              >
+                <Legend />
+                {primaryFishData.map((f) => (
+                  <Line
+                    key={f.id}
+                    dataKey={f.id}
+                    stroke={fishColorMap[f.id]}
+                    {...lineProps}
+                    name={f.name}
+                    connectNulls={false}
+                  />
+                ))}
+              </EconomyChart>
+            )}
+
+            {isSinglePair && (
+              <EconomyChart
+                title="Player Stats"
+                data={playerStatData}
+                {...chartProps}
+                integerYAxis
+              >
+                <Legend />
                 <Line
-                  key={l.id}
-                  dataKey={l.id}
-                  stroke={lureColorMap[l.id]}
-                  {...lineProps}
-                  name={l.name}
-                  connectNulls={false}
-                />
-              ))}
-            </EconomyChart>
-
-            <EconomyChart
-              title="Lure Win % by Lure"
-              data={lureWinRateData}
-              {...chartProps}
-            >
-              <Legend />
-              {lures.map((l) => (
-                <Line
-                  key={l.id}
-                  dataKey={l.id}
-                  stroke={lureColorMap[l.id]}
-                  {...lineProps}
-                  name={l.name}
-                  connectNulls={false}
-                />
-              ))}
-            </EconomyChart>
-
-            <EconomyChart
-              title="Avg Remaining Line HP by Lure (%)"
-              data={lureRemainingHPData}
-              {...chartProps}
-            >
-              <Legend />
-              {lures.map((l) => (
-                <Line
-                  key={l.id}
-                  dataKey={l.id}
-                  stroke={lureColorMap[l.id]}
-                  {...lineProps}
-                  name={l.name}
-                  connectNulls={false}
-                />
-              ))}
-            </EconomyChart>
-
-            <EconomyChart
-              title="Fish Income Rate ($)"
-              data={earningsData}
-              {...chartProps}
-            >
-              <Legend />
-              {fishData.map((f) => (
-                <Line
-                  key={`${f.id}_earn`}
-                  dataKey={`${f.id}_earn`}
-                  stroke={fishColorMap[f.id]}
-                  {...lineProps}
-                  name={f.name}
-                  connectNulls={false}
-                />
-              ))}
-            </EconomyChart>
-
-            <EconomyChart
-              title="Catch Time (s)"
-              data={catchTimeData}
-              {...chartProps}
-            >
-              <Legend />
-              {fishData.map((f) => (
-                <Line
-                  key={f.id}
-                  dataKey={f.id}
-                  stroke={fishColorMap[f.id]}
-                  {...lineProps}
-                  name={f.name}
-                  connectNulls={false}
-                />
-              ))}
-            </EconomyChart>
-
-            <EconomyChart
-              title="Player Stats"
-              data={playerStatData}
-              {...chartProps}
-              integerYAxis
-            >
-              <Legend />
-              <Line
-                dataKey="attack"
-                type="stepAfter"
-                stroke="#ff6b6b"
-                {...lineProps}
-                name="Attack"
-              />
-              <Line
-                dataKey="defense"
-                type="stepAfter"
-                stroke="#74c0fc"
-                {...lineProps}
-                name="Defense"
-              />
-              <Line
-                dataKey="lineHP"
-                type="stepAfter"
-                stroke="#69db7c"
-                {...lineProps}
-                name="Line HP"
-              />
-            </EconomyChart>
-
-            <EconomyChart
-              title="Upgrade Levels"
-              data={levelData}
-              {...chartProps}
-              integerYAxis
-            >
-              {lurePurchaseLines}
-              <Legend />
-              {nonLureUpgrades.map((u, i) => (
-                <Line
-                  key={u.id}
-                  dataKey={u.id}
+                  dataKey="attack"
                   type="stepAfter"
-                  stroke={COLORS[i % COLORS.length]}
+                  stroke="#ff6b6b"
                   {...lineProps}
-                  name={u.id}
+                  name="Attack"
                 />
-              ))}
-            </EconomyChart>
+                <Line
+                  dataKey="defense"
+                  type="stepAfter"
+                  stroke="#74c0fc"
+                  {...lineProps}
+                  name="Defense"
+                />
+                <Line
+                  dataKey="lineHP"
+                  type="stepAfter"
+                  stroke="#69db7c"
+                  {...lineProps}
+                  name="Line HP"
+                />
+              </EconomyChart>
+            )}
 
-            {lureRows.length > 0 && (
+            {isSinglePair && (
+              <EconomyChart
+                title="Upgrade Levels"
+                data={levelData}
+                {...chartProps}
+                integerYAxis
+              >
+                {lurePurchaseLinesTime}
+                <Legend />
+                {nonLureUpgrades.map((u, i) => (
+                  <Line
+                    key={u.id}
+                    dataKey={u.id}
+                    type="stepAfter"
+                    stroke={COLORS[i % COLORS.length]}
+                    {...lineProps}
+                    name={u.id}
+                  />
+                ))}
+              </EconomyChart>
+            )}
+
+            {/* Lure Purchases — multi-column */}
+            {allLureNames.length > 0 && (
               <Flex direction="column" gap="2">
                 <Text size="2" weight="bold">
                   Lure Purchases
@@ -658,22 +992,33 @@ export function EconomyTab({
                   <Table.Header>
                     <Table.Row>
                       <Table.ColumnHeaderCell>Lure</Table.ColumnHeaderCell>
-                      <Table.ColumnHeaderCell>Cost ($)</Table.ColumnHeaderCell>
-                      <Table.ColumnHeaderCell>
-                        Time Since Prev (s)
-                      </Table.ColumnHeaderCell>
+                      {isSinglePair && (
+                        <Table.ColumnHeaderCell>
+                          Cost ($)
+                        </Table.ColumnHeaderCell>
+                      )}
+                      {activePairResults.map((r) => (
+                        <Table.ColumnHeaderCell key={r.pair.id}>
+                          Time Since Prev (s)
+                          {!isSinglePair && ` — ${r.pair.label}`}
+                        </Table.ColumnHeaderCell>
+                      ))}
                     </Table.Row>
                   </Table.Header>
                   <Table.Body>
-                    {lureRows.map((row, i) => (
-                      <Table.Row key={i}>
-                        <Table.Cell>{row.name}</Table.Cell>
-                        <Table.Cell>{row.cost}</Table.Cell>
-                        <Table.Cell>
-                          {row.timeSincePrev !== null
-                            ? Math.round(row.timeSincePrev)
-                            : "—"}
-                        </Table.Cell>
+                    {allLureNames.map((name) => (
+                      <Table.Row key={name}>
+                        <Table.Cell>{name}</Table.Cell>
+                        {isSinglePair && (
+                          <Table.Cell>
+                            {lureCostMap.get(name) ?? "—"}
+                          </Table.Cell>
+                        )}
+                        {pairLureMaps.map((map, i) => (
+                          <Table.Cell key={i}>
+                            {map.has(name) ? Math.round(map.get(name)!) : "—"}
+                          </Table.Cell>
+                        ))}
                       </Table.Row>
                     ))}
                   </Table.Body>

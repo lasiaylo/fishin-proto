@@ -93,17 +93,23 @@ Note that each lure is required by the previous lure.
 
 ### In-Game CSV Switching
 
-Introduce a lightweight `csvConfigStore` (Zustand) that tracks the active filename for fish and shop CSVs (defaulting to `FishGameplay.csv` / `ShopGameplay.csv`). When the active filenames change, the fish and shop stores re-fetch their data using the new paths.
+Fish gameplay CSVs live in `public/data/Fish/` and shop gameplay CSVs in `public/data/Shop/`. A Vite plugin (`csvManifestPlugin` in `vite.config.js`) reads both directories at build/dev startup and exposes their contents as the virtual module `virtual:csv-manifest` (`FISH_CSVS`, `SHOP_CSVS` string arrays). In dev mode, adding a file to either folder invalidates the module and triggers a full page reload.
 
-The Debug panel (`debug.tsx`) gets a new **CSV Switcher** section: two `<select>` dropdowns populated with known CSV variants discovered at runtime (files named `FishGameplay*.csv` / `ShopGameplay*.csv` served from `public/data/`), plus a **Reload** button that triggers a re-fetch. `loadFishData` and `loadShopGameplayData` in `csvLoader.ts` accept an optional filename parameter; the stores pass the currently active names from `csvConfigStore`.
+`csvConfigStore` (Zustand) imports from the virtual module and tracks the currently active filenames, defaulting to the first entry of each list. `loadFishData` and `loadShopData` in `csvLoader.ts` accept an optional filename parameter and fetch from the appropriate subdirectory (`/data/Fish/` or `/data/Shop/`).
+
+The Debug panel (`debug.tsx`) gets a **CSV Switcher** section: two `<select>` dropdowns populated from `FISH_CSVS` / `SHOP_CSVS`. Selecting a fish CSV immediately calls `initFish(newFile)`. Selecting a shop CSV calls `resetAllUpgradesDebug()` to undo any applied stat changes, then `initShop(newFile)`.
 
 ### Model Economy Tab — CSV Switching
 
-Add a **CSV Pairs** control strip above the Economy charts. A user can define one or more `{ fishCSV, shopCSV, label }` pairs using dropdowns (same known-file list) and add/remove rows. Each pair is run through `simulateEconomy` independently, which already accepts `fishData`/`shopData` as parameters, so the tab just loads and passes the right data per pair.
+`EconomyTab` drops its `fishData` and `shopData` props entirely and manages its own CSV pairs. A **CSV Pairs** section (simulation mode only) renders one row per pair: a color swatch, label input, Fish CSV dropdown, Shop CSV dropdown, and a Remove button. An **+ Add Pair** button appends a new row. Pair data is loaded lazily via `useEffect` whenever a pair is added or its CSV selection changes; the Run button shows "Loading…" until all pairs have data.
 
-The Income Rate ($/s) and Income Rate ($/round) charts switch to multi-line mode: one `<Line>` per pair, colored and labelled by the pair's label. The LurePurchases table gains one `TimeSincePrev (s)` column per pair, with the pair label as the column header.
+`simulateEconomy` is called once per pair on each run, results stored by pair ID.
 
-When only one pair is selected the UI is identical to today's behavior.
+The Income Rate ($/s) and Income Rate ($/round) charts render one `<Line data={...}>` per pair using Recharts' per-series data override, each in its `COLORS[i]` color with a Legend. Lure purchase vertical reference lines are shown on both Income Rate charts in all modes (single and multi-pair), colored to their respective pair's `COLORS[i]`.
+
+When multiple pairs are active, all single-pair charts (Lure Income Rates, Lure Win %, Avg Remaining Line HP, Fish Income Rate, Catch Time, Player Stats, Upgrade Levels) are hidden.
+
+The LurePurchases table pivots to one row per lure name (unioned across all pairs) with one `TimeSincePrev (s)` column per pair. The Cost column is hidden in multi-pair mode.
 
 ### Model Economy Tab — CSV Generation
 
@@ -121,18 +127,25 @@ Generated CSVs match the existing column format exactly so they can be dropped i
 
 ### Phase 1 — In-Game CSV Switching
 
-1. **`csvConfigStore.ts`** — New Zustand store with `fishCSV` and `shopCSV` string fields, defaulting to `FishGameplay.csv` / `ShopGameplay.csv`. Expose a `setCsvConfig` action.
-2. **`csvLoader.ts`** — Add optional `fishFile` / `shopFile` parameters to `loadFishData` and `loadShopGameplayData`. Callers that omit them fall back to the defaults.
-3. **`fishStore.ts` / `shopStore.ts`** — When `csvConfigStore` changes, re-invoke the loader with the new filenames and replace store data.
-4. **`debug.tsx` — CSV Switcher section** — Two `<select>` dropdowns hard-coding the known CSV variant names (e.g. `FishGameplay.csv`, `FishGameplay2.csv`), bound to `csvConfigStore`. Selecting a new value triggers the store re-fetch.
+1. **`public/data/Fish/` and `public/data/Shop/`** — Create subdirectories; move `FishGameplay.csv` and `ShopGameplay.csv` into them respectively.
+2. **`vite.config.js` — `csvManifestPlugin`** — Reads both directories at startup, exposes `FISH_CSVS` / `SHOP_CSVS` via `virtual:csv-manifest`. Invalidates the module and triggers a full reload when files are added or removed in dev.
+3. **`src/csv-manifest.d.ts`** — Type declaration for the virtual module.
+4. **`csvConfigStore.ts`** — New Zustand store importing from `virtual:csv-manifest`; tracks active `fishCSV` / `shopCSV`, defaulting to the first entry of each list.
+5. **`csvLoader.ts`** — Add optional filename parameters to `loadFishData`, `loadShopData`, and `loadShopGameplayData`; fetch paths updated to `/data/Fish/` and `/data/Shop/`.
+6. **`fishStore.ts` / `shopStore.ts`** — `initFish` and `initShop` accept an optional filename and pass it through to the loader.
+7. **`debug.tsx` — CSV Switcher section** — Two `<select>` dropdowns populated from `FISH_CSVS` / `SHOP_CSVS`. Selecting a fish CSV calls `initFish(newFile)`; selecting a shop CSV calls `resetAllUpgradesDebug()` then `initShop(newFile)`.
 
 ### Phase 2 — Model Economy Tab: CSV Switching
 
-1. **CSV pair state in `EconomyTab.tsx`** — Replace the single `fishData`/`shopData` props with a list of `CsvPair` objects `{ fishCSV, shopCSV, label }`. Add UI to add/remove pairs and pick filenames from the same known-file list.
-2. **Data loading per pair** — When pairs change, fetch each pair's fish and shop CSVs using `loadFishData` / `loadShopGameplayData` with the filename param from Phase 1. Store results alongside each pair.
-3. **Multi-run simulation** — Run `simulateEconomy` once per pair on demand, keyed by pair label. Store all results arrays.
-4. **Income Rate charts** — Update Income Rate ($/s) and Income Rate ($/round) to render one `<Line>` per pair, each with a distinct color from `COLORS` and labeled by `pair.label`.
-5. **LurePurchases table** — Recompute `lureRows` per pair. Pivot the table: rows are lures, columns are `TimeSincePrev (s)` per pair (header = pair label).
+1. **`EconomyTab.tsx` — remove props** — Drop `fishData` and `shopData` from the component signature; update `ModelView.tsx` accordingly.
+2. **CSV pair state** — Add `CsvPair[]` state (`{ id, fishCSV, shopCSV, label }`), per-pair loaded data (`Record<id, { fish, shop }>`), and per-pair simulation results (`Record<id, EconomyRound[]>`).
+3. **CSV Pairs UI** — Render a row per pair (color swatch, label input, Fish/Shop dropdowns, Remove button) above the simulation controls, simulation mode only. "Loading…" button state while any pair's CSV data is in flight.
+4. **Data loading** — `useEffect` fetches fish and shop data for any pair that doesn't have it yet; clears loaded data and results when a pair's CSV selection changes.
+5. **Multi-run simulation** — `runSim` iterates all pairs, calls `simulateEconomy` per pair, stores results by pair ID.
+6. **Income Rate charts** — Single-pair: unchanged (lure regions, upgrade dots). Multi-pair: one `<Line data={...}>` per pair via Recharts per-series data override, each in `COLORS[i]` with a Legend.
+7. **Lure purchase reference lines** — Always shown on both Income Rate charts; colored `COLORS[i]` to match the pair that triggered the purchase. Keys include pair ID to avoid collisions.
+8. **Single-pair chart visibility** — Lure Income Rates, Lure Win %, Avg Remaining Line HP, Fish Income Rate, Catch Time, Player Stats, and Upgrade Levels are all hidden when multiple pairs are active.
+9. **LurePurchases table** — Rows keyed by lure name (unioned across all pairs); one `TimeSincePrev (s)` column per pair. Cost column hidden in multi-pair mode.
 
 ### Phase 3 — Model Economy Tab: CSV Generation
 

@@ -44,8 +44,8 @@ function persistLevels(upgrades: ShopUpgrade[]) {
   localStorage.setItem(DEBUG_LEVELS_KEY, JSON.stringify(map));
 }
 
-export async function initShop() {
-  const data = await loadShopData();
+export async function initShop(shopFile?: string) {
+  const data = await loadShopData(shopFile);
   const upgrades = data.map((d) => ({ ...d, level: 0 }));
   useShop.setState({ upgrades });
 

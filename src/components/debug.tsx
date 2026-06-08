@@ -5,7 +5,15 @@ import {
   useShop,
   setUpgradeLevelDebug,
   resetAllUpgradesDebug,
+  initShop,
 } from "../stores/shopStore";
+import { initFish } from "../stores/fishStore";
+import {
+  useCsvConfig,
+  setCsvConfig,
+  FISH_CSVS,
+  SHOP_CSVS,
+} from "../stores/csvConfigStore";
 import { pushEvent } from "../stores/eventLogStore";
 import { useSessionLog } from "../stores/sessionLogStore";
 import { downloadCSV } from "../util/roundSerializer";
@@ -14,6 +22,7 @@ export function Debug() {
   return (
     <Flex direction="row" gap="4" p="4" wrap="wrap">
       <SessionLogSection />
+      <CsvSwitcherSection />
       <ShopUpgradeSection />
       <StoreView />
       <MoneySection />
@@ -158,6 +167,58 @@ function ShopUpgradeSection() {
             </Text>
           </Flex>
         ))}
+      </Flex>
+    </Flex>
+  );
+}
+
+function CsvSwitcherSection() {
+  const { fishCSV, shopCSV } = useCsvConfig();
+
+  function handleFishChange(newFile: string) {
+    setCsvConfig({ fishCSV: newFile });
+    initFish(newFile);
+  }
+
+  function handleShopChange(newFile: string) {
+    setCsvConfig({ shopCSV: newFile });
+    resetAllUpgradesDebug();
+    initShop(newFile);
+  }
+
+  return (
+    <Flex direction="column" gap="2">
+      <Text weight="bold">CSV</Text>
+      <Separator size="4" />
+      <Flex gap="2" align="center">
+        <Text size="1" color="gray" style={{ width: "32px" }}>
+          Fish
+        </Text>
+        <select
+          value={fishCSV}
+          onChange={(e) => handleFishChange(e.target.value)}
+        >
+          {FISH_CSVS.map((f) => (
+            <option key={f} value={f}>
+              {f}
+            </option>
+          ))}
+        </select>
+      </Flex>
+      <Flex gap="2" align="center">
+        <Text size="1" color="gray" style={{ width: "32px" }}>
+          Shop
+        </Text>
+        <select
+          value={shopCSV}
+          onChange={(e) => handleShopChange(e.target.value)}
+        >
+          {SHOP_CSVS.map((f) => (
+            <option key={f} value={f}>
+              {f}
+            </option>
+          ))}
+        </select>
       </Flex>
     </Flex>
   );

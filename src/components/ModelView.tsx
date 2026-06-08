@@ -63,11 +63,7 @@ export function ModelView() {
               <ParamSweepTab fishData={fishData} />
             </Tabs.Content>
             <Tabs.Content value="economy">
-              <EconomyTab
-                fishData={fishData}
-                shopData={shopData}
-                locationData={locationData}
-              />
+              <EconomyTab locationData={locationData} />
             </Tabs.Content>
             <Tabs.Content value="graphs">
               <GraphsTab

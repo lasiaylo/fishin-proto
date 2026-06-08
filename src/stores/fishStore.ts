@@ -30,8 +30,8 @@ export const useFish = create(
   })),
 );
 
-export async function initFish() {
-  const data = await loadFishData();
+export async function initFish(fishFile?: string) {
+  const data = await loadFishData(fishFile);
   useFish.setState({ allFish: data });
 }
 
