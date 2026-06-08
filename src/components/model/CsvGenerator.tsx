@@ -317,8 +317,11 @@ function FishGenerator({
       {showPreview && (
         <PreviewTable
           rows={[
-            rows[0],
-            ...rows.slice(1).filter((_, i) => i === 0 || (i - 2) % 3 === 0),
+            ["ID", "A/D", "BasePrice"],
+            ...rows
+              .slice(1)
+              .filter((_, i) => i === 0 || (i - 2) % 3 === 0)
+              .map((r) => [r[0], r[1], r[4]]),
           ]}
         />
       )}
@@ -584,7 +587,11 @@ function ShopGenerator({
         </>
       )}
 
-      {showPreview && <PreviewTable rows={rows} />}
+      {showPreview && (
+        <PreviewTable
+          rows={[["ID", "Price"], ...rows.slice(1).map((r) => [r[0], r[1]])]}
+        />
+      )}
       <Button
         size="1"
         variant="soft"
