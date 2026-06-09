@@ -48,7 +48,8 @@ export function ModelView() {
         gap="4"
         style={{
           minHeight: "100vh",
-          fontFamily: "ui-monospace, SFMono-Regular",
+          fontFamily:
+            "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
         }}
       >
         <Text size="6" weight="bold">
