@@ -4,6 +4,8 @@ const MAX_DISTANCE = 100;
 const START_DISTANCE = MAX_DISTANCE / 2;
 const IDLE_SPEED = 8;
 
+export type DeltaMode = "Fractional" | "EaseInEaseOut";
+
 export interface FightConfig {
   restTimeRange: [number, number];
   fightTimeRange: [number, number];
@@ -14,6 +16,10 @@ export interface FightConfig {
   thrashMultRange: [number, number];
   critChance: number;
   critMult: number;
+  deltaMode: DeltaMode;
+  easeScale: number;
+  easeMidpoint: number;
+  easeSlope: number;
 }
 
 export const DEFAULT_FIGHT_CONFIG: FightConfig = {
@@ -26,7 +32,23 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   thrashMultRange: [0.95, 1.05],
   critChance: 0.125,
   critMult: 1.5,
+  deltaMode: "Fractional",
+  easeScale: 2,
+  easeMidpoint: 0.5,
+  easeSlope: 0.5,
 };
+
+function easeIn(x: number, midpoint: number, slope: number) {
+  const s = 2 / (1 - slope) - 1;
+  return x ** s / midpoint ** (s - 1);
+}
+
+function easeInEaseOut(x: number, slope: number, midpoint: number): number {
+  if (x <= 0) return 0;
+  if (x < midpoint) return easeIn(x, midpoint, slope);
+  if (x <= 1) return 1 - easeIn(1 - x, 1 - midpoint, slope);
+  return 1;
+}
 
 const STRUGGLE_GRACE = 1;
 const THRASH_MULT = 1.2;
@@ -141,7 +163,23 @@ export class FightEngine {
   }
 
   private getDelta(attack: number, defense: number): number {
-    return this.cfg.baseSpeed * (attack / (attack + defense));
+    return FightEngine.computeDelta(attack, defense, this.cfg);
+  }
+
+  static computeDelta(
+    attack: number,
+    defense: number,
+    cfg: FightConfig,
+  ): number {
+    if (cfg.deltaMode === "EaseInEaseOut") {
+      const ease = easeInEaseOut(
+        attack / (defense * cfg.easeScale),
+        cfg.easeSlope,
+        cfg.easeMidpoint,
+      );
+      return (cfg.baseSpeed - 1) * ease + 1;
+    }
+    return cfg.baseSpeed * (attack / (attack + defense));
   }
 
   private applyMovement(dt: number, reel?: boolean): void {

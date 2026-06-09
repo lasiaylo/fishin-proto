@@ -7,6 +7,16 @@ import React, {
 } from "react";
 import { Flex, Text, Button } from "@radix-ui/themes";
 import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import {
   FightEngine,
   Outcome,
   DEFAULT_FIGHT_CONFIG,
@@ -35,6 +45,179 @@ function avgTimeToColor(t: number): string {
 
 function remainingHPToColor(pct: number): string {
   return `hsl(${pct * 1.2}, 70%, 35%)`;
+}
+
+function DeltaLineChart({
+  reelMin,
+  reelMax,
+  fishAtk,
+  fishDef,
+  engineCfg,
+}: {
+  reelMin: number;
+  reelMax: number;
+  fishAtk: number;
+  fishDef: number;
+  engineCfg: FightConfig;
+}) {
+  if (reelMax < reelMin) return null;
+  const data = Array.from({ length: reelMax - reelMin + 1 }, (_, i) => {
+    const ad = reelMin + i;
+    return {
+      ad,
+      struggling: parseFloat(
+        FightEngine.computeDelta(fishAtk, ad, engineCfg).toFixed(2),
+      ),
+      resting: parseFloat(
+        FightEngine.computeDelta(ad, fishDef, engineCfg).toFixed(2),
+      ),
+    };
+  });
+
+  return (
+    <Flex direction="column" gap="2">
+      <Text size="2" weight="bold">
+        Fight Deltas
+      </Text>
+      <ResponsiveContainer width="100%" height={200}>
+        <LineChart
+          data={data}
+          margin={{ top: 4, right: 16, left: 0, bottom: 4 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+          <XAxis
+            dataKey="ad"
+            label={{
+              value: "A/D",
+              position: "insideBottomRight",
+              offset: -4,
+              fill: "#999",
+              fontSize: 11,
+            }}
+            tick={{ fill: "#999", fontSize: 11 }}
+          />
+          <YAxis tick={{ fill: "#999", fontSize: 11 }} width={42} />
+          <Tooltip
+            contentStyle={{
+              background: "#1a1a1a",
+              border: "1px solid #333",
+              fontSize: 12,
+            }}
+          />
+          <Legend wrapperStyle={{ fontSize: 12 }} />
+          <Line
+            type="monotone"
+            dataKey="struggling"
+            name="Struggling"
+            stroke="#f44336"
+            dot={false}
+            strokeWidth={2}
+          />
+          <Line
+            type="monotone"
+            dataKey="resting"
+            name="Resting"
+            stroke="#4caf50"
+            dot={false}
+            strokeWidth={2}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </Flex>
+  );
+}
+
+function DiagonalLineChart({ cells }: { cells: SweepCell[] }) {
+  const data = cells
+    .filter((c) => c.reel === c.drag)
+    .sort((a, b) => a.reel - b.reel)
+    .map((c) => ({
+      ad: c.reel,
+      winPct: parseFloat(c.winPct.toFixed(1)),
+      remainingHP: parseFloat(c.avgRemainingHP.toFixed(1)),
+      avgTime: parseFloat(c.avgTime.toFixed(1)),
+    }));
+
+  if (data.length < 2) return null;
+
+  return (
+    <Flex direction="column" gap="2">
+      <Text size="2" weight="bold">
+        Fight Stats
+      </Text>
+      <ResponsiveContainer width="100%" height={220}>
+        <LineChart
+          data={data}
+          margin={{ top: 4, right: 48, left: 0, bottom: 4 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+          <XAxis
+            dataKey="ad"
+            label={{
+              value: "A/D",
+              position: "insideBottomRight",
+              offset: -4,
+              fill: "#999",
+              fontSize: 11,
+            }}
+            tick={{ fill: "#999", fontSize: 11 }}
+          />
+          <YAxis
+            yAxisId="pct"
+            domain={[0, 100]}
+            tickFormatter={(v) => `${v}%`}
+            tick={{ fill: "#999", fontSize: 11 }}
+            width={42}
+          />
+          <YAxis
+            yAxisId="time"
+            orientation="right"
+            tickFormatter={(v) => `${v}s`}
+            tick={{ fill: "#f9a825", fontSize: 11 }}
+            width={42}
+          />
+          <Tooltip
+            formatter={(v: number, name: string) =>
+              name === "Avg Fight Time (s)" ? [`${v}s`, name] : [`${v}%`, name]
+            }
+            contentStyle={{
+              background: "#1a1a1a",
+              border: "1px solid #333",
+              fontSize: 12,
+            }}
+          />
+          <Legend wrapperStyle={{ fontSize: 12 }} />
+          <Line
+            yAxisId="pct"
+            type="monotone"
+            dataKey="winPct"
+            name="Win %"
+            stroke="#4caf50"
+            dot={false}
+            strokeWidth={2}
+          />
+          <Line
+            yAxisId="pct"
+            type="monotone"
+            dataKey="remainingHP"
+            name="Remaining Line HP %"
+            stroke="#2196f3"
+            dot={false}
+            strokeWidth={2}
+          />
+          <Line
+            yAxisId="time"
+            type="monotone"
+            dataKey="avgTime"
+            name="Avg Fight Time (s)"
+            stroke="#f9a825"
+            dot={false}
+            strokeWidth={2}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </Flex>
+  );
 }
 
 function Heatmap({
@@ -70,7 +253,7 @@ function Heatmap({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: `36px repeat(${dragVals.length}, 52px)`,
+          gridTemplateColumns: `36px repeat(${dragVals.length}, 36px)`,
           gap: 2,
         }}
       >
@@ -300,6 +483,23 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
       </Flex>
 
       {cells.length > 0 && (
+        <Flex gap="6" wrap="wrap">
+          <div style={{ minWidth: 320, flex: 1 }}>
+            <DiagonalLineChart cells={cells} />
+          </div>
+          <div style={{ minWidth: 320, flex: 1 }}>
+            <DeltaLineChart
+              reelMin={reelMin}
+              reelMax={reelMax}
+              fishAtk={fishSpeed}
+              fishDef={fishStrength}
+              engineCfg={engineCfg}
+            />
+          </div>
+        </Flex>
+      )}
+
+      {cells.length > 0 && (
         <Flex gap="8" wrap="wrap" pt="2">
           <Heatmap
             title="Win %"
@@ -307,7 +507,7 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
             dragVals={dragVals}
             cells={cells}
             getValue={(c) => c.winPct}
-            format={(v) => `${v.toFixed(0)}%`}
+            format={(v) => v.toFixed(0)}
             toColor={winPctToColor}
             lowBorder={(v) => v < 25}
           />
@@ -326,7 +526,7 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
             dragVals={dragVals}
             cells={cells}
             getValue={(c) => c.avgRemainingHP}
-            format={(v) => `${v.toFixed(0)}%`}
+            format={(v) => v.toFixed(0)}
             toColor={remainingHPToColor}
           />
         </Flex>
