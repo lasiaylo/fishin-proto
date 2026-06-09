@@ -69,16 +69,16 @@ function generateFishRows(
   let idx = 1;
 
   // Level 0: one fish, no lure required
-  const s0 = Math.round(evalFn(statsFn, 0));
-  const p0 = Math.round(evalFn(priceFn, 0));
+  const s0 = Math.ceil(evalFn(statsFn, 0));
+  const p0 = Math.ceil(evalFn(priceFn, 0));
   rows.push([`FISH_${idx++}`, String(s0), String(s0), "1", String(p0), ""]);
 
   // Levels 1..N: three fish each (min, middle, max)
   for (let l = 1; l <= levels; l++) {
     for (const mult of [1 - variance, 1, 1 + variance]) {
       const lvl = l * mult;
-      const s = Math.round(evalFn(statsFn, lvl));
-      const p = Math.round(evalFn(priceFn, lvl));
+      const s = Math.ceil(evalFn(statsFn, lvl));
+      const p = Math.ceil(evalFn(priceFn, lvl));
       rows.push([
         `FISH_${idx++}`,
         String(s),
@@ -108,7 +108,7 @@ function generateShopRows(
   ];
 
   const attackPrices = Array.from({ length: attackCount }, (_, i) =>
-    Math.round(evalFn(attackFn, i)),
+    Math.ceil(evalFn(attackFn, i)),
   );
   rows.push([
     "ATTACK",
@@ -119,7 +119,7 @@ function generateShopRows(
   ]);
 
   const defensePrices = Array.from({ length: defenseCount }, (_, i) =>
-    Math.round(evalFn(defenseFn, i)),
+    Math.ceil(evalFn(defenseFn, i)),
   );
   rows.push([
     "DEFENSE",
@@ -132,7 +132,7 @@ function generateShopRows(
   for (let i = 0; i < lureCount; i++) {
     rows.push([
       `LURE_${i + 1}`,
-      String(Math.round(evalFn(lureFn, i))),
+      String(Math.ceil(evalFn(lureFn, i))),
       "LURE",
       "1",
       i === 0 ? "" : `LURE_${i}`,
@@ -210,11 +210,159 @@ function FunctionSelect({
             value={value.growthRate}
             onChange={(v) => onChange({ ...value, growthRate: v })}
             min={0}
-            max={1}
+            max={2}
             step={0.01}
           />
         )}
       </Flex>
+    </Flex>
+  );
+}
+
+function computeLureCostTable(
+  fishRows: string[][],
+  shopRows: string[][],
+  startingAD: number,
+): {
+  lureId: string;
+  lurePrice: number;
+  fishNeeded: number;
+  adUpgradeCost: number;
+  adFishNeeded: number;
+  totalFishNeeded: number;
+}[] {
+  if (fishRows.length < 2 || shopRows.length < 2) return [];
+
+  // Group fish by RequiredLure, preserving insertion order (min, mid, max)
+  const poolFish = new Map<string, { ad: number; price: number }[]>();
+  for (const row of fishRows.slice(1)) {
+    const requiredLure = row[5] ?? "";
+    const ad = Number(row[1]);
+    const price = Number(row[4]);
+    if (!poolFish.has(requiredLure)) poolFish.set(requiredLure, []);
+    poolFish.get(requiredLure)!.push({ ad, price });
+  }
+
+  const avgPrice = (lureId: string) => {
+    const fish = poolFish.get(lureId);
+    if (!fish || fish.length === 0) return 0;
+    return fish.reduce((s, f) => s + f.price, 0) / fish.length;
+  };
+
+  // Middle fish A/D (index 1 for 3-fish pools, 0 for the single no-lure fish)
+  const midAD = (lureId: string) => {
+    const fish = poolFish.get(lureId);
+    if (!fish || fish.length === 0) return 0;
+    return fish[Math.floor(fish.length / 2)].ad;
+  };
+
+  // Parse ATTACK and DEFENSE shop rows
+  const body = shopRows.slice(1);
+  const attackRow = body.find((r) => r[0] === "ATTACK");
+  const defenseRow = body.find((r) => r[0] === "DEFENSE");
+  const attackPrices = attackRow ? attackRow[1].split(" ").map(Number) : [];
+  const attackVPL = attackRow ? Number(attackRow[3]) : 1;
+  const defensePrices = defenseRow ? defenseRow[1].split(" ").map(Number) : [];
+  const defenseVPL = defenseRow ? Number(defenseRow[3]) : 1;
+
+  const sumSlice = (prices: number[], from: number, count: number) => {
+    let total = 0;
+    for (let i = from; i < from + count && i < prices.length; i++)
+      total += prices[i];
+    return total;
+  };
+
+  const lureShopRows = body.filter((r) => r[0]?.startsWith("LURE_"));
+
+  let prevAD = Math.max(midAD(""), startingAD);
+  let attackBought = 0;
+  let defenseBought = 0;
+
+  return lureShopRows.map((lureRow) => {
+    const lureId = lureRow[0];
+    const lurePrice = Number(lureRow[1]);
+    const lureNum = parseInt(lureId.split("_")[1]);
+    const prevLureId = lureNum === 1 ? "" : `LURE_${lureNum - 1}`;
+    const avg = avgPrice(prevLureId);
+    const fishNeeded = avg > 0 ? Math.ceil(lurePrice / avg) : 0;
+
+    const targetAD = midAD(lureId);
+    const statGain = Math.max(0, targetAD - prevAD);
+    const attackLevels = attackVPL > 0 ? Math.ceil(statGain / attackVPL) : 0;
+    const defenseLevels = defenseVPL > 0 ? Math.ceil(statGain / defenseVPL) : 0;
+    const adUpgradeCost =
+      sumSlice(attackPrices, attackBought, attackLevels) +
+      sumSlice(defensePrices, defenseBought, defenseLevels);
+
+    attackBought += attackLevels;
+    defenseBought += defenseLevels;
+    prevAD = targetAD;
+
+    const currentAvg = avgPrice(lureId);
+    const adFishNeeded =
+      currentAvg > 0 ? Math.ceil(adUpgradeCost / currentAvg) : 0;
+    const totalFishNeeded =
+      avg > 0 ? Math.ceil((lurePrice + adUpgradeCost) / avg) : 0;
+    return {
+      lureId,
+      lurePrice,
+      fishNeeded,
+      adUpgradeCost,
+      adFishNeeded,
+      totalFishNeeded,
+    };
+  });
+}
+
+function LureCostTable({
+  fishRows,
+  shopRows,
+  startingAD,
+}: {
+  fishRows: string[][];
+  shopRows: string[][];
+  startingAD: number;
+}) {
+  const data = computeLureCostTable(fishRows, shopRows, startingAD);
+  if (data.length === 0) return null;
+  return (
+    <Flex direction="column" gap="2">
+      <Text size="2" weight="bold">
+        Fish needed to buy next lure
+      </Text>
+      <Table.Root variant="surface" size="1">
+        <Table.Header>
+          <Table.Row>
+            <Table.ColumnHeaderCell>Lure</Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell>Lure Cost</Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell>Fish (Lure Only)</Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell>A/D Upgrade Cost</Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell>Fish (A/D Only)</Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell>Total Fish</Table.ColumnHeaderCell>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+          {data.map(
+            ({
+              lureId,
+              lurePrice,
+              fishNeeded,
+              adUpgradeCost,
+              adFishNeeded,
+              totalFishNeeded,
+            }) => (
+              <Table.Row key={lureId}>
+                <Table.Cell>{lureId}</Table.Cell>
+                <Table.Cell>{lurePrice}</Table.Cell>
+                <Table.Cell>{fishNeeded}</Table.Cell>
+                <Table.Cell>{adUpgradeCost}</Table.Cell>
+                <Table.Cell>{adFishNeeded}</Table.Cell>
+                <Table.Cell>{totalFishNeeded}</Table.Cell>
+              </Table.Row>
+            ),
+          )}
+        </Table.Body>
+      </Table.Root>
     </Flex>
   );
 }
@@ -622,13 +770,30 @@ export function CsvGeneratorPanel({
 }) {
   const [open, setOpen] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const [fishRows, setFishRows] = useState<string[][]>([]);
+  const [shopRows, setShopRows] = useState<string[][]>([]);
   const [levels, setLevels] = useState<number>(
-    () => loadStored(SHARED_STORAGE_KEY, { levels: 3 }).levels,
+    () => loadStored(SHARED_STORAGE_KEY, { levels: 3, startingAD: 10 }).levels,
+  );
+  const [startingAD, setStartingAD] = useState<number>(
+    () =>
+      loadStored(SHARED_STORAGE_KEY, { levels: 3, startingAD: 10 }).startingAD,
   );
 
   function handleLevelsChange(v: number) {
     setLevels(v);
-    localStorage.setItem(SHARED_STORAGE_KEY, JSON.stringify({ levels: v }));
+    localStorage.setItem(
+      SHARED_STORAGE_KEY,
+      JSON.stringify({ levels: v, startingAD }),
+    );
+  }
+
+  function handleStartingADChange(v: number) {
+    setStartingAD(v);
+    localStorage.setItem(
+      SHARED_STORAGE_KEY,
+      JSON.stringify({ levels, startingAD: v }),
+    );
   }
 
   function toggle() {
@@ -664,6 +829,12 @@ export function CsvGeneratorPanel({
               onChange={handleLevelsChange}
               min={1}
             />
+            <NumInput
+              label="Starting A/D"
+              value={startingAD}
+              onChange={handleStartingADChange}
+              min={0}
+            />
             <label
               style={{
                 display: "flex",
@@ -685,23 +856,38 @@ export function CsvGeneratorPanel({
         )}
       </Flex>
       {open && (
-        <Flex direction="row" gap="6" align="start">
-          <Flex direction="column" gap="3" style={{ flex: 1 }}>
-            <FishGenerator
-              onChange={onFishRowsChange}
-              showPreview={showPreview}
-              levels={levels}
-            />
+        <>
+          <Flex direction="row" gap="6" align="start">
+            <Flex direction="column" gap="3" style={{ flex: 1 }}>
+              <FishGenerator
+                onChange={(rows) => {
+                  setFishRows(rows);
+                  onFishRowsChange?.(rows);
+                }}
+                showPreview={showPreview}
+                levels={levels}
+              />
+            </Flex>
+            <Separator orientation="vertical" size="4" />
+            <Flex direction="column" gap="3" style={{ flex: 1 }}>
+              <ShopGenerator
+                onChange={(rows) => {
+                  setShopRows(rows);
+                  onShopRowsChange?.(rows);
+                }}
+                showPreview={showPreview}
+                lureCount={levels}
+              />
+            </Flex>
           </Flex>
-          <Separator orientation="vertical" size="4" />
-          <Flex direction="column" gap="3" style={{ flex: 1 }}>
-            <ShopGenerator
-              onChange={onShopRowsChange}
-              showPreview={showPreview}
-              lureCount={levels}
+          {showPreview && (
+            <LureCostTable
+              fishRows={fishRows}
+              shopRows={shopRows}
+              startingAD={startingAD}
             />
-          </Flex>
-        </Flex>
+          )}
+        </>
       )}
     </Flex>
   );

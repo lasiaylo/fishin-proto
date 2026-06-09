@@ -1094,8 +1094,8 @@ export function EconomyTab({
                       )}
                       {activePairResults.map((r) => (
                         <Table.ColumnHeaderCell key={r.pair.id}>
-                          Time Since Prev (s)
-                          {!isSinglePair && ` — ${r.pair.label}`}
+                          {(isSinglePair && `Time Since Prev (s)`) ||
+                            (!isSinglePair && `${r.pair.label}`)}
                         </Table.ColumnHeaderCell>
                       ))}
                     </Table.Row>
