@@ -185,6 +185,42 @@ export function EngineConfigRow({
   );
 }
 
+export function CsvSelect({
+  label,
+  value,
+  csvs,
+  generatedValue,
+  showGenerated,
+  onChange,
+  gap = 4,
+}: {
+  label: string;
+  value: string;
+  csvs: string[];
+  generatedValue: string;
+  showGenerated: boolean;
+  onChange: (v: string) => void;
+  gap?: number;
+}) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap }}>
+      <Text size="1" color="gray">
+        {label}
+      </Text>
+      <select value={value} onChange={(e) => onChange(e.target.value)}>
+        {csvs.map((f) => (
+          <option key={f} value={f}>
+            {f}
+          </option>
+        ))}
+        {(showGenerated || value === generatedValue) && (
+          <option value={generatedValue}>Generated</option>
+        )}
+      </select>
+    </label>
+  );
+}
+
 export function FishSelect({
   fishData,
   value,

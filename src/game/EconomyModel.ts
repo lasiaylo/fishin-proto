@@ -251,6 +251,7 @@ export function computeLureStats(
   trialsPerFish: number,
 ): {
   rates: Record<string, number>;
+  earnings: Record<string, number>;
   winRates: Record<string, number>;
   remainingHPs: Record<string, number>;
 } {
@@ -262,6 +263,7 @@ export function computeLureStats(
   }
   const fishWeights = buildFishWeights(fishByLure, locationData);
   const rates: Record<string, number> = {};
+  const earnings: Record<string, number> = {};
   const winRates: Record<string, number> = {};
   const remainingHPs: Record<string, number> = {};
 
@@ -291,12 +293,13 @@ export function computeLureStats(
     // totalFightTime is already a weighted average (weights sum to 1)
     if (totalFightTime === 0) continue;
     rates[lureId] = totalEarnings / totalFightTime;
+    earnings[lureId] = totalEarnings;
     winRates[lureId] = totalWinRate;
     if (totalWinWeight > 0)
       remainingHPs[lureId] = totalRemainingHP / totalWinWeight;
   }
 
-  return { rates, winRates, remainingHPs };
+  return { rates, earnings, winRates, remainingHPs };
 }
 
 export function simulateEconomy(

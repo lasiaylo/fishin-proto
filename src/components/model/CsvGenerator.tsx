@@ -769,6 +769,40 @@ export function CsvGeneratorPanel({
   onOpenChange?: (open: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const { levels } = loadStored(SHARED_STORAGE_KEY, {
+      levels: 3,
+      startingAD: 10,
+    });
+    const { statsFn, priceFn, variance } = loadStored(
+      FISH_STORAGE_KEY,
+      FISH_DEFAULTS,
+    );
+    const {
+      attackFn,
+      attackVPL,
+      attackCount,
+      defenseFn,
+      defenseVPL,
+      defenseCount,
+      lureFn,
+    } = loadStored(SHOP_STORAGE_KEY, SHOP_DEFAULTS);
+    onFishRowsChange?.(generateFishRows(statsFn, priceFn, variance, levels));
+    onShopRowsChange?.(
+      generateShopRows(
+        attackFn,
+        attackVPL,
+        attackCount,
+        defenseFn,
+        defenseVPL,
+        defenseCount,
+        lureFn,
+        levels,
+      ),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [showPreview, setShowPreview] = useState(true);
   const [fishRows, setFishRows] = useState<string[][]>([]);
   const [shopRows, setShopRows] = useState<string[][]>([]);

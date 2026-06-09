@@ -1,7 +1,8 @@
 import React from "react";
-import { Flex, Text, Button } from "@radix-ui/themes";
+import { Flex, Button } from "@radix-ui/themes";
 import { FISH_CSVS, SHOP_CSVS } from "../../stores/csvConfigStore";
 import { GENERATED_FISH_CSV, GENERATED_SHOP_CSV } from "./CsvGenerator";
+import { CsvSelect } from "./shared";
 
 export interface CsvPair {
   id: string;
@@ -48,42 +49,24 @@ export function PairRow({
         onChange={(e) => onUpdate({ label: e.target.value })}
         style={{ width: 80 }}
       />
-      <label style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        <Text size="1" color="gray">
-          Fish CSV
-        </Text>
-        <select
-          value={pair.fishCSV}
-          onChange={(e) => onUpdate({ fishCSV: e.target.value })}
-        >
-          {FISH_CSVS.map((f) => (
-            <option key={f} value={f}>
-              {f}
-            </option>
-          ))}
-          {generatedFish && (
-            <option value={GENERATED_FISH_CSV}>Generated</option>
-          )}
-        </select>
-      </label>
-      <label style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        <Text size="1" color="gray">
-          Shop CSV
-        </Text>
-        <select
-          value={pair.shopCSV}
-          onChange={(e) => onUpdate({ shopCSV: e.target.value })}
-        >
-          {SHOP_CSVS.map((f) => (
-            <option key={f} value={f}>
-              {f}
-            </option>
-          ))}
-          {generatedShop && (
-            <option value={GENERATED_SHOP_CSV}>Generated</option>
-          )}
-        </select>
-      </label>
+      <CsvSelect
+        label="Fish CSV"
+        value={pair.fishCSV}
+        csvs={FISH_CSVS}
+        generatedValue={GENERATED_FISH_CSV}
+        showGenerated={generatedFish}
+        onChange={(v) => onUpdate({ fishCSV: v })}
+        gap={2}
+      />
+      <CsvSelect
+        label="Shop CSV"
+        value={pair.shopCSV}
+        csvs={SHOP_CSVS}
+        generatedValue={GENERATED_SHOP_CSV}
+        showGenerated={generatedShop}
+        onChange={(v) => onUpdate({ shopCSV: v })}
+        gap={2}
+      />
       {removable && (
         <Button size="1" variant="soft" color="red" onClick={onRemove}>
           Remove

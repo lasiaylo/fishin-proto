@@ -21,6 +21,12 @@ export function ModelView() {
   const [activeTab, setActiveTab] = useState(
     () => localStorage.getItem("debugTab") ?? "fight",
   );
+  const [generatedFishRows, setGeneratedFishRows] = useState<string[][] | null>(
+    null,
+  );
+  const [generatedShopRows, setGeneratedShopRows] = useState<string[][] | null>(
+    null,
+  );
 
   useEffect(() => {
     Promise.all([
@@ -63,13 +69,22 @@ export function ModelView() {
               <ParamSweepTab fishData={fishData} />
             </Tabs.Content>
             <Tabs.Content value="economy">
-              <EconomyTab locationData={locationData} />
+              <EconomyTab
+                locationData={locationData}
+                generatedFishRows={generatedFishRows}
+                generatedShopRows={generatedShopRows}
+                onFishRowsChange={setGeneratedFishRows}
+                onShopRowsChange={setGeneratedShopRows}
+              />
             </Tabs.Content>
             <Tabs.Content value="graphs">
               <GraphsTab
                 fishData={fishData}
-                shopData={shopData}
                 locationData={locationData}
+                generatedFishRows={generatedFishRows}
+                generatedShopRows={generatedShopRows}
+                onFishRowsChange={setGeneratedFishRows}
+                onShopRowsChange={setGeneratedShopRows}
               />
             </Tabs.Content>
           </Tabs.Root>

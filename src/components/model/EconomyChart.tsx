@@ -15,31 +15,42 @@ export const lineProps = {
   isAnimationActive: false,
 };
 
-// @ts-ignore
 export function EconomyChart({
   title,
   data,
-  maxTime,
+  maxTime = 0,
   xTicks,
   integerYAxis,
+  yDomain,
+  yTickFormatter,
+  tooltipFormatter,
+  tooltipLabelFormatter,
   header,
   children,
   xDataKey = "time",
   xDomain,
   xTickFormatter,
+  xLabel,
   syncId = "economy",
+  height = 200,
 }: {
   title: string;
   data: object[];
-  maxTime: number;
+  maxTime?: number;
   xTicks?: number[];
   integerYAxis?: boolean;
+  yDomain?: [number | string, number | string];
+  yTickFormatter?: (v: number) => string;
+  tooltipFormatter?: (v: number, name: string, props: any) => any;
+  tooltipLabelFormatter?: (v: number) => string;
   header?: React.ReactNode;
   children: React.ReactNode;
   xDataKey?: string;
   xDomain?: [number, number];
   xTickFormatter?: (v: number) => string;
+  xLabel?: string;
   syncId?: string;
+  height?: number;
 }) {
   return (
     <Flex direction="column" gap="2">
@@ -49,7 +60,7 @@ export function EconomyChart({
         </Text>
         {header}
       </Flex>
-      <ResponsiveContainer width="100%" height={200}>
+      <ResponsiveContainer width="100%" height={height}>
         <ComposedChart data={data} syncId={syncId}>
           <CartesianGrid strokeDasharray="3 3" stroke="#333" />
           <XAxis
@@ -58,14 +69,31 @@ export function EconomyChart({
             domain={xDomain ?? [0, maxTime]}
             ticks={xTicks}
             tickFormatter={xTickFormatter ?? ((v: number) => `${v / 60}`)}
+            label={
+              xLabel
+                ? {
+                    value: xLabel,
+                    position: "insideBottomRight",
+                    offset: -4,
+                    fontSize: 11,
+                  }
+                : undefined
+            }
           />
-          <YAxis allowDecimals={!integerYAxis} />
+          <YAxis
+            allowDecimals={!integerYAxis}
+            domain={yDomain}
+            tickFormatter={yTickFormatter}
+          />
           <Tooltip
             labelStyle={{ color: "#111" }}
             // @ts-ignore
-            formatter={(v: number) => +v.toFixed(2)}
+            formatter={tooltipFormatter ?? ((v: number) => +v.toFixed(2))}
             // @ts-ignore
-            labelFormatter={(label: number) => +Number(label).toFixed(2)}
+            labelFormatter={
+              tooltipLabelFormatter ??
+              ((label: number) => +Number(label).toFixed(2))
+            }
           />
           {children}
         </ComposedChart>
