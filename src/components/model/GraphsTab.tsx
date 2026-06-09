@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Flex, Text } from "@radix-ui/themes";
+import React, { useState, useEffect, useRef } from "react";
+import { Button, Flex, Text } from "@radix-ui/themes";
 import { Line, ReferenceArea, Legend } from "recharts";
 import { computeLureStats } from "../../game/EconomyModel";
 import type {
@@ -52,6 +52,18 @@ export function GraphsTab({
   const [inventorySize, setInventorySize] = useState(3);
   const [sweepData, setSweepData] = useState<object[]>([]);
   const [running, setRunning] = useState(false);
+  const [runCount, setRunCount] = useState(0);
+  const paramsRef = useRef({
+    activeFishData: defaultFishData,
+    activeShopData: [] as ShopUpgradeData[],
+    locationData,
+    lineHP,
+    inventorySize,
+    minStat,
+    maxStat,
+    trialsPerFish,
+  });
+  const hasAutoRun = useRef(false);
   const [gridLayout, setGridLayout] = useState(true);
   const [selectedFishCSV, setSelectedFishCSV] = useState(
     () =>
@@ -95,6 +107,46 @@ export function GraphsTab({
   );
 
   useEffect(() => {
+    paramsRef.current = {
+      activeFishData,
+      activeShopData,
+      locationData,
+      lineHP,
+      inventorySize,
+      minStat,
+      maxStat,
+      trialsPerFish,
+    };
+  }, [
+    activeFishData,
+    activeShopData,
+    locationData,
+    lineHP,
+    inventorySize,
+    minStat,
+    maxStat,
+    trialsPerFish,
+  ]);
+
+  useEffect(() => {
+    if (!hasAutoRun.current && activeFishData.length > 0) {
+      hasAutoRun.current = true;
+      setRunCount((c) => c + 1);
+    }
+  }, [activeFishData]);
+
+  useEffect(() => {
+    if (runCount === 0) return;
+    const {
+      activeFishData,
+      activeShopData,
+      locationData,
+      lineHP,
+      inventorySize,
+      minStat,
+      maxStat,
+      trialsPerFish,
+    } = paramsRef.current;
     if (activeFishData.length === 0) return;
     setRunning(true);
     const id = setTimeout(() => {
@@ -149,16 +201,7 @@ export function GraphsTab({
       setRunning(false);
     }, 0);
     return () => clearTimeout(id);
-  }, [
-    activeFishData,
-    activeShopData,
-    locationData,
-    lineHP,
-    inventorySize,
-    minStat,
-    maxStat,
-    trialsPerFish,
-  ]);
+  }, [runCount]);
 
   const bestRegions: { x1: number; x2: number; lureId: string }[] = [];
   if (sweepData.length > 0) {
@@ -247,11 +290,13 @@ export function GraphsTab({
           min={1}
           max={1000}
         />
-        {running && (
-          <Text size="1" color="gray">
-            Running…
-          </Text>
-        )}
+        <Button
+          variant="soft"
+          disabled={running}
+          onClick={() => setRunCount((c) => c + 1)}
+        >
+          {running ? "Running…" : "Refresh"}
+        </Button>
         <GridToggleButton
           gridLayout={gridLayout}
           onToggle={() => setGridLayout((g) => !g)}

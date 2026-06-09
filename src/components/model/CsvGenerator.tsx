@@ -17,7 +17,7 @@ function loadStored<T>(key: string, fallback: T): T {
   return fallback;
 }
 
-type FnType = "LINEAR" | "EXPONENTIAL";
+type FnType = "LINEAR" | "POLYNOMIAL" | "EXPONENTIAL";
 
 interface FunctionConfig {
   type: FnType;
@@ -52,9 +52,10 @@ const DEFAULT_LURE_FN: FunctionConfig = {
 };
 
 function evalFn(cfg: FunctionConfig, lvl: number): number {
-  return cfg.type === "LINEAR"
-    ? cfg.startValue + cfg.scaleFactor * lvl
-    : cfg.startValue + cfg.scaleFactor * Math.pow(lvl, cfg.growthRate);
+  if (cfg.type === "LINEAR") return cfg.startValue + cfg.scaleFactor * lvl;
+  if (cfg.type === "POLYNOMIAL")
+    return cfg.startValue + cfg.scaleFactor * Math.pow(lvl, cfg.growthRate);
+  return cfg.startValue + cfg.scaleFactor * Math.pow(cfg.growthRate, lvl);
 }
 
 function generateFishRows(
@@ -143,9 +144,9 @@ function generateShopRows(
 }
 
 function fnConfigStr(cfg: FunctionConfig): string {
-  return cfg.type === "LINEAR"
-    ? `LINEAR startValue=${cfg.startValue} scaleFactor=${cfg.scaleFactor}`
-    : `EXPONENTIAL startValue=${cfg.startValue} scaleFactor=${cfg.scaleFactor} growthRate=${cfg.growthRate}`;
+  if (cfg.type === "LINEAR")
+    return `LINEAR startValue=${cfg.startValue} scaleFactor=${cfg.scaleFactor}`;
+  return `${cfg.type} startValue=${cfg.startValue} scaleFactor=${cfg.scaleFactor} growthRate=${cfg.growthRate}`;
 }
 
 function downloadCsv(rows: string[][], filename: string, comment?: string) {
@@ -185,6 +186,7 @@ function FunctionSelect({
             }
           >
             <option value="LINEAR">LINEAR</option>
+            <option value="POLYNOMIAL">POLYNOMIAL</option>
             <option value="EXPONENTIAL">EXPONENTIAL</option>
           </select>
         </label>
@@ -204,7 +206,7 @@ function FunctionSelect({
           max={99999}
           step={0.5}
         />
-        {value.type === "EXPONENTIAL" && (
+        {(value.type === "POLYNOMIAL" || value.type === "EXPONENTIAL") && (
           <NumInput
             label="GrowthRate"
             value={value.growthRate}

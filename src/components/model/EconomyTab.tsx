@@ -71,8 +71,16 @@ function buildLureRows(
 
 export function EconomyTab({
   locationData,
+  generatedFishRows,
+  generatedShopRows,
+  onFishRowsChange,
+  onShopRowsChange,
 }: {
   locationData: LocationFishEntry[];
+  generatedFishRows: string[][] | null;
+  generatedShopRows: string[][] | null;
+  onFishRowsChange: (rows: string[][]) => void;
+  onShopRowsChange: (rows: string[][]) => void;
 }) {
   const [reelStr, setReelStr] = useState(INITIAL_PLAYER_STATE.attack);
   const [drag, setDrag] = useState(INITIAL_PLAYER_STATE.defense);
@@ -100,12 +108,6 @@ export function EconomyTab({
   const [pairData, setPairData] = useState<Record<string, PairData>>({});
   const [pairRounds, setPairRounds] = useState<Record<string, EconomyRound[]>>(
     {},
-  );
-  const [generatedFishRows, setGeneratedFishRows] = useState<string[][] | null>(
-    null,
-  );
-  const [generatedShopRows, setGeneratedShopRows] = useState<string[][] | null>(
-    null,
   );
 
   // Load data for each pair that doesn't have it yet
@@ -520,8 +522,8 @@ export function EconomyTab({
         </Flex>
       )}
       <CsvGeneratorPanel
-        onFishRowsChange={setGeneratedFishRows}
-        onShopRowsChange={setGeneratedShopRows}
+        onFishRowsChange={onFishRowsChange}
+        onShopRowsChange={onShopRowsChange}
         onOpenChange={handleGeneratorOpenChange}
       />
 
