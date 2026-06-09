@@ -1,18 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Flex, Text, Table, Button, SegmentedControl } from "@radix-ui/themes";
 import { csvToRounds } from "../../util/roundSerializer";
-import {
-  ComposedChart,
-  Line,
-  ReferenceArea,
-  ReferenceLine,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
+import { Line, ReferenceArea, ReferenceLine, Legend } from "recharts";
 import { simulateEconomy, type EconomyRound } from "../../game/EconomyModel";
 import {
   StatName,
@@ -34,15 +23,10 @@ import {
   GENERATED_FISH_CSV,
   GENERATED_SHOP_CSV,
 } from "./CsvGenerator";
+import { EconomyChart, lineProps } from "./EconomyChart";
+import { CsvPair, newPairId, PairRow } from "./PairRow";
 
 // ── Types ──
-
-interface CsvPair {
-  id: string;
-  fishCSV: string;
-  shopCSV: string;
-  label: string;
-}
 
 interface PairData {
   fish: FishData[];
@@ -50,11 +34,6 @@ interface PairData {
 }
 
 // ── Helpers ──
-
-let _pairCounter = 0;
-function newPairId(): string {
-  return String(++_pairCounter);
-}
 
 function buildLureRows(
   rounds: EconomyRound[],
@@ -86,153 +65,6 @@ function buildLureRows(
     }
   }
   return rows;
-}
-
-// ── EconomyChart ──
-
-const lineProps = {
-  dot: false as const,
-  strokeWidth: 2,
-  isAnimationActive: false,
-};
-
-function EconomyChart({
-  title,
-  data,
-  maxTime,
-  xTicks,
-  integerYAxis,
-  header,
-  children,
-  xDataKey = "time",
-  xDomain,
-  xTickFormatter,
-  syncId = "economy",
-}: {
-  title: string;
-  data: object[];
-  maxTime: number;
-  xTicks?: number[];
-  integerYAxis?: boolean;
-  header?: React.ReactNode;
-  children: React.ReactNode;
-  xDataKey?: string;
-  xDomain?: [number, number];
-  xTickFormatter?: (v: number) => string;
-  syncId?: string;
-}) {
-  // @ts-ignore
-  return (
-    <Flex direction="column" gap="2">
-      <Flex align="center" gap="4" wrap="wrap">
-        <Text size="2" weight="bold">
-          {title}
-        </Text>
-        {header}
-      </Flex>
-      <ResponsiveContainer width="100%" height={200}>
-        <ComposedChart data={data} syncId={syncId}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-          <XAxis
-            dataKey={xDataKey}
-            type="number"
-            domain={xDomain ?? [0, maxTime]}
-            ticks={xTicks}
-            tickFormatter={xTickFormatter ?? ((v: number) => `${v / 60}`)}
-          />
-          <YAxis allowDecimals={!integerYAxis} />
-          <Tooltip
-            labelStyle={{ color: "#111" }}
-            // @ts-ignore
-            formatter={(v: number) => +v.toFixed(2)}
-            // @ts-ignore
-            labelFormatter={(label: number) => +Number(label).toFixed(2)}
-          />
-          {children}
-        </ComposedChart>
-      </ResponsiveContainer>
-    </Flex>
-  );
-}
-
-// ── CSV Pair row ──
-
-function PairRow({
-  pair,
-  color,
-  removable,
-  generatedFish,
-  generatedShop,
-  onUpdate,
-  onRemove,
-}: {
-  pair: CsvPair;
-  color: string;
-  removable: boolean;
-  generatedFish: boolean;
-  generatedShop: boolean;
-  onUpdate: (patch: Partial<Omit<CsvPair, "id">>) => void;
-  onRemove: () => void;
-}) {
-  return (
-    <Flex gap="2" align="center" wrap="wrap">
-      <div
-        style={{
-          width: 10,
-          height: 10,
-          borderRadius: 2,
-          background: color,
-          flexShrink: 0,
-        }}
-      />
-      <input
-        value={pair.label}
-        onChange={(e) => onUpdate({ label: e.target.value })}
-        style={{ width: 80 }}
-      />
-      <label style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        <Text size="1" color="gray">
-          Fish CSV
-        </Text>
-        <select
-          value={pair.fishCSV}
-          onChange={(e) => onUpdate({ fishCSV: e.target.value })}
-        >
-          {FISH_CSVS.map((f) => (
-            <option key={f} value={f}>
-              {f}
-            </option>
-          ))}
-          {generatedFish && (
-            <option value={GENERATED_FISH_CSV}>Generated</option>
-          )}
-        </select>
-      </label>
-      <label style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        <Text size="1" color="gray">
-          Shop CSV
-        </Text>
-        <select
-          value={pair.shopCSV}
-          onChange={(e) => onUpdate({ shopCSV: e.target.value })}
-        >
-          {SHOP_CSVS.map((f) => (
-            <option key={f} value={f}>
-              {f}
-            </option>
-          ))}
-          {generatedShop && (
-            <option value={GENERATED_SHOP_CSV}>Generated</option>
-          )}
-        </select>
-      </label>
-      {removable && (
-        <Button size="1" variant="soft" color="red" onClick={onRemove}>
-          Remove
-        </Button>
-      )}
-    </Flex>
-  );
 }
 
 // ── EconomyTab ──
