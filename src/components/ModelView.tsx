@@ -41,15 +41,23 @@ export function ModelView() {
   }, []);
 
   return (
-    <Theme appearance="dark" accentColor="cyan" grayColor="mauve">
+    <Theme
+      appearance="dark"
+      accentColor="cyan"
+      grayColor="mauve"
+      style={
+        {
+          "--default-font-family":
+            "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+        } as React.CSSProperties
+      }
+    >
       <Flex
         direction="column"
         p="4"
         gap="4"
         style={{
           minHeight: "100vh",
-          fontFamily:
-            "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
         }}
       >
         <Text size="6" weight="bold">
