@@ -148,6 +148,14 @@ export function EngineConfigRow({
           </Flex>
           <Flex gap="3" wrap="wrap" align="end">
             <NumInput
+              label="Grace %"
+              value={config.gracePercent}
+              onChange={(v) => onChange({ gracePercent: v })}
+              min={0}
+              max={1}
+              step={0.05}
+            />
+            <NumInput
               label="Min Struggle Dist"
               value={config.minStruggleDistance}
               onChange={(v) => onChange({ minStruggleDistance: v })}

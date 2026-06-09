@@ -111,17 +111,23 @@ function DeltaLineChart({
   engineCfg: FightConfig;
 }) {
   if (reelMax < reelMin) return null;
+  const avgFightDur =
+    (engineCfg.fightTimeRange[0] + engineCfg.fightTimeRange[1]) / 2;
+  const avgRestDur =
+    (engineCfg.restTimeRange[0] + engineCfg.restTimeRange[1]) / 2;
+  const totalDur = avgFightDur + avgRestDur;
   const data = Array.from({ length: reelMax - reelMin + 1 }, (_, i) => {
     const ad = reelMin + i;
-    return {
-      ad,
-      struggling: parseFloat(
-        FightEngine.computeDelta(fishAtk, ad, engineCfg).toFixed(2),
-      ),
-      resting: parseFloat(
-        FightEngine.computeDelta(ad, fishDef, engineCfg).toFixed(2),
-      ),
-    };
+    const struggling = parseFloat(
+      FightEngine.computeDelta(fishAtk, ad, engineCfg).toFixed(2),
+    );
+    const resting = parseFloat(
+      FightEngine.computeDelta(ad, fishDef, engineCfg).toFixed(2),
+    );
+    const netAvg = parseFloat(
+      ((struggling * avgFightDur - resting * avgRestDur) / totalDur).toFixed(2),
+    );
+    return { ad, struggling, resting, netAvg };
   });
 
   return (
@@ -170,6 +176,15 @@ function DeltaLineChart({
             stroke="#4caf50"
             dot={false}
             strokeWidth={2}
+          />
+          <Line
+            type="monotone"
+            dataKey="netAvg"
+            name="Net Avg"
+            stroke="#ce93d8"
+            dot={false}
+            strokeWidth={2}
+            strokeDasharray="5 3"
           />
           {[0.5, 0.75, 1, 1.25].map((mult) => (
             <ReferenceLine

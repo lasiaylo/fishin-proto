@@ -7,6 +7,7 @@ const IDLE_SPEED = 8;
 export type DeltaMode = "Fractional" | "EaseInEaseOut";
 
 export interface FightConfig {
+  gracePercent: number;
   restTimeRange: [number, number];
   fightTimeRange: [number, number];
   baseSpeed: number;
@@ -25,16 +26,17 @@ export interface FightConfig {
 
 export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   restTimeRange: [3, 4],
-  fightTimeRange: [2.0, 3],
+  fightTimeRange: [1, 3],
   startStruggleWeight: 0.5,
+  gracePercent: 0.2,
   minStruggleDistance: 10,
-  baseSpeed: 20,
-  minSpeed: 1,
+  baseSpeed: 18,
+  minSpeed: 5,
   distanceMultRange: [0.9, 1.1],
   thrashMultRange: [0.95, 1.05],
   critChance: 0.125,
   critMult: 1.5,
-  deltaMode: "Fractional",
+  deltaMode: "EaseInEaseOut",
   easeScale: 2,
   easeMidpoint: 0.4,
   easeSlope: 0.3,
@@ -102,7 +104,6 @@ export class FightEngine {
   private cfg: FightConfig;
 
   private distanceMult: number = 1;
-  private thrashMult: number = 1;
   private critActive: boolean = false;
 
   constructor(
@@ -148,10 +149,6 @@ export class FightEngine {
       this.cfg.distanceMultRange[1],
     );
 
-    this.thrashMult = randomRange(
-      this.cfg.thrashMultRange[0],
-      this.cfg.thrashMultRange[1],
-    );
     if (phase === Phase.REST) {
       this.critActive =
         Math.random() < (this.cfg.critChance * this.tension) / this.lineHp;
@@ -201,16 +198,13 @@ export class FightEngine {
       this.distance += delta;
     }
 
-    this.tension +=
-      this.fishThrash *
-      (isStruggle ? reelThrashMult : 0.5) *
-      this.thrashMult *
-      dt;
+    this.tension += this.fishThrash * (isStruggle ? reelThrashMult : 1) * dt;
     this.fightElapsed += dt;
   }
 
   private step(dt: number, reel?: boolean): void {
     const remainingInPhase = this.phaseDuration - this.phaseElapsed;
+    const remainingPercent = (this.lineHp - this.fightElapsed) / this.lineHp;
 
     if (dt < remainingInPhase) {
       this.phaseElapsed += dt;
@@ -223,7 +217,9 @@ export class FightEngine {
 
       const wouldStruggle = this.phase === Phase.REST;
       const next =
-        wouldStruggle && this.distance < this.cfg.minStruggleDistance
+        wouldStruggle &&
+        this.distance < this.cfg.minStruggleDistance &&
+        remainingPercent < this.cfg.gracePercent
           ? Phase.REST
           : wouldStruggle
             ? Phase.STRUGGLE

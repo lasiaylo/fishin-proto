@@ -8,11 +8,13 @@ const HOOK_ROLL: [number, number] = [0.9, 1.1];
 
 export function randomizeFishStats(fish: FishData): FishData {
   const multiplier = randomRange(...HOOK_ROLL);
+  const thrashMult = randomRange(...HOOK_ROLL);
   const randomizedPrice = Math.round(fish.basePrice * multiplier);
   return {
     ...fish,
     attack: parseFloat((fish.attack * multiplier).toFixed(2)),
     defense: parseFloat((fish.defense * multiplier).toFixed(2)),
+    thrash: parseFloat((fish.thrash * thrashMult).toFixed(2)),
     basePrice:
       fish.id === "FISH_1"
         ? Math.max(fish.basePrice, randomizedPrice)
@@ -33,11 +35,4 @@ export const useFish = create(
 export async function initFish(fishFile?: string) {
   const data = await loadFishData(fishFile);
   useFish.setState({ allFish: data });
-}
-
-export function getAvailableFish(): FishData[] {
-  const { allFish } = useFish.getState();
-  const { selectedLure } = usePlayer.getState();
-  const effectiveLure = selectedLure ?? "";
-  return allFish.filter((f) => f.requiredLure === effectiveLure);
 }

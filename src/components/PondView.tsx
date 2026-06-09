@@ -137,7 +137,7 @@ export function PondView() {
       setFightState({ ...state });
       if (state.outcome !== null) {
         console.log(
-          "Finished!",
+          state.outcome,
           caughtFishRef.current?.name,
           caughtFishRef.current?.attack.toFixed(2),
           caughtFishRef.current?.defense.toFixed(2),

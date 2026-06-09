@@ -19,7 +19,7 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
   wallet: 0,
   attack: 10,
   defense: 10,
-  lineHP: 10,
+  lineHP: 15,
   inventorySize: 3,
   ownedLures: new Set<string>(),
   selectedLure: null,
