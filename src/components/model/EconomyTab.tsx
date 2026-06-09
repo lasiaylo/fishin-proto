@@ -67,6 +67,27 @@ function buildLureRows(
   return rows;
 }
 
+// ── Pair persistence ──
+
+const PAIRS_STORAGE_KEY = "economy-pairs";
+
+function loadStoredPairs(): CsvPair[] | null {
+  try {
+    const raw = localStorage.getItem(PAIRS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return null;
+    return parsed.map((p: Partial<CsvPair>) => ({
+      id: newPairId(),
+      fishCSV: p.fishCSV ?? FISH_CSVS[0] ?? "FishGameplay.csv",
+      shopCSV: p.shopCSV ?? SHOP_CSVS[0] ?? "ShopGameplay.csv",
+      label: p.label ?? "Default",
+    }));
+  } catch {
+    return null;
+  }
+}
+
 // ── EconomyTab ──
 
 export function EconomyTab({
@@ -97,14 +118,21 @@ export function EconomyTab({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // CSV pairs
-  const [pairs, setPairs] = useState<CsvPair[]>([
-    {
-      id: newPairId(),
-      fishCSV: FISH_CSVS[0] ?? "FishGameplay.csv",
-      shopCSV: SHOP_CSVS[0] ?? "ShopGameplay.csv",
-      label: "Default",
-    },
-  ]);
+  const [pairs, setPairs] = useState<CsvPair[]>(
+    () =>
+      loadStoredPairs() ?? [
+        {
+          id: newPairId(),
+          fishCSV: FISH_CSVS[0] ?? "FishGameplay.csv",
+          shopCSV: SHOP_CSVS[0] ?? "ShopGameplay.csv",
+          label: "Default",
+        },
+      ],
+  );
+
+  useEffect(() => {
+    localStorage.setItem(PAIRS_STORAGE_KEY, JSON.stringify(pairs));
+  }, [pairs]);
   const [pairData, setPairData] = useState<Record<string, PairData>>({});
   const [pairRounds, setPairRounds] = useState<Record<string, EconomyRound[]>>(
     {},
