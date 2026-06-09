@@ -42,7 +42,15 @@ export function ModelView() {
 
   return (
     <Theme appearance="dark" accentColor="cyan" grayColor="mauve">
-      <Flex direction="column" p="4" gap="4" style={{ minHeight: "100vh" }}>
+      <Flex
+        direction="column"
+        p="4"
+        gap="4"
+        style={{
+          minHeight: "100vh",
+          fontFamily: "ui-monospace, SFMono-Regular",
+        }}
+      >
         <Text size="6" weight="bold">
           Model
         </Text>
