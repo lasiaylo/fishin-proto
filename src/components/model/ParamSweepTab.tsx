@@ -5,7 +5,7 @@ import React, {
   useRef,
   type CSSProperties,
 } from "react";
-import { Flex, Text, Button } from "@radix-ui/themes";
+import { Flex, Text, Button, Table } from "@radix-ui/themes";
 import {
   LineChart,
   Line,
@@ -25,7 +25,6 @@ import {
 } from "../../game/FightEngine";
 import type { FishData } from "../../util/csvLoader";
 import { NumInput, FishSelect, EngineConfigRow } from "./shared";
-import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
 
 interface SweepCell {
   reel: number;
@@ -45,6 +44,54 @@ function avgTimeToColor(t: number): string {
 
 function remainingHPToColor(pct: number): string {
   return `hsl(${pct * 1.2}, 70%, 35%)`;
+}
+
+function SweepSummaryTable({
+  cells,
+  fishAtk,
+}: {
+  cells: SweepCell[];
+  fishAtk: number;
+}) {
+  const breakpoints = [
+    { label: "½×", ad: Math.max(1, Math.round(fishAtk * 0.5)) },
+    { label: "1×", ad: fishAtk },
+    { label: "2×", ad: Math.round(fishAtk * 2) },
+  ];
+
+  return (
+    <Table.Root variant="surface" size="1">
+      <Table.Header>
+        <Table.Row>
+          <Table.ColumnHeaderCell>A/D</Table.ColumnHeaderCell>
+          <Table.ColumnHeaderCell>Win %</Table.ColumnHeaderCell>
+          <Table.ColumnHeaderCell>Fight Time</Table.ColumnHeaderCell>
+          <Table.ColumnHeaderCell>Remaining HP %</Table.ColumnHeaderCell>
+        </Table.Row>
+      </Table.Header>
+      <Table.Body>
+        {breakpoints.map(({ label, ad }) => {
+          const cell = cells.find((c) => c.reel === ad && c.drag === ad);
+          return (
+            <Table.Row key={label}>
+              <Table.Cell>
+                {label} ({ad})
+              </Table.Cell>
+              <Table.Cell>
+                {cell ? `${cell.winPct.toFixed(1)}%` : "—"}
+              </Table.Cell>
+              <Table.Cell>
+                {cell ? `${cell.avgTime.toFixed(1)}s` : "—"}
+              </Table.Cell>
+              <Table.Cell>
+                {cell ? `${cell.avgRemainingHP.toFixed(1)}%` : "—"}
+              </Table.Cell>
+            </Table.Row>
+          );
+        })}
+      </Table.Body>
+    </Table.Root>
+  );
 }
 
 function DeltaLineChart({
@@ -228,7 +275,7 @@ function Heatmap({
   getValue,
   format,
   toColor,
-  lowBorder,
+  fishAD,
 }: {
   title: string;
   reelVals: number[];
@@ -237,7 +284,7 @@ function Heatmap({
   getValue: (c: SweepCell) => number;
   format: (v: number) => string;
   toColor: (v: number) => string;
-  lowBorder?: (v: number) => boolean;
+  fishAD?: number;
 }) {
   const hdr: CSSProperties = {
     fontSize: 11,
@@ -283,11 +330,14 @@ function Heatmap({
                   key={d}
                   style={{
                     background: cell ? toColor(v) : "#222",
-                    border:
-                      cell && lowBorder?.(v)
-                        ? "2px dashed #f44336"
-                        : "1px solid #2a2a2a",
+                    boxSizing: "border-box",
+                    border: r === d ? "2px solid #888" : "1px solid #2a2a2a",
+                    outline:
+                      r === fishAD && d === fishAD
+                        ? "2px solid #fff"
+                        : undefined,
                     borderRadius: 3,
+                    width: 36,
                     height: 36,
                     display: "flex",
                     alignItems: "center",
@@ -320,8 +370,12 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
     fishData[0]?.basePrice ?? 0,
   );
   const [lineHP, setLineHP] = useState(10);
-  const [reelMin, setReelMin] = useState(INITIAL_PLAYER_STATE.attack);
-  const [reelMax, setReelMax] = useState(INITIAL_PLAYER_STATE.attack + 10);
+  const [reelMin, setReelMin] = useState(
+    Math.max(1, Math.round((fishData[0]?.attack ?? 2) / 2)),
+  );
+  const [reelMax, setReelMax] = useState(
+    Math.round((fishData[0]?.attack ?? 2) * 2),
+  );
   const dragMin = reelMin;
   const dragMax = reelMax;
   const [trialsPerCell, setTrialsPerCell] = useState(200);
@@ -341,6 +395,8 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
       setFishStrength(fish.defense);
       setFishThrash(fish.thrash);
       setFishBasePrice(fish.basePrice);
+      setReelMin(Math.max(1, Math.round(fish.attack / 2)));
+      setReelMax(Math.round(fish.attack * 2));
     }
   }, [fishId, fishData]);
 
@@ -483,6 +539,12 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
       </Flex>
 
       {cells.length > 0 && (
+        <div style={{ width: "50%" }}>
+          <SweepSummaryTable cells={cells} fishAtk={fishSpeed} />
+        </div>
+      )}
+
+      {cells.length > 0 && (
         <Flex gap="6" wrap="wrap">
           <div style={{ minWidth: 320, flex: 1 }}>
             <DiagonalLineChart cells={cells} />
@@ -509,7 +571,7 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
             getValue={(c) => c.winPct}
             format={(v) => v.toFixed(0)}
             toColor={winPctToColor}
-            lowBorder={(v) => v < 25}
+            fishAD={fishSpeed}
           />
           <Heatmap
             title="Avg Fight Time (s)"
@@ -519,6 +581,7 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
             getValue={(c) => c.avgTime}
             format={(v) => (v >= MAX_SIM_TIME ? "—" : v.toFixed(1))}
             toColor={avgTimeToColor}
+            fishAD={fishSpeed}
           />
           <Heatmap
             title="Avg Remaining Line HP (%)"
@@ -528,6 +591,7 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
             getValue={(c) => c.avgRemainingHP}
             format={(v) => v.toFixed(0)}
             toColor={remainingHPToColor}
+            fishAD={fishSpeed}
           />
         </Flex>
       )}
