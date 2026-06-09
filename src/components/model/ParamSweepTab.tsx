@@ -14,6 +14,7 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
 import {
@@ -55,7 +56,9 @@ function SweepSummaryTable({
 }) {
   const breakpoints = [
     { label: "½×", ad: Math.max(1, Math.round(fishAtk * 0.5)) },
+    { label: "¾×", ad: Math.max(1, Math.round(fishAtk * 0.75)) },
     { label: "1×", ad: fishAtk },
+    { label: "1¼×", ad: Math.round(fishAtk * 1.25) },
     { label: "2×", ad: Math.round(fishAtk * 2) },
   ];
 
@@ -168,13 +171,33 @@ function DeltaLineChart({
             dot={false}
             strokeWidth={2}
           />
+          {[0.5, 0.75, 1, 1.25].map((mult) => (
+            <ReferenceLine
+              key={mult}
+              x={Math.round(fishAtk * mult)}
+              stroke="#f9a825"
+              strokeDasharray="4 3"
+              label={{
+                value: `${mult}×`,
+                fill: "#f9a825",
+                fontSize: 10,
+                position: "insideTopRight",
+              }}
+            />
+          ))}
         </LineChart>
       </ResponsiveContainer>
     </Flex>
   );
 }
 
-function DiagonalLineChart({ cells }: { cells: SweepCell[] }) {
+function DiagonalLineChart({
+  cells,
+  fishAtk,
+}: {
+  cells: SweepCell[];
+  fishAtk: number;
+}) {
   const data = cells
     .filter((c) => c.reel === c.drag)
     .sort((a, b) => a.reel - b.reel)
@@ -261,6 +284,21 @@ function DiagonalLineChart({ cells }: { cells: SweepCell[] }) {
             dot={false}
             strokeWidth={2}
           />
+          {[0.5, 0.75, 1, 1.25].map((mult) => (
+            <ReferenceLine
+              key={mult}
+              yAxisId="pct"
+              x={Math.round(fishAtk * mult)}
+              stroke="#f9a825"
+              strokeDasharray="4 3"
+              label={{
+                value: `${mult}×`,
+                fill: "#f9a825",
+                fontSize: 10,
+                position: "insideTopRight",
+              }}
+            />
+          ))}
         </LineChart>
       </ResponsiveContainer>
     </Flex>
@@ -547,7 +585,7 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
       {cells.length > 0 && (
         <Flex gap="6" wrap="wrap">
           <div style={{ minWidth: 320, flex: 1 }}>
-            <DiagonalLineChart cells={cells} />
+            <DiagonalLineChart cells={cells} fishAtk={fishSpeed} />
           </div>
           <div style={{ minWidth: 320, flex: 1 }}>
             <DeltaLineChart

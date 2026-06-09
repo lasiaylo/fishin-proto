@@ -159,6 +159,13 @@ export function EngineConfigRow({
               onChange={(v) => onChange({ baseSpeed: v })}
             />
             <NumInput
+              label="Min Speed"
+              value={config.minSpeed}
+              onChange={(v) => onChange({ minSpeed: v })}
+              min={0}
+              step={0.5}
+            />
+            <NumInput
               label="Dist Mult Min"
               value={config.distanceMultRange[0]}
               onChange={(v) =>

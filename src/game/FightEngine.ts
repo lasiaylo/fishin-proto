@@ -10,6 +10,7 @@ export interface FightConfig {
   restTimeRange: [number, number];
   fightTimeRange: [number, number];
   baseSpeed: number;
+  minSpeed: number;
   startStruggleWeight: number;
   minStruggleDistance: number;
   distanceMultRange: [number, number];
@@ -28,14 +29,15 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   startStruggleWeight: 0.5,
   minStruggleDistance: 10,
   baseSpeed: 20,
+  minSpeed: 1,
   distanceMultRange: [0.9, 1.1],
   thrashMultRange: [0.95, 1.05],
   critChance: 0.125,
   critMult: 1.5,
   deltaMode: "Fractional",
   easeScale: 2,
-  easeMidpoint: 0.5,
-  easeSlope: 0.5,
+  easeMidpoint: 0.4,
+  easeSlope: 0.3,
 };
 
 function easeIn(x: number, midpoint: number, slope: number) {
@@ -177,7 +179,7 @@ export class FightEngine {
         cfg.easeSlope,
         cfg.easeMidpoint,
       );
-      return (cfg.baseSpeed - 1) * ease + 1;
+      return (cfg.baseSpeed - cfg.minSpeed) * ease + cfg.minSpeed;
     }
     return cfg.baseSpeed * (attack / (attack + defense));
   }
