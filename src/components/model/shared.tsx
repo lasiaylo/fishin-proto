@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button, Flex, Grid, Text } from "@radix-ui/themes";
 import type { FishData } from "../../util/csvLoader";
-import type { FightConfig } from "../../game/FightEngine";
+import type { DeltaMode, FightConfig } from "../../game/FightEngine";
 
 export const COLORS = [
   "#60cdff",
@@ -176,6 +176,43 @@ export function EngineConfigRow({
                   distanceMultRange: [config.distanceMultRange[0], v],
                 })
               }
+              step={0.05}
+            />
+            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <Text size="1" color="gray">
+                Delta Mode
+              </Text>
+              <select
+                value={config.deltaMode}
+                onChange={(e) =>
+                  onChange({ deltaMode: e.target.value as DeltaMode })
+                }
+              >
+                <option value="Fractional">Fractional</option>
+                <option value="EaseInEaseOut">EaseInEaseOut</option>
+              </select>
+            </label>
+            <NumInput
+              label="Ease Scale"
+              value={config.easeScale}
+              onChange={(v) => onChange({ easeScale: v })}
+              min={0.01}
+              step={0.1}
+            />
+            <NumInput
+              label="Ease Midpoint"
+              value={config.easeMidpoint}
+              onChange={(v) => onChange({ easeMidpoint: v })}
+              min={0.01}
+              max={0.99}
+              step={0.05}
+            />
+            <NumInput
+              label="Ease Slope"
+              value={config.easeSlope}
+              onChange={(v) => onChange({ easeSlope: v })}
+              min={0.01}
+              max={0.99}
               step={0.05}
             />
           </Flex>
