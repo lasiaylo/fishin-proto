@@ -55,6 +55,16 @@ export async function initShop(shopFile?: string) {
   }
 }
 
+export function initShopFromData(data: ShopUpgradeData[]) {
+  const upgrades = data.map((d) => ({ ...d, level: 0 }));
+  useShop.setState({ upgrades });
+
+  const saved = loadPersistedLevels();
+  for (const [id, level] of Object.entries(saved)) {
+    setUpgradeLevelDebug(id, level);
+  }
+}
+
 export function getUpgradePrice(upgrade: ShopUpgrade): number | null {
   if (upgrade.level >= upgrade.prices.length) return null;
   return upgrade.prices[upgrade.level];

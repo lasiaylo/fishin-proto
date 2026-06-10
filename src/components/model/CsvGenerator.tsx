@@ -55,7 +55,10 @@ function evalFn(cfg: FunctionConfig, lvl: number): number {
   if (cfg.type === "LINEAR") return cfg.startValue + cfg.scaleFactor * lvl;
   if (cfg.type === "POLYNOMIAL")
     return cfg.startValue + cfg.scaleFactor * Math.pow(lvl, cfg.growthRate);
-  return cfg.startValue + cfg.scaleFactor * Math.pow(cfg.growthRate, lvl);
+  return (
+    cfg.startValue +
+    (cfg.scaleFactor * Math.pow(cfg.growthRate, lvl) - cfg.scaleFactor)
+  );
 }
 
 function generateFishRows(
@@ -758,6 +761,44 @@ function ShopGenerator({
         Download ShopGameplay.csv
       </Button>
     </Flex>
+  );
+}
+
+export function getGeneratedFishRows(): string[][] {
+  const { levels } = loadStored(SHARED_STORAGE_KEY, {
+    levels: 3,
+    startingAD: 10,
+  });
+  const { statsFn, priceFn, variance } = loadStored(
+    FISH_STORAGE_KEY,
+    FISH_DEFAULTS,
+  );
+  return generateFishRows(statsFn, priceFn, variance, levels);
+}
+
+export function getGeneratedShopRows(): string[][] {
+  const { levels } = loadStored(SHARED_STORAGE_KEY, {
+    levels: 3,
+    startingAD: 10,
+  });
+  const {
+    attackFn,
+    attackVPL,
+    attackCount,
+    defenseFn,
+    defenseVPL,
+    defenseCount,
+    lureFn,
+  } = loadStored(SHOP_STORAGE_KEY, SHOP_DEFAULTS);
+  return generateShopRows(
+    attackFn,
+    attackVPL,
+    attackCount,
+    defenseFn,
+    defenseVPL,
+    defenseCount,
+    lureFn,
+    levels,
   );
 }
 

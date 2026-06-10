@@ -133,17 +133,31 @@ export function parseFishGameplayRows(rows: string[][]): FishData[] {
   }));
 }
 
+function categoryFromStat(stat: StatName): string {
+  if (stat === StatName.LURE) return "lures";
+  if (
+    stat === StatName.ATTACK ||
+    stat === StatName.DEFENSE ||
+    stat === StatName.HP
+  )
+    return "rod upgrades";
+  return "misc";
+}
+
 export function parseShopGameplayRows(rows: string[][]): ShopUpgradeData[] {
-  return rows.slice(1).map((row) => ({
-    id: row[0],
-    name: row[0],
-    description: "",
-    category: "",
-    prices: row[1].split(" ").map(Number),
-    stat: parseStatName(row[2]),
-    valuePerLevel: Number(row[3]),
-    requirements: row[4] ? row[4].split(" ").filter(Boolean) : [],
-  }));
+  return rows.slice(1).map((row) => {
+    const stat = parseStatName(row[2]);
+    return {
+      id: row[0],
+      name: row[0],
+      description: "",
+      category: categoryFromStat(stat),
+      prices: row[1].split(" ").map(Number),
+      stat,
+      valuePerLevel: Number(row[3]),
+      requirements: row[4] ? row[4].split(" ").filter(Boolean) : [],
+    };
+  });
 }
 
 export async function loadShopData(

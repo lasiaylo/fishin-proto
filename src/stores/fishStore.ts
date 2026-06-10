@@ -36,3 +36,7 @@ export async function initFish(fishFile?: string) {
   const data = await loadFishData(fishFile);
   useFish.setState({ allFish: data });
 }
+
+export function initFishFromData(data: FishData[]) {
+  useFish.setState({ allFish: data });
+}

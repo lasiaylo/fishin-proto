@@ -6,14 +6,25 @@ import {
   setUpgradeLevelDebug,
   resetAllUpgradesDebug,
   initShop,
+  initShopFromData,
 } from "../stores/shopStore";
-import { initFish } from "../stores/fishStore";
+import { initFish, initFishFromData } from "../stores/fishStore";
 import {
   useCsvConfig,
   setCsvConfig,
   FISH_CSVS,
   SHOP_CSVS,
 } from "../stores/csvConfigStore";
+import {
+  getGeneratedFishRows,
+  getGeneratedShopRows,
+  GENERATED_FISH_CSV,
+  GENERATED_SHOP_CSV,
+} from "./model/CsvGenerator";
+import {
+  parseFishGameplayRows,
+  parseShopGameplayRows,
+} from "../util/csvLoader";
 import { pushEvent } from "../stores/eventLogStore";
 import { useSessionLog } from "../stores/sessionLogStore";
 import { downloadCSV } from "../util/roundSerializer";
@@ -177,13 +188,21 @@ function CsvSwitcherSection() {
 
   function handleFishChange(newFile: string) {
     setCsvConfig({ fishCSV: newFile });
-    initFish(newFile);
+    if (newFile === GENERATED_FISH_CSV) {
+      initFishFromData(parseFishGameplayRows(getGeneratedFishRows()));
+    } else {
+      initFish(newFile);
+    }
   }
 
   function handleShopChange(newFile: string) {
     setCsvConfig({ shopCSV: newFile });
     resetAllUpgradesDebug();
-    initShop(newFile);
+    if (newFile === GENERATED_SHOP_CSV) {
+      initShopFromData(parseShopGameplayRows(getGeneratedShopRows()));
+    } else {
+      initShop(newFile);
+    }
   }
 
   return (
@@ -203,6 +222,7 @@ function CsvSwitcherSection() {
               {f}
             </option>
           ))}
+          <option value={GENERATED_FISH_CSV}>Generated</option>
         </select>
       </Flex>
       <Flex gap="2" align="center">
@@ -218,6 +238,7 @@ function CsvSwitcherSection() {
               {f}
             </option>
           ))}
+          <option value={GENERATED_SHOP_CSV}>Generated</option>
         </select>
       </Flex>
     </Flex>

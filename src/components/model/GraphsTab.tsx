@@ -326,10 +326,16 @@ export function GraphsTab({
               </Flex>
             ))}
             // @ts-ignore
-            tooltipFormatter={(v: number, _name: string, props: any) => [
-              `$${(+v).toFixed(2)} (${props.payload.bestLureId === "" ? "No Lure" : props.payload.bestLureId})`,
-              "Income/Trip",
-            ]}
+            tooltipFormatter={(v: number, name: string, props: any) => {
+              if (name === "Income/Trip") {
+                const lure = props.payload.bestLureId;
+                return [
+                  `$${(+v).toFixed(2)}`,
+                  `Income/Trip (${lure === "" ? "No Lure" : lure})`,
+                ];
+              }
+              return v == null ? null : [`$${(+v).toFixed(2)}`, name];
+            }}
             tooltipLabelFormatter={(v: number) => `Stat: ${v}`}
           >
             {bestRegions.map((region, i) => (
