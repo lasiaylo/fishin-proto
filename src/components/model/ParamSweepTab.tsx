@@ -422,7 +422,7 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
   const [fishBasePrice, setFishBasePrice] = useState(
     fishData[0]?.basePrice ?? 0,
   );
-  const [lineHP, setLineHP] = useState(10);
+  const [lineHP, setLineHP] = useState(15);
   const [reelMin, setReelMin] = useState(
     Math.max(1, Math.round((fishData[0]?.attack ?? 2) / 2)),
   );
