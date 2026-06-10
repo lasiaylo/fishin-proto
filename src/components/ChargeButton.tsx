@@ -1,5 +1,6 @@
 import React, { ReactNode, useRef, useState } from "react";
 import { Button, Text } from "@radix-ui/themes";
+import gsap from "gsap";
 
 interface ChargeButtonProps {
   children: ReactNode;
@@ -11,7 +12,7 @@ interface ChargeButtonProps {
 export function ChargeButton({
   children,
   onRelease,
-  maxHoldMs = 3000,
+  maxHoldMs = 4000,
   disabled = false,
 }: ChargeButtonProps) {
   const [chargePercent, setChargePercent] = useState(0);
@@ -23,8 +24,8 @@ export function ChargeButton({
     startRef.current = Date.now();
     function tick() {
       if (startRef.current === null) return;
-      const elapsed = Date.now() - startRef.current;
-      setChargePercent(Math.min(100, (elapsed / maxHoldMs) * 100));
+      const t = Math.min(1, (Date.now() - startRef.current) / maxHoldMs);
+      setChargePercent(gsap.parseEase("power2.out")(t) * 100);
       rafRef.current = requestAnimationFrame(tick);
     }
     rafRef.current = requestAnimationFrame(tick);
@@ -33,8 +34,10 @@ export function ChargeButton({
   function releaseCharge() {
     if (startRef.current === null) return;
     cancelAnimationFrame(rafRef.current);
-    const elapsed = Date.now() - startRef.current;
-    const pct = Math.min(100, (elapsed / maxHoldMs) * 100);
+    const pct = Math.min(
+      100,
+      ((Date.now() - startRef.current) / maxHoldMs) * 100,
+    );
     startRef.current = null;
     setChargePercent(0);
     onRelease(pct);
