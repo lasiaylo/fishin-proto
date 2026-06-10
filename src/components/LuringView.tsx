@@ -1,5 +1,5 @@
 import React from "react";
-import { Flex } from "@radix-ui/themes";
+import { Flex, Text } from "@radix-ui/themes";
 import { MyButton } from "./MyButton";
 import { StatBar } from "./StatBar";
 
@@ -24,7 +24,10 @@ export function LuringView({
       >
         {biteReady ? "hook" : "reel in"}
       </MyButton>
-      <StatBar label="lure distance" value={distance} max={100} />
+      <Text size="2" color="gray">
+        {" "}
+      </Text>
+      <StatBar label="distance" value={distance} max={100} />
     </Flex>
   );
 }

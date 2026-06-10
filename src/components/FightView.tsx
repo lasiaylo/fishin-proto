@@ -39,8 +39,8 @@ export function FightView({
       <Text size="2" color="gray">
         {phase}
       </Text>
-      <StatBar label="lure distance" value={distance} max={100} />
-      <StatBar label="line hp" value={lineHp - tension} max={lineHp} />
+      <StatBar label="distance" value={distance} max={100} />
+      <StatBar label="hp" value={lineHp - tension} max={lineHp} />
     </Flex>
   );
 }

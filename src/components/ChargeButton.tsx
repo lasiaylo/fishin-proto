@@ -12,7 +12,7 @@ interface ChargeButtonProps {
 export function ChargeButton({
   children,
   onRelease,
-  maxHoldMs = 4000,
+  maxHoldMs = 3000,
   disabled = false,
 }: ChargeButtonProps) {
   const [chargePercent, setChargePercent] = useState(0);

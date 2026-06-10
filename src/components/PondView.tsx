@@ -28,13 +28,13 @@ enum GameState {
   Fighting = "fighting",
 }
 
-const BITE_DELAY: [number, number] = [2, 6];
+const BITE_DELAY: [number, number] = [5, 10];
 const HOOK_WINDOW = 2;
 const RESULT_DURATION = 1000;
 const CAST_MIN = 25;
-const CAST_MAX = 75;
-const CAST_DURATION_MIN = 0.5;
-const CAST_DURATION_MAX = 1.5;
+const CAST_MAX = 80;
+const CAST_DURATION_MIN = 4;
+const CAST_DURATION_MAX = 6;
 
 export function PondView() {
   const locations = useLocation();
@@ -215,7 +215,7 @@ export function PondView() {
     castTweenRef.current = gsap.to(castProgressObjRef.current, {
       value: castTargetRef.current,
       duration: CAST_DURATION_MIN + t * (CAST_DURATION_MAX - CAST_DURATION_MIN),
-      ease: "expo.out",
+      ease: "power4.out",
       onUpdate: () => setCastProgress(castProgressObjRef.current.value),
       onComplete: () => {
         setGameState(GameState.Luring);
