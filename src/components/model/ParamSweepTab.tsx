@@ -479,6 +479,7 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
           reel,
           drag,
           lineHP,
+          undefined,
           engineCfg,
         ),
       ]),

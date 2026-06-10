@@ -191,6 +191,7 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
           reelStr,
           drag,
           lineHP,
+          undefined,
           engineCfg,
         );
     const CHUNK = 5;
@@ -209,6 +210,7 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
               reelStr,
               drag,
               lineHP,
+              undefined,
               engineCfg,
             ).runToCompletion(true),
           );

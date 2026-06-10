@@ -1,19 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
+import gsap from "gsap";
 import { Flex, Text } from "@radix-ui/themes";
 import { MyButton } from "./MyButton";
+import { ChargeButton } from "./ChargeButton";
 import { FishData, StatName } from "../util/csvLoader";
-import { useFish } from "../stores/fishStore";
-import {
-  LocationEntry,
-  pickFishAtSpot,
-  useLocation,
-} from "../stores/locationStore";
+import { randomizeFishStats, useFish } from "../stores/fishStore";
+import { pickFishAtSpot, useLocation } from "../stores/locationStore";
 import {
   addFishToInventory,
   setSelectedLure,
   usePlayer,
 } from "../stores/playerStore";
-import { randomizeFishStats } from "../stores/fishStore";
 import { useShop } from "../stores/shopStore";
 import { pushEvent } from "../stores/eventLogStore";
 import { EventMsg } from "../util/eventMessages";
@@ -21,9 +18,11 @@ import { FightEngine, FightState, Outcome } from "../game/FightEngine";
 import { useSessionLog } from "../stores/sessionLogStore";
 import { randomRange } from "../util/random";
 import { FightView } from "./FightView";
+import { LuringView } from "./LuringView";
 
 enum GameState {
   Idle = "idle",
+  CastAnimation = "cast_animation",
   Luring = "luring",
   Missed = "missed",
   Fighting = "fighting",
@@ -32,6 +31,10 @@ enum GameState {
 const BITE_DELAY: [number, number] = [2, 6];
 const HOOK_WINDOW = 2;
 const RESULT_DURATION = 1000;
+const CAST_MIN = 25;
+const CAST_MAX = 75;
+const CAST_DURATION_MIN = 0.5;
+const CAST_DURATION_MAX = 1.5;
 
 export function PondView() {
   const locations = useLocation();
@@ -40,10 +43,17 @@ export function PondView() {
   const ownedLures = usePlayer((s) => s.ownedLures);
   const shopUpgrades = useShop((s) => s.upgrades);
   const selectedLure = usePlayer((s) => s.selectedLure);
+
   const [gameState, setGameState] = useState<GameState>(GameState.Idle);
   const [biteReady, setBiteReady] = useState(false);
   const [fading, setFading] = useState(false);
   const [fightState, setFightState] = useState<FightState | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<string>("");
+  const [castProgress, setCastProgress] = useState(0);
+
+  const castTargetRef = useRef<number>(50);
+  const castProgressObjRef = useRef({ value: 0 });
+  const castTweenRef = useRef<gsap.core.Tween | null>(null);
 
   const caughtFishRef = useRef<FishData | null>(null);
   const fightRef = useRef<FightEngine | null>(null);
@@ -57,9 +67,9 @@ export function PondView() {
 
   useEffect(() => {
     return () => {
-      if (biteTimerRef.current !== null) clearTimeout(biteTimerRef.current);
-      if (hookWindowRef.current !== null) clearTimeout(hookWindowRef.current);
+      cancelBite();
       cancelAnimationFrame(rafRef.current);
+      castTweenRef.current?.kill();
     };
   }, []);
 
@@ -67,8 +77,7 @@ export function PondView() {
     const lures = shopUpgrades.filter(
       (u) => u.stat === StatName.LURE && ownedLures.has(u.id),
     );
-    const last = lures[lures.length - 1];
-    setSelectedLure(last?.id ?? null);
+    setSelectedLure(lures[lures.length - 1]?.id ?? null);
   }, [ownedLures, shopUpgrades]);
 
   useEffect(() => {
@@ -85,10 +94,14 @@ export function PondView() {
         addFishToInventory(useFish.getState().allFish[0]);
       }
     }
-
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
+
+  function cancelBite() {
+    if (biteTimerRef.current !== null) clearTimeout(biteTimerRef.current);
+    if (hookWindowRef.current !== null) clearTimeout(hookWindowRef.current);
+  }
 
   function scheduleBite() {
     const delay = randomRange(BITE_DELAY[0], BITE_DELAY[1]) * 1000;
@@ -104,8 +117,7 @@ export function PondView() {
   }
 
   function startFight() {
-    if (biteTimerRef.current !== null) clearTimeout(biteTimerRef.current);
-    if (hookWindowRef.current !== null) clearTimeout(hookWindowRef.current);
+    cancelBite();
     setBiteReady(false);
     setGameState(GameState.Fighting);
 
@@ -120,6 +132,7 @@ export function PondView() {
       attack,
       defense,
       lineHP,
+      castTargetRef.current,
     );
 
     pushEvent(EventMsg.HOOKED());
@@ -143,7 +156,7 @@ export function PondView() {
           caughtFishRef.current?.defense.toFixed(2),
           +state.time.toFixed(2),
         );
-        finishFight(state.outcome!, state);
+        finishFight(state.outcome, state);
         return;
       }
       rafRef.current = requestAnimationFrame(loop);
@@ -156,7 +169,6 @@ export function PondView() {
     cancelAnimationFrame(rafRef.current);
     const fish = caughtFishRef.current!;
     const { lineHP, selectedLure } = usePlayer.getState();
-    const lureId = selectedLure ?? "";
 
     useSessionLog
       .getState()
@@ -166,7 +178,7 @@ export function PondView() {
         finalState.time,
         finalState.tension,
         lineHP,
-        lureId,
+        selectedLure ?? "",
       );
 
     if (result === Outcome.WIN) {
@@ -183,17 +195,39 @@ export function PondView() {
     }, RESULT_DURATION);
   }
 
-  function handleSpotClick(spotId: string, spot: LocationEntry) {
-    const fish = pickFishAtSpot(spotId);
+  function handleCastRelease(chargePercent: number) {
+    const locationId = selectedLocation || Object.keys(locations)[0];
+    const fish = pickFishAtSpot(locationId);
     if (!fish) {
       pushEvent(EventMsg.NO_FISH);
       return;
     }
+
+    const t = chargePercent / 100;
+    castTargetRef.current = CAST_MIN + t * (CAST_MAX - CAST_MIN);
     caughtFishRef.current = fish;
-    pushEvent(EventMsg.CASTING(spot.name));
-    setGameState(GameState.Luring);
-    setBiteReady(false);
-    scheduleBite();
+    pushEvent(EventMsg.CASTING(locations[locationId]?.name ?? locationId));
+
+    castProgressObjRef.current.value = 0;
+    setCastProgress(0);
+    setGameState(GameState.CastAnimation);
+
+    castTweenRef.current = gsap.to(castProgressObjRef.current, {
+      value: castTargetRef.current,
+      duration: CAST_DURATION_MIN + t * (CAST_DURATION_MAX - CAST_DURATION_MIN),
+      ease: "expo.out",
+      onUpdate: () => setCastProgress(castProgressObjRef.current.value),
+      onComplete: () => {
+        setGameState(GameState.Luring);
+        setBiteReady(false);
+        scheduleBite();
+      },
+    });
+  }
+
+  function handleReelIn() {
+    cancelBite();
+    setGameState(GameState.Idle);
   }
 
   if (gameState === GameState.Idle) {
@@ -207,32 +241,58 @@ export function PondView() {
     const ownedLureList = shopUpgrades.filter(
       (u) => u.stat === StatName.LURE && ownedLures.has(u.id),
     );
+    const locationEntries = Object.entries(locations);
+    const effectiveLocation = selectedLocation || locationEntries[0]?.[0] || "";
     return (
       <Flex className="fade-in" direction="column" gap="3" p="4">
-        <Flex direction="column" gap="2">
-          <Text size="1">lure</Text>
-          <select
-            value={selectedLure ?? ""}
-            onChange={(e) => setSelectedLure(e.target.value || null)}
-          >
-            <option value="">none</option>
-            {ownedLureList.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name}
-              </option>
-            ))}
-          </select>
+        <Flex gap={"5"}>
+          <Flex direction="column" gap="2">
+            <Text size="1">lure</Text>
+            <select
+              value={selectedLure ?? ""}
+              onChange={(e) => setSelectedLure(e.target.value || null)}
+            >
+              <option value="">none</option>
+              {ownedLureList.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+          </Flex>
+
+          <Flex direction="column" gap="2">
+            <Text size="1">spot</Text>
+            <select
+              value={effectiveLocation}
+              onChange={(e) => setSelectedLocation(e.target.value)}
+            >
+              {locationEntries.map(([id, loc]) => (
+                <option key={id} value={id}>
+                  {loc.name}
+                </option>
+              ))}
+            </select>
+          </Flex>
         </Flex>
 
-        <Text size={"1"} mt={"4"}>
-          choose a fishing spot
-        </Text>
-        {Object.entries(locations).map(([id, loc]) => (
-          <MyButton key={id} onClick={() => handleSpotClick(id, loc)}>
-            {loc.name}
-          </MyButton>
-        ))}
+        <ChargeButton onRelease={handleCastRelease}>hold to cast</ChargeButton>
       </Flex>
+    );
+  }
+
+  if (gameState === GameState.CastAnimation) {
+    return <LuringView distance={castProgress} />;
+  }
+
+  if (gameState === GameState.Luring) {
+    return (
+      <LuringView
+        distance={castTargetRef.current}
+        biteReady={biteReady}
+        onHook={startFight}
+        onReelIn={handleReelIn}
+      />
     );
   }
 
@@ -252,28 +312,9 @@ export function PondView() {
     );
   }
 
-  let message;
-  let onClick;
-
-  if (gameState === GameState.Missed) {
-    onClick = () => setGameState(GameState.Idle);
-    message = "go back";
-  } else {
-    onClick = () => {
-      if (biteReady) {
-        startFight();
-        return;
-      }
-      if (biteTimerRef.current !== null) clearTimeout(biteTimerRef.current);
-      if (hookWindowRef.current !== null) clearTimeout(hookWindowRef.current);
-      setGameState(GameState.Idle);
-    };
-    message = biteReady ? "hook" : "reel";
-  }
-
   return (
     <Flex direction="column" gap="4" p="4" justify="start">
-      <MyButton onClick={onClick}>{message}</MyButton>
+      <MyButton onClick={() => setGameState(GameState.Idle)}>go back</MyButton>
     </Flex>
   );
 }

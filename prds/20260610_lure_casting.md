@@ -1,6 +1,6 @@
 <!--What is a PRD: A PRD(product requirement document> is a document that we use to document a project and its requirements. We use this as a communication tool to describe a project which might get broken down into multiple PRs and guide coding agents through the implementation -->
 
-# PRD: <description>
+# PRD: Lure Casting Mechanic
 
 This PRD outlines the new casting mechanic.
 
@@ -22,41 +22,43 @@ This feature will go in-line with a wider effort to slow down gameplay to feel m
 
 ### State Machine
 
-Add two new states to `GameState` in `PondView`:
-
 ```
-Idle → Casting → CastAnimation → Luring → Fighting
-         ↑ hold Cast button
-                 ↑ release, lure flies
-                               ↑ lure arrives, bite timer starts
-                                            ↑ fish bites + player hooks
+Idle → CastAnimation → Luring → Fighting
+         ↑ release Cast button
+                       ↑ lure arrives, bite timer starts
+                                    ↑ fish bites + player hooks
 ```
 
-- **Idle**: Lure dropdown + Location dropdown + Cast button (all in one screen, no more per-spot buttons)
-- **Casting**: Cast button is held. A charge bar fills up over a max hold duration (e.g. 3s). Releasing transitions to CastAnimation.
-- **CastAnimation**: The lure distance bar animates from 0 → `castTarget` (25–75, mapped from charge %). No buttons. After animation completes, transitions to Luring and starts the bite timer.
-- **Luring**: FightView is shown with the lure stationary at `castTarget`. A "reel in" button cancels back to Idle. When the fish bites, the "hook" button appears.
-- **Fighting**: Existing fight loop. FightEngine starts with `distance = castTarget` instead of the hardcoded 50.
+- **Idle**: Lure dropdown + Location dropdown + Cast button (all in one screen, no more per-spot buttons). Charging is internal to `ChargeButton` — no separate `Casting` game state needed.
+- **CastAnimation**: GSAP tween animates the lure distance from 0 → `castTarget`. No interactive button. After tween completes, transitions to Luring and starts the bite timer.
+- **Luring**: `LuringView` shown with lure stationary at `castTarget`. A single button ("reel in") cancels back to Idle; it switches to "hook" when the fish bites.
+- **Fighting**: Existing fight loop. `FightEngine` starts with `distance = castTarget`.
 
-### Cast Charge
+### ChargeButton (`src/components/ChargeButton.tsx`)
 
-- A reusable `ChargeButton` component handles all charge logic internally.
-- It accepts `onRelease(chargePercent: number)` and `maxHoldMs` props.
-- Internally tracks `pointerdown` timestamp and runs a `requestAnimationFrame` loop to update the fill.
-- The button renders a fill layer (`position: absolute`, `width: chargePercent%`) behind the label — the button itself is the indicator.
-- On `pointerup`/`pointercancel`, calls `onRelease` with the clamped charge percent and resets.
-- PondView receives the charge percent and computes `castTarget = lerp(25, 75, chargePercent)`.
+- Reusable component. Props: `children`, `onRelease(chargePercent: number)`, `maxHoldMs` (default 3000), `disabled?`.
+- Uses Radix `Button` (`radius="none" variant="outline"`) to match existing button style.
+- Tracks `pointerdown` timestamp with a RAF loop; calls `onRelease` with clamped charge percent on `pointerup`/`pointercancel`.
+- The button itself is the charge indicator: a CSS `linear-gradient` grows white from left to right as charge increases. Background is transparent (shows page background when uncharged).
 
-### Cast Animation in FightView
+### Cast Animation
 
-- FightView receives a new optional prop `castMode` with shape `{ progress: number; target: number }`.
-- When `castMode` is set, the lure distance bar shows `progress` (animating up to `target`), and the reel/hook button is hidden.
-- PondView drives `progress` via a `requestAnimationFrame` loop during `CastAnimation` state.
+- Driven by GSAP (`gsap.to`) with `expo.out` easing — fast launch, dramatic slowdown like a shuttlecock.
+- Duration scales with charge: `CAST_DURATION_MIN` → `CAST_DURATION_MAX` (short tap is a quick snap, full charge is a full arcing toss).
+- GSAP tweens a plain object ref (`castProgressObjRef`) and calls `setCastProgress` on each update.
+- On complete: transitions to `Luring`, starts bite timer.
+
+### Component Structure
+
+- **`src/components/StatBar.tsx`** — extracted from `FightView`; shared by both `FightView` and `LuringView`.
+- **`src/components/LuringView.tsx`** — handles both `CastAnimation` and `Luring` states. Props: `distance`, `biteReady?`, `onHook?`, `onReelIn?`. Button is always visible; disabled when `onReelIn` is absent (during cast animation).
+- **`src/components/FightView.tsx`** — fight-only, all props required.
+- **`src/util/easing.ts`** — `easeIn` / `easeInEaseOut` extracted from `FightEngine`.
 
 ### Dynamic Start Distance
 
-- `FightEngine` constructor accepts an optional `startDistance` parameter (default `50`).
-- PondView passes `castTarget` when constructing `FightEngine`.
+- `FightEngine` constructor: `startDistance` param (default `START_DISTANCE = 50`) placed before the optional `config` param.
+- `PondView.startFight()` passes `castTargetRef.current` as `startDistance`.
 
 ### Screen layout
 
@@ -66,14 +68,15 @@ IDLE
   spot   [ dropdown ]
   [ hold to cast ]
 
-CASTING
-  [ ████████░░ cast ]  ← fill grows inside button itself
+CASTING (inside ChargeButton, no game state change)
+  [ ████████░░ cast ]  ← gradient fill grows inside button
 
-CAST ANIMATION (FightView, no buttons)
-  lure distance  [ ██████░░░░░░ ] 38 / 100  ← animating
+CAST ANIMATION (LuringView, button disabled)
+  [ reel in ]  ← disabled
+  lure distance  [ ██████░░░░░░ ] 38 / 100  ← animating via GSAP
 
-LURING (FightView)
-  [ reel in ]   [ hook ]  ← hook appears on bite
+LURING (LuringView, button enabled)
+  [ reel in → hook ]  ← label switches on bite
   lure distance  [ ████████████ ] 38 / 100  ← frozen
 
 FIGHTING (FightView, existing)
@@ -84,45 +87,39 @@ FIGHTING (FightView, existing)
 
 ## Implementation Plan
 
-### Phase 1 — Restructure Idle UI + ChargeButton Component
+### Phase 1 — Restructure Idle UI + ChargeButton Component ✓
 
-- Create `src/components/ChargeButton.tsx`. Props: `children`, `onRelease(chargePercent: number)`, `maxHoldMs` (default 3000), `disabled?`.
-- Internally: `chargePercent` state, `rafRef` and `startRef` refs. `pointerdown` starts the RAF loop; `pointerup`/`pointercancel` calls `onRelease` and resets.
-- Renders a `<button>` with `position: relative`. The fill layer is `position: absolute; left: 0; top: 0; height: 100%; width: ${chargePercent}%; pointer-events: none` with a distinct background.
-- In `PondView`, replace the per-spot `MyButton` list with a `<select>` for location (alongside the existing lure `<select>`).
-- Add `<ChargeButton onRelease={(pct) => handleCastRelease(pct)}>hold to cast</ChargeButton>` below the dropdowns.
-- `handleCastRelease` computes `castTarget = lerp(25, 75, pct / 100)` and transitions to `CastAnimation`.
+- Created `src/components/ChargeButton.tsx`.
+- In `PondView`, replaced per-spot buttons with location `<select>` and `<ChargeButton>`.
+- Added `CAST_MIN`, `CAST_MAX` constants. `handleCastRelease` computes `castTarget` and enters `CastAnimation`.
 
-### Phase 2 — Cast Animation State
+### Phase 2 — Cast Animation State ✓
 
-- Add `CastAnimation` and `Casting` to the `GameState` enum.
-- Add `castTarget: number` and `castProgress: number` state values to `PondView`.
-- In `CastAnimation`, run a `requestAnimationFrame` loop that increments `castProgress` at a fixed speed (e.g. 40 units/sec) until it reaches `castTarget`.
-- Once `castProgress >= castTarget`: transition to `Luring`, call `scheduleBite()`.
-- Render: pass `castMode={{ progress: castProgress, target: castTarget }}` to `FightView`.
+- Added `CastAnimation` to `GameState`.
+- Cast animation driven by GSAP `expo.out` tween (replaced initial RAF loop approach).
+- Duration interpolated between `CAST_DURATION_MIN` and `CAST_DURATION_MAX` based on charge percent.
 
-### Phase 3 — FightView Cast Mode
+### Phase 3 — LuringView Component ✓
 
-- Add optional prop `castMode?: { progress: number; target: number }` to `FightViewProps`.
-- When `castMode` is present: render only the lure distance `StatBar` (showing `castMode.progress`), no reel/hook button.
-- The existing `fading` + stat bars remain unchanged for the fight phase.
+- Extracted `StatBar` to `src/components/StatBar.tsx`.
+- Created `src/components/LuringView.tsx` for both cast animation and luring display.
+- `FightView` restored to fight-only with all props required.
 
-### Phase 4 — Luring Inside FightView
+### Phase 4 — Luring Interaction ✓
 
-- Add props `lureBiteReady?: boolean`, `onHook?: () => void`, `onReelIn?: () => void` to `FightViewProps`.
-- When `gameState === Luring`: render FightView with lure distance frozen at `castTarget`, and show "reel in" / "hook" buttons using those props.
-- Remove the old Luring/Missed render branch from PondView (the one that showed a bare `MyButton`).
+- `LuringView` shows a single button that is disabled during cast animation and switches between "reel in" / "hook" during luring.
+- `PondView` handles `handleReelIn` (cancels bite timers, returns to Idle) and passes `startFight` as `onHook`.
 
-### Phase 5 — Dynamic FightEngine Start Distance
+### Phase 5 — Dynamic FightEngine Start Distance ✓
 
-- Add `startDistance?: number` parameter to `FightEngine` constructor (default `START_DISTANCE = 50`).
-- In `PondView.startFight()`, pass `castTarget` as `startDistance`.
+- `FightEngine` constructor: `startDistance` before `config`.
+- Updated all call sites (`FightTraceTab`, `ParamSweepTab`, `EconomyModel`).
 
-### Test Plan
+## Test Plan
 
 1. **Idle screen** shows two dropdowns (lure and spot) and a single Cast button — no per-spot buttons.
-2. **Short hold** on Cast produces a lure distance target near 25; **full hold** produces a target near 75.
-3. After releasing Cast, the lure distance bar **animates from 0** to the target before any bite can occur.
-4. The **hook / reel-in buttons are hidden** during the cast animation and only appear once the lure has arrived.
-5. A **fish bite** during the luring phase shows the hook button; missing the window returns to Idle.
+2. **Short hold** on Cast produces a lure distance target near 25 with a quick animation; **full hold** produces a target near 75 with a longer toss animation.
+3. After releasing Cast, the lure distance bar **animates with an expo-out curve** (fast then dramatic slowdown) before any bite can occur.
+4. The **reel-in button is visible but disabled** during the cast animation and becomes enabled once the lure arrives.
+5. A **fish bite** during the luring phase switches the button to "hook"; missing the window returns to Idle.
 6. The **fight starts** with the lure distance bar already at the cast target (not at 50).

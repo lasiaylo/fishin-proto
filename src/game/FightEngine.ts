@@ -1,4 +1,5 @@
 import { randomRange } from "../util/random";
+import { easeInEaseOut } from "../util/easing";
 
 const MAX_DISTANCE = 100;
 const START_DISTANCE = MAX_DISTANCE / 2;
@@ -41,18 +42,6 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   easeMidpoint: 0.4,
   easeSlope: 0.3,
 };
-
-function easeIn(x: number, midpoint: number, slope: number) {
-  const s = 2 / (1 - slope) - 1;
-  return x ** s / midpoint ** (s - 1);
-}
-
-function easeInEaseOut(x: number, slope: number, midpoint: number): number {
-  if (x <= 0) return 0;
-  if (x < midpoint) return easeIn(x, midpoint, slope);
-  if (x <= 1) return 1 - easeIn(1 - x, 1 - midpoint, slope);
-  return 1;
-}
 
 const STRUGGLE_GRACE = 1;
 const THRASH_MULT = 1.2;
@@ -113,6 +102,7 @@ export class FightEngine {
     playerAtk: number,
     playerDef: number,
     lineHp: number,
+    startDistance: number = START_DISTANCE,
     config?: Partial<FightConfig>,
   ) {
     this.fishAtk = fishAttack;
@@ -123,7 +113,7 @@ export class FightEngine {
     this.lineHp = lineHp;
     this.cfg = { ...DEFAULT_FIGHT_CONFIG, ...config };
 
-    this.distance = START_DISTANCE;
+    this.distance = startDistance;
     this.tension = 0;
     this.fightElapsed = 0;
 
