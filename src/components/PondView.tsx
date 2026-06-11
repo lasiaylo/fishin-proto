@@ -3,7 +3,7 @@ import gsap from "gsap";
 import { Flex, Text } from "@radix-ui/themes";
 import { MyButton } from "./MyButton";
 import { ChargeButton } from "./ChargeButton";
-import { FishData, StatName } from "../util/csvLoader";
+import { FishData, StatName, getZone } from "../util/csvLoader";
 import { randomizeFishStats, useFish } from "../stores/fishStore";
 import { pickFishForZone, useLocation } from "../stores/locationStore";
 import {
@@ -16,7 +16,7 @@ import { pushEvent } from "../stores/eventLogStore";
 import { EventMsg } from "../util/eventMessages";
 import { FightEngine, FightState, Outcome } from "../game/FightEngine";
 import { useSessionLog } from "../stores/sessionLogStore";
-import { randomRange } from "../util/random";
+
 import { ReelView } from "./ReelView";
 
 enum GameState {
@@ -26,8 +26,9 @@ enum GameState {
   Fighting = "fighting",
 }
 
-const BITE_DELAY: [number, number] = [1, 5];
 const RESULT_DURATION = 1000;
+const BITE_CHECK_INTERVAL = 5;
+const BITE_CHANCE = 0.35;
 const CAST_MIN = 25;
 const CAST_MAX = 80;
 const CAST_DURATION_MIN = 1;
@@ -62,7 +63,7 @@ export function PondView() {
   const lastTimeRef = useRef<number | null>(null);
   const reelRef = useRef<boolean>(false);
   const prevCritRef = useRef<boolean>(false);
-  const biteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastBiteCheckDistanceRef = useRef<number>(0);
   const luringRafRef = useRef<number>(0);
   const luringLastTimeRef = useRef<number | null>(null);
   const luringDistanceRef = useRef<number>(0);
@@ -71,7 +72,6 @@ export function PondView() {
 
   useEffect(() => {
     return () => {
-      cancelBite();
       cancelAnimationFrame(rafRef.current);
       cancelAnimationFrame(luringRafRef.current);
       castTweenRef.current?.kill();
@@ -103,22 +103,23 @@ export function PondView() {
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
 
-  function cancelBite() {
-    if (biteTimerRef.current !== null) clearTimeout(biteTimerRef.current);
-  }
-
-  function scheduleBite() {
-    const delay = randomRange(BITE_DELAY[0], BITE_DELAY[1]) * 1000;
-    biteTimerRef.current = setTimeout(() => {
-      pushEvent(EventMsg.BITING);
-      startFight();
-    }, delay);
+  function checkBite(distance: number): boolean {
+    const zone = getZone(distance);
+    if (!zone) return false;
+    if (Math.random() > BITE_CHANCE) return false;
+    const fish = pickFishForZone(castLocationRef.current, zone);
+    if (!fish) return false;
+    caughtFishRef.current = fish;
+    pushEvent(EventMsg.BITING);
+    startFight();
+    return true;
   }
 
   function startLuringLoop(initialDistance: number) {
     luringDistanceRef.current = initialDistance;
     luringLastTimeRef.current = null;
     luringReelSpeedRef.current = 0;
+    lastBiteCheckDistanceRef.current = initialDistance;
 
     function loop(timestamp: number) {
       if (luringLastTimeRef.current === null)
@@ -149,6 +150,14 @@ export function PondView() {
           handleReelIn();
           return;
         }
+
+        if (
+          lastBiteCheckDistanceRef.current - luringDistanceRef.current >=
+          BITE_CHECK_INTERVAL
+        ) {
+          lastBiteCheckDistanceRef.current = luringDistanceRef.current;
+          if (checkBite(luringDistanceRef.current)) return;
+        }
       }
 
       luringRafRef.current = requestAnimationFrame(loop);
@@ -158,7 +167,6 @@ export function PondView() {
   }
 
   function startFight() {
-    cancelBite();
     cancelAnimationFrame(luringRafRef.current);
     setGameState(GameState.Fighting);
 
@@ -174,6 +182,7 @@ export function PondView() {
       defense,
       lineHP,
       luringDistanceRef.current,
+      fish.startingDistance,
     );
 
     pushEvent(EventMsg.HOOKED());
@@ -255,14 +264,12 @@ export function PondView() {
       onComplete: () => {
         setGameState(GameState.Luring);
         setLuringDistance(castTarget);
-        scheduleBite();
         startLuringLoop(castTarget);
       },
     });
   }
 
   function handleReelIn() {
-    cancelBite();
     cancelAnimationFrame(luringRafRef.current);
     setGameState(GameState.Idle);
   }

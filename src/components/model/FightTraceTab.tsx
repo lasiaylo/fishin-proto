@@ -23,6 +23,7 @@ import {
   type FightState,
 } from "../../game/FightEngine";
 import type { FishData } from "../../util/csvLoader";
+import { avgZoneDistance } from "../../util/csvLoader";
 import { COLORS, NumInput, FishSelect, EngineConfigRow } from "./shared";
 import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
 import { randomizeFishStats } from "../../stores/fishStore";
@@ -152,6 +153,12 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
   const [fishBasePrice, setFishBasePrice] = useState(
     fishData[0]?.basePrice ?? 0,
   );
+  const [fishStartingDistance, setFishStartingDistance] = useState(
+    fishData[0]?.startingDistance ?? 0,
+  );
+  const [fishStartDistance, setFishStartDistance] = useState(
+    avgZoneDistance(fishData[0]?.zones ?? []),
+  );
   const [reelStr, setReelStr] = useState(INITIAL_PLAYER_STATE.attack);
   const [drag, setDrag] = useState(INITIAL_PLAYER_STATE.defense);
   const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
@@ -174,6 +181,8 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
       setFishStrength(fish.defense);
       setFishThrash(fish.thrash);
       setFishBasePrice(fish.basePrice);
+      setFishStartingDistance(fish.startingDistance);
+      setFishStartDistance(avgZoneDistance(fish.zones));
     }
   }, [fishId, fishData]);
 
@@ -191,7 +200,8 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
           reelStr,
           drag,
           lineHP,
-          undefined,
+          fishStartDistance,
+          fishStartingDistance,
           engineCfg,
         );
     const CHUNK = 5;
@@ -210,7 +220,8 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
               reelStr,
               drag,
               lineHP,
-              undefined,
+              fishStartDistance,
+              rf.startingDistance,
               engineCfg,
             ).runToCompletion(true),
           );
@@ -295,6 +306,18 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
           label="Base Price"
           value={fishBasePrice}
           onChange={setFishBasePrice}
+          min={0}
+        />
+        <NumInput
+          label="Start Distance"
+          value={fishStartDistance}
+          onChange={setFishStartDistance}
+          min={0}
+        />
+        <NumInput
+          label="Starting Distance"
+          value={fishStartingDistance}
+          onChange={setFishStartingDistance}
           min={0}
         />
         <Flex align="center" gap="1">

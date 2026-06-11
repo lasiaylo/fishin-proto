@@ -94,6 +94,8 @@ export class FightEngine {
 
   private distanceMult: number = 1;
   private critActive: boolean = false;
+  private targetDistance: number = 0;
+  private pullDone: boolean = false;
 
   constructor(
     fishAttack: number,
@@ -103,6 +105,7 @@ export class FightEngine {
     playerDef: number,
     lineHp: number,
     startDistance: number = START_DISTANCE,
+    targetDistance: number = startDistance,
     config?: Partial<FightConfig>,
   ) {
     this.fishAtk = fishAttack;
@@ -112,6 +115,7 @@ export class FightEngine {
     this.playerDef = playerDef;
     this.lineHp = lineHp;
     this.cfg = { ...DEFAULT_FIGHT_CONFIG, ...config };
+    this.targetDistance = targetDistance;
 
     this.distance = startDistance;
     this.tension = 0;
@@ -122,13 +126,7 @@ export class FightEngine {
     this.phaseDuration = 0;
     this.outcome = null;
 
-    this.setPhase(this.randomStartPhase());
-  }
-
-  private randomStartPhase(): Phase {
-    return Math.random() < this.cfg.startStruggleWeight
-      ? Phase.STRUGGLE
-      : Phase.REST;
+    this.setPhase(Phase.STRUGGLE);
   }
 
   private setPhase(phase: Phase): void {
@@ -146,9 +144,16 @@ export class FightEngine {
       this.critActive = false;
     }
 
-    const range =
-      phase === Phase.REST ? this.cfg.restTimeRange : this.cfg.fightTimeRange;
-    this.phaseDuration = randomRange(range[0], range[1]);
+    if (phase === Phase.STRUGGLE && !this.pullDone) {
+      this.phaseDuration =
+        this.distance < this.targetDistance
+          ? this.cfg.fightTimeRange[1]
+          : this.cfg.fightTimeRange[0];
+    } else {
+      const range =
+        phase === Phase.REST ? this.cfg.restTimeRange : this.cfg.fightTimeRange;
+      this.phaseDuration = randomRange(range[0], range[1]);
+    }
   }
 
   private getDelta(attack: number, defense: number): number {
@@ -199,21 +204,28 @@ export class FightEngine {
     if (dt < remainingInPhase) {
       this.phaseElapsed += dt;
       this.applyMovement(dt, reel);
+      if (
+        this.phase === Phase.STRUGGLE &&
+        !this.pullDone &&
+        this.distance >= this.targetDistance
+      ) {
+        this.pullDone = true;
+        this.setPhase(Phase.REST);
+      }
     } else {
       const dt1 = remainingInPhase;
       const dt2 = dt - dt1;
 
       this.applyMovement(dt1, reel);
 
-      const wouldStruggle = this.phase === Phase.REST;
+      if (this.phase === Phase.STRUGGLE) this.pullDone = true;
       const next =
-        wouldStruggle &&
-        this.distance < this.cfg.minStruggleDistance &&
-        remainingPercent < this.cfg.gracePercent
-          ? Phase.REST
-          : wouldStruggle
-            ? Phase.STRUGGLE
-            : Phase.REST;
+        this.phase === Phase.REST
+          ? this.distance < this.cfg.minStruggleDistance &&
+            remainingPercent < this.cfg.gracePercent
+            ? Phase.REST
+            : Phase.STRUGGLE
+          : Phase.REST;
       this.setPhase(next);
 
       this.applyMovement(dt2, reel);
@@ -248,7 +260,8 @@ export class FightEngine {
     this.phaseDuration = 0;
     this.distanceMult = 1;
     this.critActive = false;
-    this.setPhase(this.randomStartPhase());
+    this.pullDone = false;
+    this.setPhase(Phase.STRUGGLE);
   }
 
   runToCompletion(recordHistory = false): {

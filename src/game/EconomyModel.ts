@@ -4,6 +4,7 @@ import {
   LocationFishEntry,
   ShopUpgradeData,
   StatName,
+  avgZoneDistance,
 } from "../util/csvLoader";
 import { INITIAL_PLAYER_STATE, PlayerStats } from "../stores/playerStore";
 
@@ -50,6 +51,8 @@ function runTrials(
     player.attack,
     player.defense,
     player.lineHP,
+    avgZoneDistance(fish.zones),
+    fish.startingDistance,
   );
   let winCount = 0;
   let totalWinTime = 0;

@@ -10,6 +10,13 @@ const ZONE_RANGES: Record<Zone, [number, number]> = {
   [Zone.FAR]: [50, 80],
 };
 
+export function avgZoneDistance(zones: Zone[]): number {
+  if (zones.length === 0) return 50;
+  const mins = zones.map((z) => ZONE_RANGES[z][0]);
+  const maxs = zones.map((z) => ZONE_RANGES[z][1]);
+  return (Math.min(...mins) + Math.max(...maxs)) / 2;
+}
+
 export function getZone(distance: number): Zone | null {
   for (const zone of [Zone.FAR, Zone.MID, Zone.CLOSE]) {
     const [min, max] = ZONE_RANGES[zone];

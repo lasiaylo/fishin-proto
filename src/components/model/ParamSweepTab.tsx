@@ -25,6 +25,7 @@ import {
   type FightConfig,
 } from "../../game/FightEngine";
 import type { FishData } from "../../util/csvLoader";
+import { avgZoneDistance } from "../../util/csvLoader";
 import { NumInput, FishSelect, EngineConfigRow } from "./shared";
 
 interface SweepCell {
@@ -422,6 +423,12 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
   const [fishBasePrice, setFishBasePrice] = useState(
     fishData[0]?.basePrice ?? 0,
   );
+  const [fishStartingDistance, setFishStartingDistance] = useState(
+    fishData[0]?.startingDistance ?? 0,
+  );
+  const [fishStartDistance, setFishStartDistance] = useState(
+    avgZoneDistance(fishData[0]?.zones ?? []),
+  );
   const [lineHP, setLineHP] = useState(15);
   const [reelMin, setReelMin] = useState(
     Math.max(1, Math.round((fishData[0]?.attack ?? 2) / 2)),
@@ -448,6 +455,8 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
       setFishStrength(fish.defense);
       setFishThrash(fish.thrash);
       setFishBasePrice(fish.basePrice);
+      setFishStartingDistance(fish.startingDistance);
+      setFishStartDistance(avgZoneDistance(fish.zones));
       setReelMin(Math.max(1, Math.round(fish.attack / 2)));
       setReelMax(Math.round(fish.attack * 2));
     }
@@ -479,7 +488,8 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
           reel,
           drag,
           lineHP,
-          undefined,
+          fishStartDistance,
+          fishStartingDistance,
           engineCfg,
         ),
       ]),
@@ -562,6 +572,18 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
           label="Base Price"
           value={fishBasePrice}
           onChange={setFishBasePrice}
+          min={0}
+        />
+        <NumInput
+          label="Start Distance"
+          value={fishStartDistance}
+          onChange={setFishStartDistance}
+          min={0}
+        />
+        <NumInput
+          label="Starting Distance"
+          value={fishStartingDistance}
+          onChange={setFishStartingDistance}
           min={0}
         />
       </Flex>
