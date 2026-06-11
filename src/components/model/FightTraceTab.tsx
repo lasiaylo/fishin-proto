@@ -153,10 +153,8 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
   const [fishBasePrice, setFishBasePrice] = useState(
     fishData[0]?.basePrice ?? 0,
   );
-  const [fishStartingDistance, setFishStartingDistance] = useState(
-    fishData[0]?.startingDistance ?? 0,
-  );
-  const [fishStartDistance, setFishStartDistance] = useState(
+  const [fishHp, setFishHp] = useState(fishData[0]?.hp ?? 0);
+  const [fightStartDistance, setFightStartDistance] = useState(
     avgZoneDistance(fishData[0]?.zones ?? []),
   );
   const [reelStr, setReelStr] = useState(INITIAL_PLAYER_STATE.attack);
@@ -181,8 +179,8 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
       setFishStrength(fish.defense);
       setFishThrash(fish.thrash);
       setFishBasePrice(fish.basePrice);
-      setFishStartingDistance(fish.startingDistance);
-      setFishStartDistance(avgZoneDistance(fish.zones));
+      setFishHp(fish.hp);
+      setFightStartDistance(avgZoneDistance(fish.zones));
     }
   }, [fishId, fishData]);
 
@@ -200,8 +198,8 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
           reelStr,
           drag,
           lineHP,
-          fishStartDistance,
-          fishStartingDistance,
+          fightStartDistance,
+          fishHp,
           engineCfg,
         );
     const CHUNK = 5;
@@ -220,8 +218,8 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
               reelStr,
               drag,
               lineHP,
-              fishStartDistance,
-              rf.startingDistance,
+              fightStartDistance,
+              rf.hp,
               engineCfg,
             ).runToCompletion(true),
           );
@@ -310,16 +308,11 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
         />
         <NumInput
           label="Start Distance"
-          value={fishStartDistance}
-          onChange={setFishStartDistance}
+          value={fightStartDistance}
+          onChange={setFightStartDistance}
           min={0}
         />
-        <NumInput
-          label="Starting Distance"
-          value={fishStartingDistance}
-          onChange={setFishStartingDistance}
-          min={0}
-        />
+        <NumInput label="HP" value={fishHp} onChange={setFishHp} min={0} />
         <Flex align="center" gap="1">
           <input
             id="randomize-stats"

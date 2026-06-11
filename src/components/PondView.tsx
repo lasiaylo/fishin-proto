@@ -182,7 +182,7 @@ export function PondView() {
       defense,
       lineHP,
       luringDistanceRef.current,
-      fish.startingDistance,
+      fish.hp,
     );
 
     pushEvent(EventMsg.HOOKED());

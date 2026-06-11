@@ -34,7 +34,7 @@ export interface FishData {
   requiredLure: string;
   thrash: number;
   zones: Zone[];
-  startingDistance: number;
+  hp: number;
 }
 
 export enum StatName {
@@ -155,7 +155,7 @@ function parseFishRow(row: string[]): FishData {
     basePrice: Number(row[4]),
     requiredLure: row[5] || "",
     zones: row[6] ? (row[6].split(" ").filter(Boolean) as Zone[]) : [],
-    startingDistance: Number(row[7]) || 0,
+    hp: Number(row[7]) || 0,
   };
 }
 

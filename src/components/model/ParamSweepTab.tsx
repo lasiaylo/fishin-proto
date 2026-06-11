@@ -423,10 +423,8 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
   const [fishBasePrice, setFishBasePrice] = useState(
     fishData[0]?.basePrice ?? 0,
   );
-  const [fishStartingDistance, setFishStartingDistance] = useState(
-    fishData[0]?.startingDistance ?? 0,
-  );
-  const [fishStartDistance, setFishStartDistance] = useState(
+  const [fishHp, setFishHp] = useState(fishData[0]?.hp ?? 0);
+  const [fightStartDistance, setFightStartDistance] = useState(
     avgZoneDistance(fishData[0]?.zones ?? []),
   );
   const [lineHP, setLineHP] = useState(15);
@@ -455,8 +453,8 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
       setFishStrength(fish.defense);
       setFishThrash(fish.thrash);
       setFishBasePrice(fish.basePrice);
-      setFishStartingDistance(fish.startingDistance);
-      setFishStartDistance(avgZoneDistance(fish.zones));
+      setFishHp(fish.hp);
+      setFightStartDistance(avgZoneDistance(fish.zones));
       setReelMin(Math.max(1, Math.round(fish.attack / 2)));
       setReelMax(Math.round(fish.attack * 2));
     }
@@ -488,8 +486,8 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
           reel,
           drag,
           lineHP,
-          fishStartDistance,
-          fishStartingDistance,
+          fightStartDistance,
+          fishHp,
           engineCfg,
         ),
       ]),
@@ -576,16 +574,11 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
         />
         <NumInput
           label="Start Distance"
-          value={fishStartDistance}
-          onChange={setFishStartDistance}
+          value={fightStartDistance}
+          onChange={setFightStartDistance}
           min={0}
         />
-        <NumInput
-          label="Starting Distance"
-          value={fishStartingDistance}
-          onChange={setFishStartingDistance}
-          min={0}
-        />
+        <NumInput label="HP" value={fishHp} onChange={setFishHp} min={0} />
       </Flex>
       <Flex gap="3" wrap="wrap" align="end">
         <NumInput label="Line HP" value={lineHP} onChange={setLineHP} min={1} />

@@ -1,4 +1,4 @@
-ID, Attack, Defense, Thrash, BasePrice, RequiredLure, Zone, StartingDistance
+ID, Attack, Defense, Thrash, BasePrice, RequiredLure, Zone, HP
 FISH_1, 2, 4, 1, 4, , CLOSE, 15
 FISH_2, 6, 6, 1, 10, LURE_1, MID, 35
 FISH_3, 7, 7, 1, 15, LURE_1, MID, 40

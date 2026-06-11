@@ -52,7 +52,7 @@ function runTrials(
     player.defense,
     player.lineHP,
     avgZoneDistance(fish.zones),
-    fish.startingDistance,
+    fish.hp,
   );
   let winCount = 0;
   let totalWinTime = 0;
