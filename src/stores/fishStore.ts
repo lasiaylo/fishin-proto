@@ -15,6 +15,9 @@ export function randomizeFishStats(fish: FishData): FishData {
     attack: parseFloat((fish.attack * multiplier).toFixed(2)),
     defense: parseFloat((fish.defense * multiplier).toFixed(2)),
     thrash: parseFloat((fish.thrash * thrashMult).toFixed(2)),
+    startingDistance: parseFloat(
+      (fish.startingDistance * multiplier).toFixed(1),
+    ),
     basePrice:
       fish.id === "FISH_1"
         ? Math.max(fish.basePrice, randomizedPrice)

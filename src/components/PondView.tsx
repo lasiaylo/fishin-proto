@@ -5,7 +5,7 @@ import { MyButton } from "./MyButton";
 import { ChargeButton } from "./ChargeButton";
 import { FishData, StatName } from "../util/csvLoader";
 import { randomizeFishStats, useFish } from "../stores/fishStore";
-import { pickFishAtSpot, useLocation } from "../stores/locationStore";
+import { pickFishForZone, useLocation } from "../stores/locationStore";
 import {
   addFishToInventory,
   setSelectedLure,
@@ -23,7 +23,6 @@ enum GameState {
   Idle = "idle",
   CastAnimation = "cast_animation",
   Luring = "luring",
-  Missed = "missed",
   Fighting = "fighting",
 }
 
@@ -54,6 +53,7 @@ export function PondView() {
 
   const castProgressObjRef = useRef({ value: 0 });
   const castTweenRef = useRef<gsap.core.Tween | null>(null);
+  const castLocationRef = useRef<string>("");
 
   const caughtFishRef = useRef<FishData | null>(null);
   const fightRef = useRef<FightEngine | null>(null);
@@ -238,15 +238,9 @@ export function PondView() {
 
   function handleCastRelease(chargePercent: number) {
     const locationId = selectedLocation || Object.keys(locations)[0];
-    const fish = pickFishAtSpot(locationId);
-    if (!fish) {
-      pushEvent(EventMsg.NO_FISH);
-      return;
-    }
-
     const t = chargePercent / 100;
     const castTarget = CAST_MIN + t * (CAST_MAX - CAST_MIN);
-    caughtFishRef.current = fish;
+    castLocationRef.current = locationId;
     pushEvent(EventMsg.CASTING(locations[locationId]?.name ?? locationId));
 
     castProgressObjRef.current.value = 0;

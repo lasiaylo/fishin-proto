@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import {
   FishData,
+  Zone,
   loadLocationDisplayData,
   loadLocationGameplayData,
 } from "../util/csvLoader";
@@ -37,23 +38,9 @@ export async function initLocations() {
   useLocation.setState(locations, true);
 }
 
-export function pickFishAtSpot(locationId: string): FishData | null {
-  const location = useLocation.getState()[locationId];
-  if (!location) return null;
-
-  const { allFish } = useFish.getState();
-  const { selectedLure } = usePlayer.getState();
-  const effectiveLure = selectedLure ?? "";
-
-  const candidates = location.fish.flatMap(({ fishId, percent }) => {
-    const fish = allFish.find((f) => f.id === fishId);
-    return fish && fish.requiredLure === effectiveLure
-      ? [{ fish, percent }]
-      : [];
-  });
-
-  if (candidates.length === 0) return null;
-
+function weightedPick(
+  candidates: { fish: FishData; percent: number }[],
+): FishData {
   const total = candidates.reduce((sum, c) => sum + c.percent, 0);
   let rand = Math.random() * total;
   let selected = candidates[candidates.length - 1].fish;
@@ -64,6 +51,29 @@ export function pickFishAtSpot(locationId: string): FishData | null {
       break;
     }
   }
+  return selected;
+}
 
-  return randomizeFishStats(selected);
+export function pickFishForZone(
+  locationId: string,
+  zone: Zone,
+): FishData | null {
+  const location = useLocation.getState()[locationId];
+  if (!location) return null;
+
+  const { allFish } = useFish.getState();
+  const { selectedLure } = usePlayer.getState();
+  const effectiveLure = selectedLure ?? "";
+
+  const candidates = location.fish.flatMap(({ fishId, percent }) => {
+    const fish = allFish.find((f) => f.id === fishId);
+    return fish &&
+      fish.requiredLure === effectiveLure &&
+      fish.zones.includes(zone)
+      ? [{ fish, percent }]
+      : [];
+  });
+
+  if (candidates.length === 0) return null;
+  return randomizeFishStats(weightedPick(candidates));
 }

@@ -1,3 +1,23 @@
+export enum Zone {
+  CLOSE = "CLOSE",
+  MID = "MID",
+  FAR = "FAR",
+}
+
+const ZONE_RANGES: Record<Zone, [number, number]> = {
+  [Zone.CLOSE]: [5, 30],
+  [Zone.MID]: [30, 60],
+  [Zone.FAR]: [50, 80],
+};
+
+export function getZone(distance: number): Zone | null {
+  for (const zone of [Zone.FAR, Zone.MID, Zone.CLOSE]) {
+    const [min, max] = ZONE_RANGES[zone];
+    if (distance >= min && distance <= max) return zone;
+  }
+  return null;
+}
+
 export interface FishData {
   id: string;
   name: string;
@@ -6,6 +26,8 @@ export interface FishData {
   defense: number;
   requiredLure: string;
   thrash: number;
+  zones: Zone[];
+  startingDistance: number;
 }
 
 export enum StatName {
@@ -72,13 +94,8 @@ export async function loadFishData(
   );
 
   return gameplayRows.slice(1).map((row) => ({
-    id: row[0],
+    ...parseFishRow(row),
     name: displayById.get(row[0]) ?? row[0],
-    attack: Number(row[1]),
-    defense: Number(row[2]),
-    thrash: Number(row[3]) || 0,
-    basePrice: Number(row[4]),
-    requiredLure: row[5] || "",
   }));
 }
 
@@ -121,8 +138,8 @@ export async function loadShopGameplayData(
   }));
 }
 
-export function parseFishGameplayRows(rows: string[][]): FishData[] {
-  return rows.slice(1).map((row) => ({
+function parseFishRow(row: string[]): FishData {
+  return {
     id: row[0],
     name: row[0],
     attack: Number(row[1]),
@@ -130,7 +147,13 @@ export function parseFishGameplayRows(rows: string[][]): FishData[] {
     thrash: Number(row[3]) || 0,
     basePrice: Number(row[4]),
     requiredLure: row[5] || "",
-  }));
+    zones: row[6] ? (row[6].split(" ").filter(Boolean) as Zone[]) : [],
+    startingDistance: Number(row[7]) || 0,
+  };
+}
+
+export function parseFishGameplayRows(rows: string[][]): FishData[] {
+  return rows.slice(1).map(parseFishRow);
 }
 
 function categoryFromStat(stat: StatName): string {
