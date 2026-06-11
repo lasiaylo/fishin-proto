@@ -28,7 +28,7 @@ enum GameState {
 
 const RESULT_DURATION = 1000;
 const BITE_CHECK_INTERVAL = 5;
-const BITE_CHANCE = 0.35;
+const BITE_CHANCE = 1.35;
 const CAST_MIN = 25;
 const CAST_MAX = 80;
 const CAST_DURATION_MIN = 1;
@@ -67,7 +67,7 @@ export function PondView() {
   const luringRafRef = useRef<number>(0);
   const luringLastTimeRef = useRef<number | null>(null);
   const luringDistanceRef = useRef<number>(0);
-  const reelLuringRef = useRef<boolean>(false);
+  const isReelingRef = useRef<boolean>(false);
   const luringReelSpeedRef = useRef<number>(0);
 
   useEffect(() => {
@@ -117,9 +117,10 @@ export function PondView() {
 
   function startLuringLoop(initialDistance: number) {
     luringDistanceRef.current = initialDistance;
+    lastBiteCheckDistanceRef.current = initialDistance;
     luringLastTimeRef.current = null;
     luringReelSpeedRef.current = 0;
-    lastBiteCheckDistanceRef.current = initialDistance;
+    isReelingRef.current = false;
 
     function loop(timestamp: number) {
       if (luringLastTimeRef.current === null)
@@ -127,7 +128,7 @@ export function PondView() {
       const dt = Math.min((timestamp - luringLastTimeRef.current) / 1000, 0.1);
       luringLastTimeRef.current = timestamp;
 
-      if (reelLuringRef.current) {
+      if (isReelingRef.current) {
         luringReelSpeedRef.current = Math.min(
           luringReelSpeedRef.current + LURING_REEL_ACCEL * dt,
           LURING_REEL_MAX_SPEED,
@@ -335,10 +336,10 @@ export function PondView() {
         distance={luringDistance}
         lineHp={lineHpRef.current}
         onReelStart={() => {
-          reelLuringRef.current = true;
+          isReelingRef.current = true;
         }}
         onReelEnd={() => {
-          reelLuringRef.current = false;
+          isReelingRef.current = false;
         }}
       />
     );

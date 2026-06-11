@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { FishData, loadFishData } from "../util/csvLoader";
-import { usePlayer } from "./playerStore";
 import { randomRange } from "../util/random";
 
 const HOOK_ROLL: [number, number] = [0.9, 1.1];

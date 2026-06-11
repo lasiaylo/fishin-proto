@@ -21,7 +21,6 @@ export function ReelView({
   lineHp,
   fading = false,
 }: ReelViewProps) {
-  console.log(lineHp, lineHp - (fightState?.tension ?? 0));
   return (
     <Flex
       direction="column"

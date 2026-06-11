@@ -68,14 +68,32 @@ function generateFishRows(
   levels: number,
 ): string[][] {
   const rows: string[][] = [
-    ["ID", "Attack", "Defense", "Thrash", "BasePrice", "RequiredLure"],
+    [
+      "ID",
+      "Attack",
+      "Defense",
+      "Thrash",
+      "BasePrice",
+      "RequiredLure",
+      "Zone",
+      "HP",
+    ],
   ];
   let idx = 1;
 
   // Level 0: one fish, no lure required
   const s0 = Math.ceil(evalFn(statsFn, 0));
   const p0 = Math.ceil(evalFn(priceFn, 0));
-  rows.push([`FISH_${idx++}`, String(s0), String(s0), "1", String(p0), ""]);
+  rows.push([
+    `FISH_${idx++}`,
+    String(s0),
+    String(s0),
+    "1",
+    String(p0),
+    "",
+    "CLOSE",
+    "30",
+  ]);
 
   // Levels 1..N: three fish each (min, middle, max)
   for (let l = 1; l <= levels; l++) {
@@ -90,6 +108,8 @@ function generateFishRows(
         "1",
         String(p),
         `LURE_${l}`,
+        "MID",
+        "50",
       ]);
     }
   }
