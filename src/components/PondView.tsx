@@ -17,8 +17,7 @@ import { EventMsg } from "../util/eventMessages";
 import { FightEngine, FightState, Outcome } from "../game/FightEngine";
 import { useSessionLog } from "../stores/sessionLogStore";
 import { randomRange } from "../util/random";
-import { FightView } from "./FightView";
-import { LuringView } from "./LuringView";
+import { ReelView } from "./ReelView";
 
 enum GameState {
   Idle = "idle",
@@ -28,13 +27,15 @@ enum GameState {
   Fighting = "fighting",
 }
 
-const BITE_DELAY: [number, number] = [5, 10];
-const HOOK_WINDOW = 2;
+const BITE_DELAY: [number, number] = [1, 5];
 const RESULT_DURATION = 1000;
 const CAST_MIN = 25;
 const CAST_MAX = 80;
-const CAST_DURATION_MIN = 4;
-const CAST_DURATION_MAX = 6;
+const CAST_DURATION_MIN = 1;
+const CAST_DURATION_MAX = 2.5;
+const LURING_REEL_MAX_SPEED = 12;
+const LURING_REEL_ACCEL = 20;
+const LURING_REEL_DECEL = 20;
 
 export function PondView() {
   const locations = useLocation();
@@ -45,30 +46,34 @@ export function PondView() {
   const selectedLure = usePlayer((s) => s.selectedLure);
 
   const [gameState, setGameState] = useState<GameState>(GameState.Idle);
-  const [biteReady, setBiteReady] = useState(false);
   const [fading, setFading] = useState(false);
   const [fightState, setFightState] = useState<FightState | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string>("");
   const [castProgress, setCastProgress] = useState(0);
+  const [luringDistance, setLuringDistance] = useState(0);
 
-  const castTargetRef = useRef<number>(50);
   const castProgressObjRef = useRef({ value: 0 });
   const castTweenRef = useRef<gsap.core.Tween | null>(null);
 
   const caughtFishRef = useRef<FishData | null>(null);
   const fightRef = useRef<FightEngine | null>(null);
-  const lineHpRef = useRef<number>(0);
+  const lineHpRef = useRef<number>(usePlayer.getState().lineHP);
   const rafRef = useRef<number>(0);
   const lastTimeRef = useRef<number | null>(null);
   const reelRef = useRef<boolean>(false);
   const prevCritRef = useRef<boolean>(false);
   const biteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hookWindowRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const luringRafRef = useRef<number>(0);
+  const luringLastTimeRef = useRef<number | null>(null);
+  const luringDistanceRef = useRef<number>(0);
+  const reelLuringRef = useRef<boolean>(false);
+  const luringReelSpeedRef = useRef<number>(0);
 
   useEffect(() => {
     return () => {
       cancelBite();
       cancelAnimationFrame(rafRef.current);
+      cancelAnimationFrame(luringRafRef.current);
       castTweenRef.current?.kill();
     };
   }, []);
@@ -100,25 +105,61 @@ export function PondView() {
 
   function cancelBite() {
     if (biteTimerRef.current !== null) clearTimeout(biteTimerRef.current);
-    if (hookWindowRef.current !== null) clearTimeout(hookWindowRef.current);
   }
 
   function scheduleBite() {
     const delay = randomRange(BITE_DELAY[0], BITE_DELAY[1]) * 1000;
     biteTimerRef.current = setTimeout(() => {
-      setBiteReady(true);
       pushEvent(EventMsg.BITING);
-      hookWindowRef.current = setTimeout(() => {
-        setBiteReady(false);
-        pushEvent(EventMsg.ESCAPED);
-        setGameState(GameState.Missed);
-      }, HOOK_WINDOW * 1000);
+      startFight();
     }, delay);
+  }
+
+  function startLuringLoop(initialDistance: number) {
+    luringDistanceRef.current = initialDistance;
+    luringLastTimeRef.current = null;
+    luringReelSpeedRef.current = 0;
+
+    function loop(timestamp: number) {
+      if (luringLastTimeRef.current === null)
+        luringLastTimeRef.current = timestamp;
+      const dt = Math.min((timestamp - luringLastTimeRef.current) / 1000, 0.1);
+      luringLastTimeRef.current = timestamp;
+
+      if (reelLuringRef.current) {
+        luringReelSpeedRef.current = Math.min(
+          luringReelSpeedRef.current + LURING_REEL_ACCEL * dt,
+          LURING_REEL_MAX_SPEED,
+        );
+      } else {
+        luringReelSpeedRef.current = Math.max(
+          luringReelSpeedRef.current - LURING_REEL_DECEL * dt,
+          0,
+        );
+      }
+
+      if (luringReelSpeedRef.current > 0) {
+        luringDistanceRef.current = Math.max(
+          0,
+          luringDistanceRef.current - luringReelSpeedRef.current * dt,
+        );
+        setLuringDistance(luringDistanceRef.current);
+
+        if (luringDistanceRef.current <= 0) {
+          handleReelIn();
+          return;
+        }
+      }
+
+      luringRafRef.current = requestAnimationFrame(loop);
+    }
+
+    luringRafRef.current = requestAnimationFrame(loop);
   }
 
   function startFight() {
     cancelBite();
-    setBiteReady(false);
+    cancelAnimationFrame(luringRafRef.current);
     setGameState(GameState.Fighting);
 
     const { attack, defense, lineHP } = usePlayer.getState();
@@ -132,7 +173,7 @@ export function PondView() {
       attack,
       defense,
       lineHP,
-      castTargetRef.current,
+      luringDistanceRef.current,
     );
 
     pushEvent(EventMsg.HOOKED());
@@ -204,7 +245,7 @@ export function PondView() {
     }
 
     const t = chargePercent / 100;
-    castTargetRef.current = CAST_MIN + t * (CAST_MAX - CAST_MIN);
+    const castTarget = CAST_MIN + t * (CAST_MAX - CAST_MIN);
     caughtFishRef.current = fish;
     pushEvent(EventMsg.CASTING(locations[locationId]?.name ?? locationId));
 
@@ -213,20 +254,22 @@ export function PondView() {
     setGameState(GameState.CastAnimation);
 
     castTweenRef.current = gsap.to(castProgressObjRef.current, {
-      value: castTargetRef.current,
+      value: castTarget,
       duration: CAST_DURATION_MIN + t * (CAST_DURATION_MAX - CAST_DURATION_MIN),
-      ease: "power4.out",
+      ease: "power3.out",
       onUpdate: () => setCastProgress(castProgressObjRef.current.value),
       onComplete: () => {
         setGameState(GameState.Luring);
-        setBiteReady(false);
+        setLuringDistance(castTarget);
         scheduleBite();
+        startLuringLoop(castTarget);
       },
     });
   }
 
   function handleReelIn() {
     cancelBite();
+    cancelAnimationFrame(luringRafRef.current);
     setGameState(GameState.Idle);
   }
 
@@ -282,24 +325,29 @@ export function PondView() {
   }
 
   if (gameState === GameState.CastAnimation) {
-    return <LuringView distance={castProgress} />;
+    return <ReelView distance={castProgress} lineHp={lineHpRef.current} />;
   }
 
   if (gameState === GameState.Luring) {
     return (
-      <LuringView
-        distance={castTargetRef.current}
-        biteReady={biteReady}
-        onHook={startFight}
-        onReelIn={handleReelIn}
+      <ReelView
+        distance={luringDistance}
+        lineHp={lineHpRef.current}
+        onReelStart={() => {
+          reelLuringRef.current = true;
+        }}
+        onReelEnd={() => {
+          reelLuringRef.current = false;
+        }}
       />
     );
   }
 
   if (gameState === GameState.Fighting && fightState !== null) {
     return (
-      <FightView
-        state={fightState}
+      <ReelView
+        distance={fightState.distance}
+        fightState={fightState}
         lineHp={lineHpRef.current}
         fading={fading}
         onReelStart={() => {

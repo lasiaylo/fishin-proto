@@ -4,12 +4,16 @@ import React from "react";
 
 export function MyButton({
   onClick,
+  onMouseDown,
+  onMouseUp,
   disabled,
   description,
   children,
 }: {
   children: ReactNode;
-  onClick: () => void;
+  onClick?: () => void;
+  onMouseDown?: () => void;
+  onMouseUp?: () => void;
   disabled?: boolean;
   description?: string;
 }) {
@@ -19,7 +23,10 @@ export function MyButton({
         radius={"none"}
         disabled={disabled}
         variant="outline"
-        onClick={onClick}
+        onClick={onClick ?? (() => {})}
+        onMouseDown={onMouseDown}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
       >
         <Text size={"1"}>{children}</Text>
       </Button>

@@ -4,23 +4,24 @@ import { FightState } from "../game/FightEngine";
 import { MyButton } from "./MyButton";
 import { StatBar } from "./StatBar";
 
-interface FightViewProps {
-  state: FightState;
+interface ReelViewProps {
+  distance: number;
+  onReelStart?: () => void;
+  onReelEnd?: () => void;
+  fightState?: FightState | null;
   lineHp: number;
   fading?: boolean;
-  onReelStart: () => void;
-  onReelEnd: () => void;
 }
 
-export function FightView({
-  state,
-  lineHp,
-  fading = false,
+export function ReelView({
+  distance,
   onReelStart,
   onReelEnd,
-}: FightViewProps) {
-  const { distance, tension, phase } = state;
-
+  fightState,
+  lineHp,
+  fading = false,
+}: ReelViewProps) {
+  console.log(lineHp, lineHp - (fightState?.tension ?? 0));
   return (
     <Flex
       direction="column"
@@ -29,18 +30,22 @@ export function FightView({
       p="4"
       style={{ opacity: fading ? 0 : 1, transition: "opacity 0.6s ease" }}
     >
-      <div
+      <MyButton
+        disabled={!onReelStart}
         onMouseDown={onReelStart}
         onMouseUp={onReelEnd}
-        onMouseLeave={onReelEnd}
       >
-        <MyButton onClick={() => {}}>reel</MyButton>
-      </div>
+        reel
+      </MyButton>
       <Text size="2" color="gray">
-        {phase}
+        {fightState?.phase ?? " "}
       </Text>
       <StatBar label="distance" value={distance} max={100} />
-      <StatBar label="hp" value={lineHp - tension} max={lineHp} />
+      <StatBar
+        label="hp"
+        value={lineHp - (fightState?.tension ?? 0)}
+        max={lineHp}
+      />
     </Flex>
   );
 }
