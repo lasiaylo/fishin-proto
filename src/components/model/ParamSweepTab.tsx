@@ -25,7 +25,7 @@ import {
   type FightConfig,
 } from "../../game/FightEngine";
 import type { FishData } from "../../util/csvLoader";
-import { avgZoneDistance } from "../../util/csvLoader";
+import { avgZoneDistance } from "../../util/zones";
 import { NumInput, FishSelect, EngineConfigRow } from "./shared";
 
 interface SweepCell {

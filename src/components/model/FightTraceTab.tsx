@@ -23,7 +23,7 @@ import {
   type FightState,
 } from "../../game/FightEngine";
 import type { FishData } from "../../util/csvLoader";
-import { avgZoneDistance } from "../../util/csvLoader";
+import { avgZoneDistance } from "../../util/zones";
 import { COLORS, NumInput, FishSelect, EngineConfigRow } from "./shared";
 import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
 import { randomizeFishStats } from "../../stores/fishStore";

@@ -1,10 +1,10 @@
 import { create } from "zustand";
 import {
   FishData,
-  Zone,
   loadLocationDisplayData,
   loadLocationGameplayData,
 } from "../util/csvLoader";
+import { Zone } from "../util/zones";
 import { randomizeFishStats, useFish } from "./fishStore";
 import { usePlayer } from "./playerStore";
 

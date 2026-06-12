@@ -4,8 +4,8 @@ import {
   LocationFishEntry,
   ShopUpgradeData,
   StatName,
-  avgZoneDistance,
 } from "../util/csvLoader";
+import { avgZoneDistance } from "../util/zones";
 import { INITIAL_PLAYER_STATE, PlayerStats } from "../stores/playerStore";
 
 // ── Constants ──

@@ -3,7 +3,8 @@ import gsap from "gsap";
 import { Flex, Text } from "@radix-ui/themes";
 import { MyButton } from "./MyButton";
 import { ChargeButton } from "./ChargeButton";
-import { FishData, StatName, getZone } from "../util/csvLoader";
+import { FishData, StatName } from "../util/csvLoader";
+import { Zone, getZone, BITE_CHANCE, BITE_CHECK_INTERVAL } from "../util/zones";
 import { randomizeFishStats, useFish } from "../stores/fishStore";
 import { pickFishForZone, useLocation } from "../stores/locationStore";
 import {
@@ -27,8 +28,6 @@ enum GameState {
 }
 
 const RESULT_DURATION = 1000;
-const BITE_CHECK_INTERVAL = 5;
-const BITE_CHANCE = 0.35;
 const CAST_MIN = 25;
 const CAST_MAX = 80;
 const CAST_DURATION_MIN = 1;
@@ -106,7 +105,7 @@ export function PondView() {
   function checkBite(distance: number): boolean {
     const zone = getZone(distance);
     if (!zone) return false;
-    if (Math.random() > BITE_CHANCE) return false;
+    if (Math.random() > BITE_CHANCE[zone]) return false;
     const fish = pickFishForZone(castLocationRef.current, zone);
     if (!fish) return false;
     caughtFishRef.current = fish;
