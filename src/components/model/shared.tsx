@@ -138,6 +138,26 @@ export function EngineConfigRow({
               min={0}
             />
             <NumInput
+              label="Init Fight Min"
+              value={config.initialFightRange[0]}
+              onChange={(v) =>
+                onChange({
+                  initialFightRange: [v, config.initialFightRange[1]],
+                })
+              }
+              min={0}
+            />
+            <NumInput
+              label="Init Fight Max"
+              value={config.initialFightRange[1]}
+              onChange={(v) =>
+                onChange({
+                  initialFightRange: [config.initialFightRange[0], v],
+                })
+              }
+              min={0}
+            />
+            <NumInput
               label="Start Struggle Weight"
               value={config.startStruggleWeight}
               onChange={(v) => onChange({ startStruggleWeight: v })}

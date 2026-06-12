@@ -28,7 +28,7 @@ enum GameState {
 
 const RESULT_DURATION = 1000;
 const BITE_CHECK_INTERVAL = 5;
-const BITE_CHANCE = 1.35;
+const BITE_CHANCE = 0.35;
 const CAST_MIN = 25;
 const CAST_MAX = 80;
 const CAST_DURATION_MIN = 1;

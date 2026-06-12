@@ -11,6 +11,7 @@ export interface FightConfig {
   gracePercent: number;
   restTimeRange: [number, number];
   fightTimeRange: [number, number];
+  initialFightRange: [number, number];
   baseSpeed: number;
   minSpeed: number;
   startStruggleWeight: number;
@@ -28,6 +29,7 @@ export interface FightConfig {
 export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   restTimeRange: [3, 4],
   fightTimeRange: [1, 3],
+  initialFightRange: [2, 4],
   startStruggleWeight: 0.5,
   gracePercent: 0.2,
   minStruggleDistance: 10,
@@ -145,15 +147,15 @@ export class FightEngine {
     }
 
     if (phase === Phase.STRUGGLE && !this.pullDone) {
-      this.phaseDuration =
-        this.distance < this.targetDistance
-          ? this.cfg.fightTimeRange[1]
-          : this.cfg.fightTimeRange[0];
-    } else {
-      const range =
-        phase === Phase.REST ? this.cfg.restTimeRange : this.cfg.fightTimeRange;
-      this.phaseDuration = randomRange(range[0], range[1]);
+      this.phaseDuration = randomRange(
+        this.cfg.initialFightRange[0],
+        this.cfg.initialFightRange[1],
+      );
+      return;
     }
+    const range =
+      phase === Phase.REST ? this.cfg.restTimeRange : this.cfg.fightTimeRange;
+    this.phaseDuration = randomRange(range[0], range[1]);
   }
 
   private getDelta(attack: number, defense: number): number {
@@ -207,7 +209,8 @@ export class FightEngine {
       if (
         this.phase === Phase.STRUGGLE &&
         !this.pullDone &&
-        this.distance >= this.targetDistance
+        this.distance >= this.targetDistance &&
+        this.phaseElapsed > this.cfg.initialFightRange[0]
       ) {
         this.pullDone = true;
         this.setPhase(Phase.REST);
