@@ -18,6 +18,7 @@ export enum StatName {
   HP = "HP",
   LURE = "LURE",
   INVENTORY = "INVENTORY",
+  CAST_DISTANCE = "CAST_DISTANCE",
   WIN = "win",
 }
 

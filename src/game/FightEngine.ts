@@ -45,7 +45,7 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   easeSlope: 0.3,
 };
 
-const STRUGGLE_GRACE = 1;
+const STRUGGLE_GRACE = 0.5;
 const THRASH_MULT = 1.2;
 const REEL_DEFENSE_MULT = 0.5;
 

@@ -111,6 +111,9 @@ export function buyUpgrade(id: string) {
     case StatName.INVENTORY:
       addToStat("inventorySize", upgrade.valuePerLevel);
       break;
+    case StatName.CAST_DISTANCE:
+      addToStat("castMax", upgrade.valuePerLevel);
+      break;
   }
 
   // Update upgrade level
@@ -151,6 +154,9 @@ export function setUpgradeLevelDebug(id: string, newLevel: number) {
     case StatName.INVENTORY:
       addToStat("inventorySize", delta * upgrade.valuePerLevel);
       break;
+    case StatName.CAST_DISTANCE:
+      addToStat("castMax", delta * upgrade.valuePerLevel);
+      break;
   }
 
   const newUpgrades = [...state.upgrades];
@@ -179,6 +185,9 @@ export function resetAllUpgradesDebug() {
         break;
       case StatName.INVENTORY:
         addToStat("inventorySize", delta * u.valuePerLevel);
+        break;
+      case StatName.CAST_DISTANCE:
+        addToStat("castMax", delta * u.valuePerLevel);
         break;
     }
   }

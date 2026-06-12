@@ -7,6 +7,7 @@ export interface PlayerStats {
   defense: number;
   lineHP: number;
   inventorySize: number;
+  castMax: number;
 }
 export interface PlayerState extends PlayerStats {
   wallet: number;
@@ -21,6 +22,7 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
   defense: 10,
   lineHP: 15,
   inventorySize: 3,
+  castMax: 25,
   ownedLures: new Set<string>(),
   selectedLure: null,
   inventory: [],

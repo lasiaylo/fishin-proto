@@ -37,7 +37,7 @@ export function ReelView({
         reel
       </MyButton>
       <Text size="2" color="gray">
-        {fightState?.phase ?? " "}
+        {fightState?.phase ?? " "}
       </Text>
       <StatBar label="distance" value={distance} max={100} />
       <StatBar

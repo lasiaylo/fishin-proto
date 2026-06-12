@@ -29,18 +29,20 @@ enum GameState {
 
 const RESULT_DURATION = 1000;
 const CAST_MIN = 25;
-const CAST_MAX = 80;
 const CAST_DURATION_MIN = 1;
 const CAST_DURATION_MAX = 2;
-const LURING_REEL_MAX_SPEED = 12;
+const CAST_CHARGE_DURATION = 2000;
+const LURING_REEL_MAX_SPEED = 10;
 const LURING_REEL_ACCEL = 20;
 const LURING_REEL_DECEL = 20;
+const REEL_MIN = 5;
 
 export function PondView() {
   const locations = useLocation();
   const invCount = usePlayer((s) => s.inventory.length);
   const inventorySize = usePlayer((s) => s.inventorySize);
   const ownedLures = usePlayer((s) => s.ownedLures);
+  const castMax = usePlayer((s) => s.castMax);
   const shopUpgrades = useShop((s) => s.upgrades);
   const selectedLure = usePlayer((s) => s.selectedLure);
 
@@ -154,7 +156,8 @@ export function PondView() {
 
         if (
           lastBiteCheckDistanceRef.current - luringDistanceRef.current >=
-          BITE_CHECK_INTERVAL
+            BITE_CHECK_INTERVAL &&
+          initialDistance - luringDistanceRef.current >= REEL_MIN
         ) {
           lastBiteCheckDistanceRef.current = luringDistanceRef.current;
           if (checkBite(luringDistanceRef.current)) return;
@@ -249,7 +252,7 @@ export function PondView() {
   function handleCastRelease(chargePercent: number) {
     const locationId = selectedLocation || Object.keys(locations)[0];
     const t = chargePercent / 100;
-    const castTarget = CAST_MIN + t * (CAST_MAX - CAST_MIN);
+    const castTarget = CAST_MIN + t * (castMax - CAST_MIN);
     castLocationRef.current = locationId;
     pushEvent(EventMsg.CASTING(locations[locationId]?.name ?? locationId));
 
@@ -321,7 +324,12 @@ export function PondView() {
           </Flex>
         </Flex>
 
-        <ChargeButton onRelease={handleCastRelease}>hold to cast</ChargeButton>
+        <ChargeButton
+          onRelease={handleCastRelease}
+          maxHoldMs={CAST_CHARGE_DURATION}
+        >
+          hold to cast
+        </ChargeButton>
       </Flex>
     );
   }
