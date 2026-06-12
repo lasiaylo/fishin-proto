@@ -13,7 +13,7 @@ export const ZONE_RANGES: Record<Zone, [number, number]> = {
 export const BITE_CHECK_INTERVAL = 5;
 
 // Target probability of getting at least one bite while reeling through a zone.
-const TARGET_BITE_CHANCE = 0.1;
+const TARGET_BITE_CHANCE = 0.7;
 
 function perCheckChance(zone: Zone): number {
   const [min, max] = ZONE_RANGES[zone];
@@ -27,12 +27,11 @@ export const BITE_CHANCE: Record<Zone, number> = {
   [Zone.FAR]: perCheckChance(Zone.FAR),
 };
 
-export function getZone(distance: number): Zone | null {
-  for (const zone of [Zone.FAR, Zone.MID, Zone.CLOSE]) {
+export function getZones(distance: number): Zone[] {
+  return [Zone.CLOSE, Zone.MID, Zone.FAR].filter((zone) => {
     const [min, max] = ZONE_RANGES[zone];
-    if (distance >= min && distance <= max) return zone;
-  }
-  return null;
+    return distance >= min && distance <= max;
+  });
 }
 
 export function avgZoneDistance(zones: Zone[]): number {

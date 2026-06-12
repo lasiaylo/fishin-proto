@@ -56,7 +56,7 @@ function weightedPick(
 
 export function pickFishForZone(
   locationId: string,
-  zone: Zone,
+  zones: Zone[],
 ): FishData | null {
   const location = useLocation.getState()[locationId];
   if (!location) return null;
@@ -69,7 +69,7 @@ export function pickFishForZone(
     const fish = allFish.find((f) => f.id === fishId);
     return fish &&
       fish.requiredLure === effectiveLure &&
-      fish.zones.includes(zone)
+      fish.zones.some((z) => zones.includes(z))
       ? [{ fish, percent }]
       : [];
   });

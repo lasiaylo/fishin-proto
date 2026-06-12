@@ -34,13 +34,9 @@ export function ChargeButton({
   function releaseCharge() {
     if (startRef.current === null) return;
     cancelAnimationFrame(rafRef.current);
-    const pct = Math.min(
-      100,
-      ((Date.now() - startRef.current) / maxHoldMs) * 100,
-    );
     startRef.current = null;
+    onRelease(Math.min(100, chargePercent));
     setChargePercent(0);
-    onRelease(pct);
   }
 
   return (

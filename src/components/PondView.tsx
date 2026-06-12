@@ -4,7 +4,7 @@ import { Flex, Text } from "@radix-ui/themes";
 import { MyButton } from "./MyButton";
 import { ChargeButton } from "./ChargeButton";
 import { FishData, StatName } from "../util/csvLoader";
-import { Zone, getZone, BITE_CHANCE, BITE_CHECK_INTERVAL } from "../util/zones";
+import { getZones, BITE_CHANCE, BITE_CHECK_INTERVAL } from "../util/zones";
 import { randomizeFishStats, useFish } from "../stores/fishStore";
 import { pickFishForZone, useLocation } from "../stores/locationStore";
 import {
@@ -31,7 +31,7 @@ const RESULT_DURATION = 1000;
 const CAST_MIN = 25;
 const CAST_MAX = 80;
 const CAST_DURATION_MIN = 1;
-const CAST_DURATION_MAX = 2.5;
+const CAST_DURATION_MAX = 2;
 const LURING_REEL_MAX_SPEED = 12;
 const LURING_REEL_ACCEL = 20;
 const LURING_REEL_DECEL = 20;
@@ -103,10 +103,11 @@ export function PondView() {
   }, []);
 
   function checkBite(distance: number): boolean {
-    const zone = getZone(distance);
-    if (!zone) return false;
-    if (Math.random() > BITE_CHANCE[zone]) return false;
-    const fish = pickFishForZone(castLocationRef.current, zone);
+    const zones = getZones(distance);
+    if (zones.length === 0) return false;
+    const biteChance = Math.max(...zones.map((z) => BITE_CHANCE[z]));
+    if (Math.random() > biteChance) return false;
+    const fish = pickFishForZone(castLocationRef.current, zones);
     if (!fish) return false;
     caughtFishRef.current = fish;
     pushEvent(EventMsg.BITING);
