@@ -1,5 +1,5 @@
 import React, { ReactNode, useRef, useState } from "react";
-import { Button, Text } from "@radix-ui/themes";
+import { Box, Button, Text } from "@radix-ui/themes";
 import gsap from "gsap";
 
 interface ChargeButtonProps {
@@ -7,11 +7,13 @@ interface ChargeButtonProps {
   onRelease: (chargePercent: number) => void;
   maxHoldMs?: number;
   disabled?: boolean;
+  minWidth?: number;
 }
 
 export function ChargeButton({
   children,
   onRelease,
+  minWidth,
   maxHoldMs = 2000,
   disabled = false,
 }: ChargeButtonProps) {
@@ -52,7 +54,9 @@ export function ChargeButton({
         background: `linear-gradient(90deg, white ${chargePercent}%, transparent ${chargePercent}%)`,
       }}
     >
-      <Text size="1">{children}</Text>
+      <Box minWidth={`${minWidth ?? 0}px`}>
+        <Text size="1">{children}</Text>
+      </Box>
     </Button>
   );
 }

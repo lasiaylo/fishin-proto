@@ -12,7 +12,7 @@ const SHARED_STORAGE_KEY = "csvgen_shared";
 function loadStored<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
-    if (raw) return JSON.parse(raw) as T;
+    if (raw) return { ...fallback, ...JSON.parse(raw) };
   } catch {}
   return fallback;
 }
@@ -123,6 +123,12 @@ function generateFishRows(
   return rows;
 }
 
+function priceList(fn: FunctionConfig, count: number): string {
+  return Array.from({ length: count }, (_, i) => Math.ceil(evalFn(fn, i))).join(
+    " ",
+  );
+}
+
 function generateShopRows(
   attackFn: FunctionConfig,
   attackVPL: number,
@@ -140,23 +146,16 @@ function generateShopRows(
     ["ID", "Price", "Stat", "ValuePerLevel", "Requirement"],
   ];
 
-  const attackPrices = Array.from({ length: attackCount }, (_, i) =>
-    Math.ceil(evalFn(attackFn, i)),
-  );
   rows.push([
     "ATTACK",
-    attackPrices.join(" "),
+    priceList(attackFn, attackCount),
     "ATTACK",
     String(attackVPL),
     "",
   ]);
-
-  const defensePrices = Array.from({ length: defenseCount }, (_, i) =>
-    Math.ceil(evalFn(defenseFn, i)),
-  );
   rows.push([
     "DEFENSE",
-    defensePrices.join(" "),
+    priceList(defenseFn, defenseCount),
     "DEFENSE",
     String(defenseVPL),
     "",
@@ -172,15 +171,13 @@ function generateShopRows(
     ]);
   }
 
-  for (let i = 0; i < castDistanceCount; i++) {
-    rows.push([
-      `CAST_${i + 1}`,
-      String(Math.ceil(evalFn(castDistanceFn, i))),
-      "CAST_DISTANCE",
-      String(castDistanceVPL),
-      i === 0 ? "" : `CAST_${i}`,
-    ]);
-  }
+  rows.push([
+    "CAST_DISTANCE",
+    priceList(castDistanceFn, castDistanceCount),
+    "CAST_DISTANCE",
+    String(castDistanceVPL),
+    "",
+  ]);
 
   return rows;
 }
@@ -574,13 +571,13 @@ function ShopGenerator({
 
   const [lureFn, setLureFn] = useState<FunctionConfig>(() => stored.lureFn);
   const [castDistanceFn, setCastDistanceFn] = useState<FunctionConfig>(
-    () => stored.castDistanceFn ?? DEFAULT_CAST_FN,
+    () => stored.castDistanceFn,
   );
   const [castDistanceVPL, setCastDistanceVPL] = useState(
-    () => stored.castDistanceVPL ?? SHOP_DEFAULTS.castDistanceVPL,
+    () => stored.castDistanceVPL,
   );
   const [castDistanceCount, setCastDistanceCount] = useState(
-    () => stored.castDistanceCount ?? SHOP_DEFAULTS.castDistanceCount,
+    () => stored.castDistanceCount,
   );
   const [mergeStats, setMergeStats] = useState(
     () => stored.mergeStats ?? false,
@@ -891,9 +888,9 @@ export function getGeneratedShopRows(): string[][] {
     defenseCount,
     lureFn,
     levels,
-    castDistanceFn ?? DEFAULT_CAST_FN,
-    castDistanceVPL ?? SHOP_DEFAULTS.castDistanceVPL,
-    castDistanceCount ?? SHOP_DEFAULTS.castDistanceCount,
+    castDistanceFn,
+    castDistanceVPL,
+    castDistanceCount,
   );
 }
 
@@ -909,42 +906,8 @@ export function CsvGeneratorPanel({
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const { levels } = loadStored(SHARED_STORAGE_KEY, {
-      levels: 3,
-      startingAD: 10,
-    });
-    const { statsFn, priceFn, variance } = loadStored(
-      FISH_STORAGE_KEY,
-      FISH_DEFAULTS,
-    );
-    const {
-      attackFn,
-      attackVPL,
-      attackCount,
-      defenseFn,
-      defenseVPL,
-      defenseCount,
-      lureFn,
-      castDistanceFn,
-      castDistanceVPL,
-      castDistanceCount,
-    } = loadStored(SHOP_STORAGE_KEY, SHOP_DEFAULTS);
-    onFishRowsChange?.(generateFishRows(statsFn, priceFn, variance, levels));
-    onShopRowsChange?.(
-      generateShopRows(
-        attackFn,
-        attackVPL,
-        attackCount,
-        defenseFn,
-        defenseVPL,
-        defenseCount,
-        lureFn,
-        levels,
-        castDistanceFn ?? DEFAULT_CAST_FN,
-        castDistanceVPL ?? SHOP_DEFAULTS.castDistanceVPL,
-        castDistanceCount ?? SHOP_DEFAULTS.castDistanceCount,
-      ),
-    );
+    onFishRowsChange?.(getGeneratedFishRows());
+    onShopRowsChange?.(getGeneratedShopRows());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [showPreview, setShowPreview] = useState(true);

@@ -1,12 +1,9 @@
 ID, Name, Description, Category
 ATTACK, Reel , Reel in fish faster when they're resting, rod upgrades
-ATTACK_2, Reel II, Even more reeling power for stubborn fish, rod upgrades
 DEFENSE, Drag, Prevents fish from pulling so hard when they're really fighting, rod upgrades
-DEFENSE_2, Drag II, Prevents fish from pulling so hard when they're really fighting, rod upgrades
 HP, Line, Increases how much tension the line can take before it snaps., rod upgrades
 LURE_1, Floater, Catch more fish, lures
 LURE_2, Spinner, Attract rarer fish, lures
 LURE_3, Deep Diver, Reach fish that won't bite near the surface, lures
-WIN, Win, Win the game, misc
 COOLER, Big Cooler, Fits one more fish in your cooler., misc
-DISTANCE_1, Long Cast, Cast your line further into the water., rod upgrades
+CAST_DISTANCE, Cast Distance, Cast your line further into the water., rod upgrades

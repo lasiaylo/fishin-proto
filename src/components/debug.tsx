@@ -6,7 +6,7 @@ import {
   setUpgradeLevelDebug,
   resetAllUpgradesDebug,
   initShop,
-  initShopFromData,
+  initShopFromRows,
 } from "../stores/shopStore";
 import { initFish, initFishFromData } from "../stores/fishStore";
 import {
@@ -21,10 +21,7 @@ import {
   GENERATED_FISH_CSV,
   GENERATED_SHOP_CSV,
 } from "./model/CsvGenerator";
-import {
-  parseFishGameplayRows,
-  parseShopGameplayRows,
-} from "../util/csvLoader";
+import { parseFishGameplayRows } from "../util/csvLoader";
 import { pushEvent } from "../stores/eventLogStore";
 import { useSessionLog } from "../stores/sessionLogStore";
 import { downloadCSV } from "../util/roundSerializer";
@@ -199,7 +196,7 @@ function CsvSwitcherSection() {
     setCsvConfig({ shopCSV: newFile });
     resetAllUpgradesDebug();
     if (newFile === GENERATED_SHOP_CSV) {
-      initShopFromData(parseShopGameplayRows(getGeneratedShopRows()));
+      initShopFromRows(getGeneratedShopRows());
     } else {
       initShop(newFile);
     }

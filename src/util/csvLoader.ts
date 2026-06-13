@@ -150,14 +150,36 @@ function categoryFromStat(stat: StatName): string {
   return "misc";
 }
 
-export function parseShopGameplayRows(rows: string[][]): ShopUpgradeData[] {
+export async function loadShopDisplayMap(): Promise<
+  Map<string, { name: string; description: string; category: string }>
+> {
+  const res = await fetch("/data/ShopDisplay.csv");
+  const rows = parseCSV(await res.text());
+  return new Map(
+    rows
+      .slice(1)
+      .map((row) => [
+        row[0],
+        { name: row[1], description: row[2], category: row[3] ?? "" },
+      ]),
+  );
+}
+
+export function parseShopGameplayRows(
+  rows: string[][],
+  displayMap?: Map<
+    string,
+    { name: string; description: string; category: string }
+  >,
+): ShopUpgradeData[] {
   return rows.slice(1).map((row) => {
     const stat = parseStatName(row[2]);
+    const display = displayMap?.get(row[0]);
     return {
       id: row[0],
-      name: row[0],
-      description: "",
-      category: categoryFromStat(stat),
+      name: display?.name ?? row[0],
+      description: display?.description ?? "",
+      category: display?.category ?? categoryFromStat(stat),
       prices: row[1].split(" ").map(Number),
       stat,
       valuePerLevel: Number(row[3]),

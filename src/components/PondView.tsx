@@ -28,7 +28,7 @@ enum GameState {
 }
 
 const RESULT_DURATION = 1000;
-const CAST_MIN = 25;
+const CAST_MIN = 5;
 const CAST_DURATION_MIN = 1;
 const CAST_DURATION_MAX = 2;
 const CAST_CHARGE_DURATION = 2000;
@@ -44,7 +44,6 @@ export function PondView() {
   const ownedLures = usePlayer((s) => s.ownedLures);
   const castMax = usePlayer((s) => s.castMax);
   const shopUpgrades = useShop((s) => s.upgrades);
-  const selectedLure = usePlayer((s) => s.selectedLure);
 
   const [gameState, setGameState] = useState<GameState>(GameState.Idle);
   const [fading, setFading] = useState(false);
@@ -192,6 +191,7 @@ export function PondView() {
     pushEvent(EventMsg.HOOKED());
     lastTimeRef.current = null;
     prevCritRef.current = false;
+    setFightState({ ...fightRef.current.tick(0, false) });
 
     function loop(timestamp: number) {
       if (lastTimeRef.current === null) lastTimeRef.current = timestamp;
@@ -286,49 +286,14 @@ export function PondView() {
         </Flex>
       );
     }
-    const ownedLureList = shopUpgrades.filter(
-      (u) => u.stat === StatName.LURE && ownedLures.has(u.id),
-    );
-    const locationEntries = Object.entries(locations);
-    const effectiveLocation = selectedLocation || locationEntries[0]?.[0] || "";
     return (
-      <Flex className="fade-in" direction="column" gap="3" p="4">
-        <Flex gap={"5"}>
-          <Flex direction="column" gap="2">
-            <Text size="1">lure</Text>
-            <select
-              value={selectedLure ?? ""}
-              onChange={(e) => setSelectedLure(e.target.value || null)}
-            >
-              <option value="">none</option>
-              {ownedLureList.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
-          </Flex>
-
-          <Flex direction="column" gap="2">
-            <Text size="1">spot</Text>
-            <select
-              value={effectiveLocation}
-              onChange={(e) => setSelectedLocation(e.target.value)}
-            >
-              {locationEntries.map(([id, loc]) => (
-                <option key={id} value={id}>
-                  {loc.name}
-                </option>
-              ))}
-            </select>
-          </Flex>
-        </Flex>
-
+      <Flex className="fade-in" direction="column" gap="4" p="4">
         <ChargeButton
           onRelease={handleCastRelease}
           maxHoldMs={CAST_CHARGE_DURATION}
+          minWidth={200}
         >
-          hold to cast
+          cast
         </ChargeButton>
       </Flex>
     );

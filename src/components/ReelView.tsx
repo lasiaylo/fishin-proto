@@ -1,5 +1,5 @@
 import React from "react";
-import { Flex, Text } from "@radix-ui/themes";
+import { Box, Flex, Text } from "@radix-ui/themes";
 import { FightState } from "../game/FightEngine";
 import { MyButton } from "./MyButton";
 import { StatBar } from "./StatBar";
@@ -22,31 +22,34 @@ export function ReelView({
   fading = false,
 }: ReelViewProps) {
   return (
-    <Flex
-      direction="column"
-      width={"100%"}
-      gap="4"
-      p="4"
-      pt={"74px"}
-      style={{ opacity: fading ? 0 : 1, transition: "opacity 0.6s ease" }}
-    >
+    <Flex direction="column" width={"100%"} gap="4" p="4">
       <MyButton
         disabled={!onReelStart}
         onMouseDown={onReelStart}
         onMouseUp={onReelEnd}
-        minWidth={165}
+        minWidth={200}
       >
         reel
       </MyButton>
-      <Text size="2" color="gray">
-        {fightState?.phase ?? " "}
-      </Text>
-      <StatBar label="distance" value={distance} max={100} />
-      <StatBar
-        label="hp"
-        value={lineHp - (fightState?.tension ?? 0)}
-        max={lineHp}
-      />
+      <Flex
+        direction="column"
+        width={"100%"}
+        gap="4"
+        className={"fade-in"}
+        style={{ opacity: fading ? 0 : 1, transition: "opacity 0.6s ease" }}
+      >
+        <Box minHeight={"25px"}>
+          <Text size="2" color="gray">
+            {fightState?.phase ?? " "}
+          </Text>
+        </Box>
+        <StatBar label="distance" value={distance} max={100} />
+        <StatBar
+          label="hp"
+          value={lineHp - (fightState?.tension ?? 0)}
+          max={lineHp}
+        />
+      </Flex>
     </Flex>
   );
 }

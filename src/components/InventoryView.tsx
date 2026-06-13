@@ -1,21 +1,29 @@
-import { Code, Flex, Text } from "@radix-ui/themes";
+import { Code, Flex, Select, Text } from "@radix-ui/themes";
 import React from "react";
-import { usePlayer } from "../stores/playerStore";
+import { setSelectedLure, usePlayer } from "../stores/playerStore";
+import { useShop } from "../stores/shopStore";
+import { StatName } from "../util/csvLoader";
 
 export function InventoryView() {
   const wallet = usePlayer((s) => s.wallet);
   const inventory = usePlayer((s) => s.inventory);
   const inventorySize = usePlayer((s) => s.inventorySize);
+  const ownedLures = usePlayer((s) => s.ownedLures);
+  const selectedLure = usePlayer((s) => s.selectedLure);
+  const shopUpgrades = useShop((s) => s.upgrades);
+
+  const ownedLureList = shopUpgrades.filter(
+    (u) => u.stat === StatName.LURE && ownedLures.has(u.id),
+  );
 
   return (
     <Flex
       position={"relative"}
-      mt="6"
       direction="column"
       flexShrink="0"
-      maxHeight="500px"
       width="200px"
-      gap={"3"}
+      gap={"6"}
+      pt="40px"
     >
       <Code size="2">${wallet}</Code>
       <Flex direction="column" gap="1">
@@ -30,6 +38,24 @@ export function InventoryView() {
             </Code>
           );
         })}
+      </Flex>
+      <Flex direction="column" gap="2">
+        <Text size="1">lure</Text>
+        <Select.Root
+          size="1"
+          value={selectedLure ?? "__none__"}
+          onValueChange={(v) => setSelectedLure(v === "__none__" ? null : v)}
+        >
+          <Select.Trigger variant={"soft"} />
+          <Select.Content>
+            <Select.Item value="__none__">none</Select.Item>
+            {ownedLureList.map((u) => (
+              <Select.Item key={u.id} value={u.id}>
+                {u.name}
+              </Select.Item>
+            ))}
+          </Select.Content>
+        </Select.Root>
       </Flex>
     </Flex>
   );

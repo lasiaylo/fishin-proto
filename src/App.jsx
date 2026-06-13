@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { EventLog } from "./components/EventLog";
 import { ActionsSection } from "./components/ActionsSection";
 import { Debug } from "./components/debug";
-import { initShop, initShopFromData } from "./stores/shopStore";
+import { initShop, initShopFromRows } from "./stores/shopStore";
 import { initFish, initFishFromData } from "./stores/fishStore";
 import { initLocations } from "./stores/locationStore";
 import { pushEvent } from "./stores/eventLogStore";
@@ -17,7 +17,7 @@ import {
   GENERATED_FISH_CSV,
   GENERATED_SHOP_CSV,
 } from "./components/model/CsvGenerator";
-import { parseFishGameplayRows, parseShopGameplayRows } from "./util/csvLoader";
+import { parseFishGameplayRows } from "./util/csvLoader";
 import { InventoryView } from "./components/InventoryView.tsx";
 
 function App() {
@@ -33,7 +33,7 @@ function App() {
       initFish(fishCSV);
     }
     if (shopCSV === GENERATED_SHOP_CSV) {
-      initShopFromData(parseShopGameplayRows(getGeneratedShopRows()));
+      initShopFromRows(getGeneratedShopRows());
     } else {
       initShop(shopCSV);
     }

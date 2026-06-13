@@ -1,6 +1,12 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import { ShopUpgradeData, StatName, loadShopData } from "../util/csvLoader";
+import {
+  ShopUpgradeData,
+  StatName,
+  loadShopData,
+  loadShopDisplayMap,
+  parseShopGameplayRows,
+} from "../util/csvLoader";
 import {
   addLure,
   addToStat,
@@ -53,6 +59,11 @@ export async function initShop(shopFile?: string) {
   for (const [id, level] of Object.entries(saved)) {
     setUpgradeLevelDebug(id, level);
   }
+}
+
+export async function initShopFromRows(rows: string[][]) {
+  const displayMap = await loadShopDisplayMap();
+  initShopFromData(parseShopGameplayRows(rows, displayMap));
 }
 
 export function initShopFromData(data: ShopUpgradeData[]) {
