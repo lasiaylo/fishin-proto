@@ -27,12 +27,14 @@ export function ReelView({
       width={"100%"}
       gap="4"
       p="4"
+      pt={"74px"}
       style={{ opacity: fading ? 0 : 1, transition: "opacity 0.6s ease" }}
     >
       <MyButton
         disabled={!onReelStart}
         onMouseDown={onReelStart}
         onMouseUp={onReelEnd}
+        minWidth={165}
       >
         reel
       </MyButton>
