@@ -12,7 +12,7 @@ const SHARED_STORAGE_KEY = "csvgen_shared";
 function loadStored<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
-    if (raw) return { ...fallback, ...JSON.parse(raw) };
+    if (raw) return JSON.parse(raw) as T;
   } catch {}
   return fallback;
 }
@@ -123,12 +123,6 @@ function generateFishRows(
   return rows;
 }
 
-function priceList(fn: FunctionConfig, count: number): string {
-  return Array.from({ length: count }, (_, i) => Math.ceil(evalFn(fn, i))).join(
-    " ",
-  );
-}
-
 function generateShopRows(
   attackFn: FunctionConfig,
   attackVPL: number,
@@ -146,20 +140,37 @@ function generateShopRows(
     ["ID", "Price", "Stat", "ValuePerLevel", "Requirement"],
   ];
 
+  const attackPrices = Array.from({ length: attackCount }, (_, i) =>
+    Math.ceil(evalFn(attackFn, i)),
+  );
   rows.push([
     "ATTACK",
-    priceList(attackFn, attackCount),
+    attackPrices.join(" "),
     "ATTACK",
     String(attackVPL),
     "",
   ]);
+
+  const defensePrices = Array.from({ length: defenseCount }, (_, i) =>
+    Math.ceil(evalFn(defenseFn, i)),
+  );
   rows.push([
     "DEFENSE",
-    priceList(defenseFn, defenseCount),
+    defensePrices.join(" "),
     "DEFENSE",
     String(defenseVPL),
     "",
   ]);
+
+  for (let i = 0; i < castDistanceCount; i++) {
+    rows.push([
+      `CAST_${i + 1}`,
+      String(Math.ceil(evalFn(castDistanceFn, i))),
+      "CAST_DISTANCE",
+      String(castDistanceVPL),
+      i === 0 ? "" : `CAST_${i}`,
+    ]);
+  }
 
   for (let i = 0; i < lureCount; i++) {
     rows.push([
@@ -170,14 +181,6 @@ function generateShopRows(
       i === 0 ? "" : `LURE_${i}`,
     ]);
   }
-
-  rows.push([
-    "CAST_DISTANCE",
-    priceList(castDistanceFn, castDistanceCount),
-    "CAST_DISTANCE",
-    String(castDistanceVPL),
-    "",
-  ]);
 
   return rows;
 }
@@ -571,13 +574,13 @@ function ShopGenerator({
 
   const [lureFn, setLureFn] = useState<FunctionConfig>(() => stored.lureFn);
   const [castDistanceFn, setCastDistanceFn] = useState<FunctionConfig>(
-    () => stored.castDistanceFn,
+    () => stored.castDistanceFn ?? DEFAULT_CAST_FN,
   );
   const [castDistanceVPL, setCastDistanceVPL] = useState(
-    () => stored.castDistanceVPL,
+    () => stored.castDistanceVPL ?? SHOP_DEFAULTS.castDistanceVPL,
   );
   const [castDistanceCount, setCastDistanceCount] = useState(
-    () => stored.castDistanceCount,
+    () => stored.castDistanceCount ?? SHOP_DEFAULTS.castDistanceCount,
   );
   const [mergeStats, setMergeStats] = useState(
     () => stored.mergeStats ?? false,
@@ -695,8 +698,8 @@ function ShopGenerator({
         </Text>
       </label>
 
-      {mergeStats ? (
-        <Flex direction="row" gap="4" align="start">
+      <Flex direction="row" gap="4" align="start">
+        {mergeStats ? (
           <Flex direction="column" gap="2">
             <Text size="1" weight="bold">
               ATTACK / DEFENSE
@@ -721,21 +724,8 @@ function ShopGenerator({
               />
             </Flex>
           </Flex>
-
-          <Flex direction="column" gap="2">
-            <Text size="1" weight="bold">
-              LURE
-            </Text>
-            <FunctionSelect
-              label="Price curve"
-              value={lureFn}
-              onChange={setLureFn}
-            />
-          </Flex>
-        </Flex>
-      ) : (
-        <>
-          <Flex direction="row" gap="4" align="start">
+        ) : (
+          <>
             <Flex direction="column" gap="2">
               <Text size="1" weight="bold">
                 ATTACK
@@ -785,44 +775,44 @@ function ShopGenerator({
                 />
               </Flex>
             </Flex>
-          </Flex>
+          </>
+        )}
 
-          <Flex direction="column" gap="2">
-            <Text size="1" weight="bold">
-              LURE
-            </Text>
-            <FunctionSelect
-              label="Price curve"
-              value={lureFn}
-              onChange={setLureFn}
+        <Flex direction="column" gap="2">
+          <Text size="1" weight="bold">
+            CAST DISTANCE
+          </Text>
+          <FunctionSelect
+            label="Price curve"
+            value={castDistanceFn}
+            onChange={setCastDistanceFn}
+          />
+          <Flex gap="3" wrap="wrap" align="end">
+            <NumInput
+              label="ValuePerLevel"
+              value={castDistanceVPL}
+              onChange={setCastDistanceVPL}
+              min={1}
+            />
+            <NumInput
+              label="Upgrades"
+              value={castDistanceCount}
+              onChange={setCastDistanceCount}
+              min={0}
             />
           </Flex>
-        </>
-      )}
+        </Flex>
+      </Flex>
 
       <Flex direction="column" gap="2">
         <Text size="1" weight="bold">
-          CAST DISTANCE
+          LURE
         </Text>
         <FunctionSelect
           label="Price curve"
-          value={castDistanceFn}
-          onChange={setCastDistanceFn}
+          value={lureFn}
+          onChange={setLureFn}
         />
-        <Flex gap="3" wrap="wrap" align="end">
-          <NumInput
-            label="ValuePerLevel"
-            value={castDistanceVPL}
-            onChange={setCastDistanceVPL}
-            min={1}
-          />
-          <NumInput
-            label="Upgrades"
-            value={castDistanceCount}
-            onChange={setCastDistanceCount}
-            min={0}
-          />
-        </Flex>
       </Flex>
 
       {showPreview && (
@@ -888,9 +878,9 @@ export function getGeneratedShopRows(): string[][] {
     defenseCount,
     lureFn,
     levels,
-    castDistanceFn,
-    castDistanceVPL,
-    castDistanceCount,
+    castDistanceFn ?? DEFAULT_CAST_FN,
+    castDistanceVPL ?? SHOP_DEFAULTS.castDistanceVPL,
+    castDistanceCount ?? SHOP_DEFAULTS.castDistanceCount,
   );
 }
 
@@ -906,8 +896,42 @@ export function CsvGeneratorPanel({
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    onFishRowsChange?.(getGeneratedFishRows());
-    onShopRowsChange?.(getGeneratedShopRows());
+    const { levels } = loadStored(SHARED_STORAGE_KEY, {
+      levels: 3,
+      startingAD: 10,
+    });
+    const { statsFn, priceFn, variance } = loadStored(
+      FISH_STORAGE_KEY,
+      FISH_DEFAULTS,
+    );
+    const {
+      attackFn,
+      attackVPL,
+      attackCount,
+      defenseFn,
+      defenseVPL,
+      defenseCount,
+      lureFn,
+      castDistanceFn,
+      castDistanceVPL,
+      castDistanceCount,
+    } = loadStored(SHOP_STORAGE_KEY, SHOP_DEFAULTS);
+    onFishRowsChange?.(generateFishRows(statsFn, priceFn, variance, levels));
+    onShopRowsChange?.(
+      generateShopRows(
+        attackFn,
+        attackVPL,
+        attackCount,
+        defenseFn,
+        defenseVPL,
+        defenseCount,
+        lureFn,
+        levels,
+        castDistanceFn ?? DEFAULT_CAST_FN,
+        castDistanceVPL ?? SHOP_DEFAULTS.castDistanceVPL,
+        castDistanceCount ?? SHOP_DEFAULTS.castDistanceCount,
+      ),
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [showPreview, setShowPreview] = useState(true);
