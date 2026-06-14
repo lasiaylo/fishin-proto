@@ -26,14 +26,25 @@ import {
 import { EconomyChart, lineProps } from "./EconomyChart";
 import { CsvPair, newPairId, PairRow } from "./PairRow";
 
+// ── Helpers ──
+
+function getLureBoughtName(
+  round: EconomyRound,
+  lureSet: Set<string>,
+): string {
+  for (const entry of round.upgradesBought) {
+    const match = entry.match(/^(.+) L\d+$/);
+    if (match && lureSet.has(match[1])) return match[1].replace(/^LURE_/i, "");
+  }
+  return "";
+}
+
 // ── Types ──
 
 interface PairData {
   fish: FishData[];
   shop: ShopUpgradeData[];
 }
-
-// ── Helpers ──
 
 function buildLureRows(
   rounds: EconomyRound[],
@@ -456,9 +467,21 @@ export function EconomyTab({
   }
   const activeLureIds = [...new Set(primaryRounds.map((r) => r.lureId))];
 
+  const pairLureIdSets: Record<string, Set<string>> = {};
+  for (const { pair } of activePairResults) {
+    const shop =
+      pair.id === "recorded"
+        ? primaryShopData
+        : (pairData[pair.id]?.shop ?? primaryShopData);
+    pairLureIdSets[pair.id] = new Set(
+      shop.filter((u) => u.stat === StatName.LURE).map((u) => u.id),
+    );
+  }
+
   const lurePurchaseLinesTime = activePairResults.flatMap(
-    ({ pair, rounds }, i) =>
-      rounds
+    ({ pair, rounds }, i) => {
+      const lureSet = pairLureIdSets[pair.id] ?? new Set<string>();
+      return rounds
         .filter((r) => r.boughtLure)
         .map((r) => (
           <ReferenceLine
@@ -466,12 +489,21 @@ export function EconomyTab({
             x={r.cumulativeTime}
             stroke={COLORS[i % COLORS.length]}
             strokeDasharray="4 2"
+            label={{
+              value: getLureBoughtName(r, lureSet),
+              position: "insideTop",
+              dx: 14,
+              fontSize: 9,
+              fill: COLORS[i % COLORS.length],
+            }}
           />
-        )),
+        ));
+    },
   );
   const lurePurchaseLinesRound = activePairResults.flatMap(
-    ({ pair, rounds }, i) =>
-      rounds
+    ({ pair, rounds }, i) => {
+      const lureSet = pairLureIdSets[pair.id] ?? new Set<string>();
+      return rounds
         .filter((r) => r.boughtLure)
         .map((r) => (
           <ReferenceLine
@@ -479,8 +511,16 @@ export function EconomyTab({
             x={r.round}
             stroke={COLORS[i % COLORS.length]}
             strokeDasharray="4 2"
+            label={{
+              value: getLureBoughtName(r, lureSet),
+              position: "insideTop",
+              dx: 14,
+              fontSize: 9,
+              fill: COLORS[i % COLORS.length],
+            }}
           />
-        )),
+        ));
+    },
   );
 
   // Single-pair: upgrade dots; multi-pair: omit

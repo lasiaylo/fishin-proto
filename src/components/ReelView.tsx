@@ -22,7 +22,13 @@ export function ReelView({
   fading = false,
 }: ReelViewProps) {
   return (
-    <Flex direction="column" width={"100%"} gap="4" p="4">
+    <Flex
+      direction="column"
+      width={"100%"}
+      gap="4"
+      p="4"
+      style={{ opacity: fading ? 0 : 1, transition: "opacity 0.6s ease" }}
+    >
       <MyButton
         disabled={!onReelStart}
         onMouseDown={onReelStart}
@@ -31,13 +37,7 @@ export function ReelView({
       >
         reel
       </MyButton>
-      <Flex
-        direction="column"
-        width={"100%"}
-        gap="4"
-        className={"fade-in"}
-        style={{ opacity: fading ? 0 : 1, transition: "opacity 0.6s ease" }}
-      >
+      <Flex direction="column" width={"100%"} gap="4" className={"fade-in"}>
         <Box minHeight={"25px"}>
           <Text size="2" color="gray">
             {fightState?.phase ?? " "}

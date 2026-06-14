@@ -14,6 +14,7 @@ export const BITE_CHECK_INTERVAL = 1;
 
 // Target probability of getting at least one bite while reeling through a zone.
 export const TARGET_BITE_CHANCE = 0.7;
+export const BITE_CHANCE_INCREMENT = 0.05;
 
 function perCheckChance(zone: Zone): number {
   const [min, max] = ZONE_RANGES[zone];
@@ -26,6 +27,20 @@ export const BITE_CHANCE: Record<Zone, number> = {
   [Zone.MID]: perCheckChance(Zone.MID),
   [Zone.FAR]: perCheckChance(Zone.FAR),
 };
+
+export function getBiteChance(zones: Zone[], emptyReelCount: number): number {
+  const target = Math.min(
+    TARGET_BITE_CHANCE + BITE_CHANCE_INCREMENT * emptyReelCount,
+    1,
+  );
+  return Math.max(
+    ...zones.map((z) => {
+      const [min, max] = ZONE_RANGES[z];
+      const n = (max - min) / BITE_CHECK_INTERVAL;
+      return 1 - (1 - target) ** (1 / n);
+    }),
+  );
+}
 
 export function getZones(distance: number): Zone[] {
   return [Zone.CLOSE, Zone.MID, Zone.FAR].filter((zone) => {

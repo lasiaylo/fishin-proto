@@ -4,7 +4,7 @@ import { Flex, Text } from "@radix-ui/themes";
 import { MyButton } from "./MyButton";
 import { ChargeButton } from "./ChargeButton";
 import { FishData, StatName } from "../util/csvLoader";
-import { getZones, BITE_CHANCE, BITE_CHECK_INTERVAL } from "../util/zones";
+import { getZones, BITE_CHECK_INTERVAL, getBiteChance } from "../util/zones";
 import { randomizeFishStats, useFish } from "../stores/fishStore";
 import { pickFishForZone, useLocation } from "../stores/locationStore";
 import {
@@ -69,6 +69,7 @@ export function PondView() {
   const luringDistanceRef = useRef<number>(0);
   const isReelingRef = useRef<boolean>(false);
   const luringReelSpeedRef = useRef<number>(0);
+  const emptyReelCountRef = useRef(0);
 
   useEffect(() => {
     return () => {
@@ -106,10 +107,11 @@ export function PondView() {
   function checkBite(distance: number): boolean {
     const zones = getZones(distance);
     if (zones.length === 0) return false;
-    const biteChance = Math.max(...zones.map((z) => BITE_CHANCE[z]));
-    if (Math.random() > biteChance) return false;
+    if (Math.random() > getBiteChance(zones, emptyReelCountRef.current))
+      return false;
     const fish = pickFishForZone(castLocationRef.current, zones);
     if (!fish) return false;
+    emptyReelCountRef.current = 0;
     caughtFishRef.current = fish;
     pushEvent(EventMsg.BITING);
     startFight();
@@ -275,6 +277,7 @@ export function PondView() {
 
   function handleReelIn() {
     cancelAnimationFrame(luringRafRef.current);
+    emptyReelCountRef.current += 1;
     setGameState(GameState.Idle);
   }
 
