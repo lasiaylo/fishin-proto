@@ -13,7 +13,7 @@ export const ZONE_RANGES: Record<Zone, [number, number]> = {
 export const BITE_CHECK_INTERVAL = 1;
 
 // Target probability of getting at least one bite while reeling through a zone.
-const TARGET_BITE_CHANCE = 0.65;
+const TARGET_BITE_CHANCE = 0.7;
 
 function perCheckChance(zone: Zone): number {
   const [min, max] = ZONE_RANGES[zone];
