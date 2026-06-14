@@ -109,6 +109,7 @@ export function EconomyTab({
   const [inventorySize, setInventorySize] = useState(
     INITIAL_PLAYER_STATE.inventorySize,
   );
+  const [castMax, setCastMax] = useState(INITIAL_PLAYER_STATE.castMax);
   const [simMinutes, setSimMinutes] = useState(10);
   const [evalTrials, setEvalTrials] = useState(200);
   const [running, setRunning] = useState(false);
@@ -291,7 +292,7 @@ export function EconomyTab({
           data.fish,
           data.shop,
           locationData,
-          { attack: reelStr, defense: drag, lineHP, inventorySize },
+          { attack: reelStr, defense: drag, lineHP, inventorySize, castMax },
           simMinutes,
           evalTrials,
         );
@@ -570,6 +571,12 @@ export function EconomyTab({
           value={inventorySize}
           onChange={setInventorySize}
           min={1}
+        />
+        <NumInput
+          label="Cast Max"
+          value={castMax}
+          onChange={setCastMax}
+          min={INITIAL_PLAYER_STATE.castMax}
         />
         <NumInput
           label="Sim minutes"

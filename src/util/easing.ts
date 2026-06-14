@@ -1,3 +1,7 @@
+export function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
 function easeIn(x: number, midpoint: number, slope: number): number {
   const s = 2 / (1 - slope) - 1;
   return x ** s / midpoint ** (s - 1);

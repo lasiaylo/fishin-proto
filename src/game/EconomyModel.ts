@@ -5,17 +5,25 @@ import {
   ShopUpgradeData,
   StatName,
 } from "../util/csvLoader";
-import { avgZoneDistance } from "../util/zones";
+import {
+  avgZoneDistance,
+  Zone,
+  ZONE_RANGES,
+  TARGET_BITE_CHANCE,
+} from "../util/zones";
+import { lerp } from "../util/easing";
+import {
+  CAST_MIN,
+  CAST_DURATION_MIN,
+  CAST_DURATION_MAX,
+  CAST_CHARGE_DURATION,
+  LURING_REEL_MAX_SPEED,
+  RESULT_DURATION,
+} from "../components/PondView";
 import { INITIAL_PLAYER_STATE, PlayerStats } from "../stores/playerStore";
 
-// ── Constants ──
-
-const SHOP_TRAVEL_TIME = 5;
-const CAST_WAIT_TIME = 5;
 const EVAL_TRIALS = 100;
 const MAX_ROUNDS = 100;
-
-// ── Types ──
 
 export interface EconomyRound {
   round: number;
@@ -169,6 +177,41 @@ function evalLure(
   };
 }
 
+function perCastOverhead(
+  castMax: number,
+  lureId: string,
+  fishByLure: Map<string, FishData[]>,
+): number {
+  const pool = fishByLure.get(lureId) ?? [];
+  const validZones = [...new Set(pool.flatMap((f) => f.zones))];
+  const maxZoneDist = Math.max(...validZones.map((z) => ZONE_RANGES[z][1]));
+  const effectiveCast = Math.min(castMax, maxZoneDist);
+  const castT =
+    castMax > CAST_MIN ? (effectiveCast - CAST_MIN) / (castMax - CAST_MIN) : 0;
+  const chargeTime = lerp(0, CAST_CHARGE_DURATION / 1000, castT);
+  const castAnimDuration = lerp(CAST_DURATION_MIN, CAST_DURATION_MAX, castT);
+  const luringTime = expectedLuringTime(effectiveCast);
+  return chargeTime + castAnimDuration + luringTime + RESULT_DURATION / 1000;
+}
+
+function expectedLuringTime(effectiveCast: number): number {
+  const zoneOrder = [Zone.FAR, Zone.MID, Zone.CLOSE];
+  let survivalProb = 1;
+  let expectedDistance = 0;
+  for (const zone of zoneOrder) {
+    const [zMin, zMax] = ZONE_RANGES[zone];
+    if (effectiveCast < zMin) continue;
+    const entryDistance = Math.min(effectiveCast, zMax);
+    const reelDistance = entryDistance - zMin;
+    expectedDistance += survivalProb * TARGET_BITE_CHANCE * reelDistance;
+    survivalProb *= 1 - TARGET_BITE_CHANCE;
+  }
+
+  // Chance of going through without any hooks
+  expectedDistance += survivalProb * effectiveCast;
+  return expectedDistance / LURING_REEL_MAX_SPEED;
+}
+
 function cheapestUpgrade(
   shopData: ShopUpgradeData[],
   levels: Record<string, number>,
@@ -187,6 +230,8 @@ function cheapestUpgrade(
         return player.inventorySize;
       case StatName.LURE:
         return 0;
+      case StatName.CAST_DISTANCE:
+        return player.castMax;
       default:
         return Infinity;
     }
@@ -243,6 +288,9 @@ function applyUpgrade(
       break;
     case StatName.INVENTORY:
       player.inventorySize += upgrade.valuePerLevel;
+      break;
+    case StatName.CAST_DISTANCE:
+      player.castMax += upgrade.valuePerLevel;
       break;
   }
 }
@@ -344,7 +392,8 @@ export function simulateEconomy(
     if (!best) break;
 
     const { lureId, avgFightTime, avgEarningsPerCast } = best;
-    const roundTime = player.inventorySize * (CAST_WAIT_TIME + avgFightTime);
+    const overhead = perCastOverhead(player.castMax, lureId, fishByLure);
+    const roundTime = player.inventorySize * (overhead + avgFightTime);
     const income = player.inventorySize * avgEarningsPerCast;
     wallet += income;
     cumulativeTime += roundTime;
