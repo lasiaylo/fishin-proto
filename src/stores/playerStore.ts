@@ -22,7 +22,7 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
   defense: 10,
   lineHP: 15,
   inventorySize: 3,
-  castMax: 25,
+  castMax: 30,
   ownedLures: new Set<string>(),
   selectedLure: null,
   inventory: [],

@@ -5,8 +5,8 @@ export enum Zone {
 }
 
 export const ZONE_RANGES: Record<Zone, [number, number]> = {
-  [Zone.CLOSE]: [5, 30],
-  [Zone.MID]: [30, 60],
+  [Zone.CLOSE]: [1, 20],
+  [Zone.MID]: [21, 50],
   [Zone.FAR]: [50, 80],
 };
 
