@@ -183,7 +183,6 @@ export function PondView() {
       fish.hp,
     );
 
-    pushEvent(EventMsg.HOOKED());
     lastTimeRef.current = null;
     prevCritRef.current = false;
     setFightState({ ...fightRef.current.tick(0, false) });

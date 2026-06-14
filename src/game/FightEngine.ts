@@ -1,4 +1,4 @@
-import { randomRange } from "../util/random";
+import { randomRange, perCheckProbability } from "../util/random";
 import { easeInEaseOut } from "../util/easing";
 
 const MAX_DISTANCE = 100;
@@ -45,6 +45,7 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   easeSlope: 0.3,
 };
 
+const CRIT_CHECK_INTERVAL = 0.5;
 const STRUGGLE_GRACE = 0.5;
 const THRASH_MULT = 1.2;
 const REEL_DEFENSE_MULT = 0.5;
@@ -96,6 +97,8 @@ export class FightEngine {
 
   private distanceMult: number = 1;
   private critActive: boolean = false;
+  private critCheckElapsed: number = 0;
+  private critPerCheckChance: number = 0;
   private targetDistance: number = 0;
   private pullDone: boolean = false;
 
@@ -133,29 +136,38 @@ export class FightEngine {
 
   private setPhase(phase: Phase): void {
     this.phaseElapsed = 0;
+    this.critCheckElapsed = 0;
     this.phase = phase;
     this.distanceMult = randomRange(
       this.cfg.distanceMultRange[0],
       this.cfg.distanceMultRange[1],
     );
 
-    if (phase === Phase.REST) {
-      this.critActive =
-        Math.random() < (this.cfg.critChance * this.tension) / this.lineHp;
-    } else {
-      this.critActive = false;
-    }
-
     if (phase === Phase.STRUGGLE && !this.pullDone) {
       this.phaseDuration = randomRange(
         this.cfg.initialFightRange[0],
         this.cfg.initialFightRange[1],
       );
+      this.critActive = false;
       return;
     }
+
     const range =
       phase === Phase.REST ? this.cfg.restTimeRange : this.cfg.fightTimeRange;
     this.phaseDuration = randomRange(range[0], range[1]);
+
+    if (phase === Phase.REST) {
+      const baseCritP = (this.cfg.critChance * this.tension) / this.lineHp;
+      const periodicChecks = Math.floor(this.phaseDuration / CRIT_CHECK_INTERVAL);
+      this.critPerCheckChance = perCheckProbability(baseCritP, periodicChecks + 1);
+      this.critActive = Math.random() < this.critPerCheckChance;
+      const firstOffset =
+        this.phaseDuration % CRIT_CHECK_INTERVAL || CRIT_CHECK_INTERVAL;
+      this.critCheckElapsed = CRIT_CHECK_INTERVAL - firstOffset;
+    } else {
+      this.critPerCheckChance = 0;
+      this.critActive = false;
+    }
   }
 
   private getDelta(attack: number, defense: number): number {
@@ -176,6 +188,14 @@ export class FightEngine {
       return (cfg.baseSpeed - cfg.minSpeed) * ease + cfg.minSpeed;
     }
     return cfg.baseSpeed * (attack / (attack + defense));
+  }
+
+  private advanceCritCheck(dt: number): void {
+    this.critCheckElapsed += dt;
+    if (this.critCheckElapsed >= CRIT_CHECK_INTERVAL) {
+      this.critCheckElapsed -= CRIT_CHECK_INTERVAL;
+      this.critActive = Math.random() < this.critPerCheckChance;
+    }
   }
 
   private applyMovement(dt: number, reel?: boolean): void {
@@ -206,6 +226,7 @@ export class FightEngine {
     if (dt < remainingInPhase) {
       this.phaseElapsed += dt;
       this.applyMovement(dt, reel);
+      if (this.phase === Phase.REST) this.advanceCritCheck(dt);
       if (
         this.phase === Phase.STRUGGLE &&
         !this.pullDone &&
@@ -219,7 +240,9 @@ export class FightEngine {
       const dt1 = remainingInPhase;
       const dt2 = dt - dt1;
 
+      const wasRest = this.phase === Phase.REST;
       this.applyMovement(dt1, reel);
+      if (wasRest) this.advanceCritCheck(dt1);
 
       if (this.phase === Phase.STRUGGLE) this.pullDone = true;
       const next =
@@ -232,6 +255,7 @@ export class FightEngine {
       this.setPhase(next);
 
       this.applyMovement(dt2, reel);
+      if (this.phase === Phase.REST) this.advanceCritCheck(dt2);
       this.phaseElapsed = dt2;
     }
 
@@ -263,6 +287,8 @@ export class FightEngine {
     this.phaseDuration = 0;
     this.distanceMult = 1;
     this.critActive = false;
+    this.critCheckElapsed = 0;
+    this.critPerCheckChance = 0;
     this.pullDone = false;
     this.setPhase(Phase.STRUGGLE);
   }
