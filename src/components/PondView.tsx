@@ -29,9 +29,9 @@ enum GameState {
 
 export const RESULT_DURATION = 1000;
 export const CAST_MIN = 5;
-export const CAST_DURATION_MIN = 1;
-export const CAST_DURATION_MAX = 2;
-export const CAST_CHARGE_DURATION = 2000;
+export const CAST_DURATION_MIN = 0.5;
+export const CAST_DURATION_MAX = 1.5;
+export const CAST_CHARGE_DURATION = 1500;
 export const LURING_REEL_MAX_SPEED = 10;
 const LURING_REEL_ACCEL = 20;
 const LURING_REEL_DECEL = 20;
@@ -78,13 +78,6 @@ export function PondView() {
       castTweenRef.current?.kill();
     };
   }, []);
-
-  useEffect(() => {
-    const lures = shopUpgrades.filter(
-      (u) => u.stat === StatName.LURE && ownedLures.has(u.id),
-    );
-    setSelectedLure(lures[lures.length - 1]?.id ?? null);
-  }, [ownedLures, shopUpgrades]);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
