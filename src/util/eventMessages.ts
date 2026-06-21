@@ -5,7 +5,7 @@ export const EventMsg = {
   NO_FISH: "no fish available to catch.",
 
   CRIT: "crit!",
-  CAUGHT: (name: string) => `caught a ${name}!`,
+  CAUGHT: (name: string) => `caught a ${name}`,
   SOLD_FISH: (name: string, price: number) => `sold ${name} for $${price}`,
   CASTING: (spot: string) => `casting...`,
   BOUGHT: (id: string, level: number) => `bought ${id} level ${level}`,

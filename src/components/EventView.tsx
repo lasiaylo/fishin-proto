@@ -2,7 +2,7 @@ import { Box, Flex, Text } from "@radix-ui/themes";
 import { useEventLog } from "../stores/eventLogStore";
 import React from "react";
 
-export function EventLog() {
+export function EventView() {
   const events = useEventLog((s) => s.events);
 
   return (
@@ -11,7 +11,7 @@ export function EventLog() {
       mt="6"
       direction="column"
       flexShrink="0"
-      maxHeight="500px"
+      maxHeight="300px"
       width="200px"
       gap={"5"}
     >

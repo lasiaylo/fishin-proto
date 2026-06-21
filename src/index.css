@@ -8,3 +8,17 @@ pre {
 .action-button:active {
   background-color: var(--gray-5);
 }
+
+@keyframes float-fade {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-10px); }
+}
+
+.sale-popup {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  animation: float-fade 2.5s ease-out forwards;
+  pointer-events: none;
+  white-space: nowrap;
+}

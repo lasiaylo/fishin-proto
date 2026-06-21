@@ -2,7 +2,7 @@ import "@radix-ui/themes/styles.css";
 import "../global.css";
 import { Flex, Theme } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
-import { EventLog } from "./components/EventLog";
+import { EventView } from "./components/EventView.tsx";
 import { ActionsSection } from "./components/ActionsSection";
 import { Debug } from "./components/debug";
 import { initShop, initShopFromRows } from "./stores/shopStore";
@@ -29,7 +29,9 @@ function App() {
     const { fishCSV, shopCSV } = useCsvConfig.getState();
     if (fishCSV === GENERATED_FISH_CSV) {
       loadFishDisplayMap().then((displayMap) =>
-        initFishFromData(parseFishGameplayRows(getGeneratedFishRows(), displayMap)),
+        initFishFromData(
+          parseFishGameplayRows(getGeneratedFishRows(), displayMap),
+        ),
       );
     } else {
       initFish(fishCSV);
@@ -66,7 +68,7 @@ function App() {
         gap="5"
         style={{ justifyContent: "center" }}
       >
-        <EventLog />
+        <EventView />
         <ActionsSection />
         <InventoryView />
       </Flex>

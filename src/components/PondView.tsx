@@ -249,7 +249,6 @@ export function PondView() {
     const t = chargePercent / 100;
     const castTarget = CAST_MIN + t * (castMax - CAST_MIN);
     castLocationRef.current = locationId;
-    pushEvent(EventMsg.CASTING(locations[locationId]?.name ?? locationId));
 
     castProgressObjRef.current.value = 0;
     setCastProgress(0);
@@ -278,7 +277,7 @@ export function PondView() {
     if (invCount >= inventorySize) {
       return (
         <Flex className="fade-in" direction="column" gap="3" p="4">
-          <Text size={"1"}>The cooler is full.</Text>
+          <Text size={"1"}>the cooler is full.</Text>
         </Flex>
       );
     }
