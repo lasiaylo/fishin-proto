@@ -30,9 +30,9 @@ enum GameState {
 export const RESULT_DURATION = 1000;
 export const CAST_MIN = 5;
 export const CAST_DURATION_MIN = 0.5;
-export const CAST_DURATION_MAX = 1.5;
-export const CAST_CHARGE_DURATION = 2000;
-export const LURING_REEL_MAX_SPEED = 10;
+export const CAST_DURATION_MAX = 2.0;
+export const CAST_CHARGE_DURATION = 2500;
+export const LURING_REEL_MAX_SPEED = 8;
 const LURING_REEL_ACCEL = 20;
 const LURING_REEL_DECEL = 20;
 export const REEL_MIN = 5;
