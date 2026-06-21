@@ -6,6 +6,7 @@ import { simulateEconomy, type EconomyRound } from "../../game/EconomyModel";
 import {
   StatName,
   loadFishData,
+  loadFishDisplayMap,
   loadShopGameplayData,
   parseFishGameplayRows,
   parseShopGameplayRows,
@@ -25,13 +26,11 @@ import {
 } from "./CsvGenerator";
 import { EconomyChart, lineProps } from "./EconomyChart";
 import { CsvPair, newPairId, PairRow } from "./PairRow";
+import { DEFAULT_UPGRADE_STRATEGY } from "../../game/EconomyModel";
 
 // ── Helpers ──
 
-function getLureBoughtName(
-  round: EconomyRound,
-  lureSet: Set<string>,
-): string {
+function getLureBoughtName(round: EconomyRound, lureSet: Set<string>): string {
   for (const entry of round.upgradesBought) {
     const match = entry.match(/^(.+) L\d+$/);
     if (match && lureSet.has(match[1])) return match[1].replace(/^LURE_/i, "");
@@ -93,6 +92,7 @@ function loadStoredPairs(): CsvPair[] | null {
       fishCSV: p.fishCSV ?? FISH_CSVS[0] ?? "FishGameplay.csv",
       shopCSV: p.shopCSV ?? SHOP_CSVS[0] ?? "ShopGameplay.csv",
       label: p.label ?? "Default",
+      upgradeStrategy: p.upgradeStrategy ?? DEFAULT_UPGRADE_STRATEGY,
     }));
   } catch {
     return null;
@@ -121,8 +121,8 @@ export function EconomyTab({
     INITIAL_PLAYER_STATE.inventorySize,
   );
   const [castMax, setCastMax] = useState(INITIAL_PLAYER_STATE.castMax);
-  const [simMinutes, setSimMinutes] = useState(10);
-  const [evalTrials, setEvalTrials] = useState(200);
+  const [simMinutes, setSimMinutes] = useState(20);
+  const [evalTrials, setEvalTrials] = useState(100);
   const [running, setRunning] = useState(false);
   const [gridLayout, setGridLayout] = useState(true);
   const [mode, setMode] = useState<"simulation" | "recorded">("simulation");
@@ -138,6 +138,7 @@ export function EconomyTab({
           fishCSV: FISH_CSVS[0] ?? "FishGameplay.csv",
           shopCSV: SHOP_CSVS[0] ?? "ShopGameplay.csv",
           label: "Default",
+          upgradeStrategy: DEFAULT_UPGRADE_STRATEGY,
         },
       ],
   );
@@ -159,7 +160,9 @@ export function EconomyTab({
       if (fishIsGenerated && !generatedFishRows) continue;
       if (shopIsGenerated && !generatedShopRows) continue;
       const fishPromise = fishIsGenerated
-        ? Promise.resolve(parseFishGameplayRows(generatedFishRows!))
+        ? loadFishDisplayMap().then((displayMap) =>
+            parseFishGameplayRows(generatedFishRows!, displayMap),
+          )
         : loadFishData(pair.fishCSV);
       const shopPromise = shopIsGenerated
         ? Promise.resolve(parseShopGameplayRows(generatedShopRows!))
@@ -235,6 +238,7 @@ export function EconomyTab({
         fishCSV: FISH_CSVS[0] ?? "FishGameplay.csv",
         shopCSV: SHOP_CSVS[0] ?? "ShopGameplay.csv",
         label: `Pair ${prev.length + 1}`,
+        upgradeStrategy: DEFAULT_UPGRADE_STRATEGY,
       },
     ]);
   }
@@ -306,6 +310,7 @@ export function EconomyTab({
           { attack: reelStr, defense: drag, lineHP, inventorySize, castMax },
           simMinutes,
           evalTrials,
+          pair.upgradeStrategy,
         );
       }
       setPairRounds(results);

@@ -10,6 +10,7 @@ import type {
 import {
   StatName,
   loadFishData,
+  loadFishDisplayMap,
   loadShopGameplayData,
   parseFishGameplayRows,
   parseShopGameplayRows,
@@ -84,7 +85,9 @@ export function GraphsTab({
   useEffect(() => {
     if (selectedFishCSV === GENERATED_FISH_CSV) {
       if (generatedFishRows) {
-        setActiveFishData(parseFishGameplayRows(generatedFishRows));
+        loadFishDisplayMap().then((displayMap) =>
+          setActiveFishData(parseFishGameplayRows(generatedFishRows, displayMap)),
+        );
       }
     } else {
       loadFishData(selectedFishCSV).then(setActiveFishData);

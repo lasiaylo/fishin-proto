@@ -37,7 +37,7 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   minSpeed: 4,
   distanceMultRange: [0.9, 1.1],
   thrashMultRange: [0.95, 1.05],
-  critChance: 0.125,
+  critChance: 0.15,
   critMult: 1.5,
   deltaMode: "EaseInEaseOut",
   easeScale: 2,
@@ -158,8 +158,13 @@ export class FightEngine {
 
     if (phase === Phase.REST) {
       const baseCritP = (this.cfg.critChance * this.tension) / this.lineHp;
-      const periodicChecks = Math.floor(this.phaseDuration / CRIT_CHECK_INTERVAL);
-      this.critPerCheckChance = perCheckProbability(baseCritP, periodicChecks + 1);
+      const periodicChecks = Math.floor(
+        this.phaseDuration / CRIT_CHECK_INTERVAL,
+      );
+      this.critPerCheckChance = perCheckProbability(
+        baseCritP,
+        periodicChecks + 1,
+      );
       this.critActive = Math.random() < this.critPerCheckChance;
       const firstOffset =
         this.phaseDuration % CRIT_CHECK_INTERVAL || CRIT_CHECK_INTERVAL;

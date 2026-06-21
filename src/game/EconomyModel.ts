@@ -25,6 +25,12 @@ import { INITIAL_PLAYER_STATE, PlayerStats } from "../stores/playerStore";
 const EVAL_TRIALS = 100;
 const MAX_ROUNDS = 100;
 
+export type UpgradeStrategy =
+  | { type: "CHEAPEST_UPGRADE" }
+  | { type: "PRIORITIZE_LURE"; lureRoundTrips: number };
+
+export const DEFAULT_UPGRADE_STRATEGY: UpgradeStrategy = { type: "CHEAPEST_UPGRADE" };
+
 export interface EconomyRound {
   round: number;
   cumulativeTime: number;
@@ -265,6 +271,36 @@ function cheapestUpgrade(
   return best;
 }
 
+function prioritizeLureUpgrade(
+  shopData: ShopUpgradeData[],
+  levels: Record<string, number>,
+  wallet: number,
+  player: PlayerStats,
+  income: number,
+  roundTripsThreshold: number,
+): { upgrade: ShopUpgradeData; price: number } | null {
+  let cheapestLure: { upgrade: ShopUpgradeData; price: number } | null = null;
+  for (const upgrade of shopData) {
+    if (upgrade.stat !== StatName.LURE) continue;
+    const level = levels[upgrade.id] ?? 0;
+    if (level >= upgrade.prices.length) continue;
+    const price = upgrade.prices[level];
+    if (cheapestLure === null || price < cheapestLure.price) {
+      cheapestLure = { upgrade, price };
+    }
+  }
+
+  if (cheapestLure !== null && income > 0) {
+    const roundsNeeded = Math.ceil(Math.max(0, cheapestLure.price - wallet) / income);
+    if (roundsNeeded <= roundTripsThreshold) {
+      if (wallet >= cheapestLure.price) return cheapestLure;
+      return null;
+    }
+  }
+
+  return cheapestUpgrade(shopData, levels, wallet, player);
+}
+
 function applyUpgrade(
   upgrade: ShopUpgradeData,
   player: PlayerStats,
@@ -362,6 +398,7 @@ export function simulateEconomy(
   },
   maxMinutes = 60,
   evalTrials = EVAL_TRIALS,
+  strategy: UpgradeStrategy = DEFAULT_UPGRADE_STRATEGY,
 ): EconomyRound[] {
   const maxTime = maxMinutes * 60;
   const player = { ...start };
@@ -402,14 +439,21 @@ export function simulateEconomy(
     const upgradesBought: string[] = [];
     let boughtLure = false;
 
-    let cheapUpgrade = cheapestUpgrade(shopData, levels, wallet, player);
-    while (cheapUpgrade !== null) {
-      const { upgrade, price } = cheapUpgrade;
+    const pickUpgrade = (w: number) => {
+      if (strategy.type === "PRIORITIZE_LURE") {
+        return prioritizeLureUpgrade(shopData, levels, w, player, income, strategy.lureRoundTrips);
+      }
+      return cheapestUpgrade(shopData, levels, w, player);
+    };
+
+    let nextUpgrade = pickUpgrade(wallet);
+    while (nextUpgrade !== null) {
+      const { upgrade, price } = nextUpgrade;
       wallet -= price;
       applyUpgrade(upgrade, player, ownedLures, levels);
       upgradesBought.push(`${upgrade.id} L${levels[upgrade.id]}`);
       if (upgrade.stat === StatName.LURE) boughtLure = true;
-      cheapUpgrade = cheapestUpgrade(shopData, levels, wallet, player);
+      nextUpgrade = pickUpgrade(wallet);
     }
 
     rounds.push({

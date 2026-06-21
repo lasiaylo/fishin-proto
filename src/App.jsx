@@ -17,7 +17,7 @@ import {
   GENERATED_FISH_CSV,
   GENERATED_SHOP_CSV,
 } from "./components/model/CsvGenerator";
-import { parseFishGameplayRows } from "./util/csvLoader";
+import { parseFishGameplayRows, loadFishDisplayMap } from "./util/csvLoader";
 import { InventoryView } from "./components/InventoryView.tsx";
 
 function App() {
@@ -28,7 +28,9 @@ function App() {
   useEffect(() => {
     const { fishCSV, shopCSV } = useCsvConfig.getState();
     if (fishCSV === GENERATED_FISH_CSV) {
-      initFishFromData(parseFishGameplayRows(getGeneratedFishRows()));
+      loadFishDisplayMap().then((displayMap) =>
+        initFishFromData(parseFishGameplayRows(getGeneratedFishRows(), displayMap)),
+      );
     } else {
       initFish(fishCSV);
     }

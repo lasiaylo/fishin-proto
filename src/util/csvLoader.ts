@@ -135,8 +135,20 @@ function parseFishRow(row: string[]): FishData {
   };
 }
 
-export function parseFishGameplayRows(rows: string[][]): FishData[] {
-  return rows.slice(1).map(parseFishRow);
+export async function loadFishDisplayMap(): Promise<Map<string, string>> {
+  const res = await fetch("/data/FishDisplay.csv");
+  const rows = parseCSV(await res.text());
+  return new Map(rows.slice(1).map((row) => [row[0], row[1]]));
+}
+
+export function parseFishGameplayRows(
+  rows: string[][],
+  displayMap?: Map<string, string>,
+): FishData[] {
+  return rows.slice(1).map((row) => ({
+    ...parseFishRow(row),
+    name: displayMap?.get(row[0]) ?? row[0],
+  }));
 }
 
 function categoryFromStat(stat: StatName): string {

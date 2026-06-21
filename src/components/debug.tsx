@@ -21,7 +21,7 @@ import {
   GENERATED_FISH_CSV,
   GENERATED_SHOP_CSV,
 } from "./model/CsvGenerator";
-import { parseFishGameplayRows } from "../util/csvLoader";
+import { parseFishGameplayRows, loadFishDisplayMap } from "../util/csvLoader";
 import { pushEvent } from "../stores/eventLogStore";
 import { useSessionLog } from "../stores/sessionLogStore";
 import { downloadCSV } from "../util/roundSerializer";
@@ -183,10 +183,11 @@ function ShopUpgradeSection() {
 function CsvSwitcherSection() {
   const { fishCSV, shopCSV } = useCsvConfig();
 
-  function handleFishChange(newFile: string) {
+  async function handleFishChange(newFile: string) {
     setCsvConfig({ fishCSV: newFile });
     if (newFile === GENERATED_FISH_CSV) {
-      initFishFromData(parseFishGameplayRows(getGeneratedFishRows()));
+      const displayMap = await loadFishDisplayMap();
+      initFishFromData(parseFishGameplayRows(getGeneratedFishRows(), displayMap));
     } else {
       initFish(newFile);
     }
