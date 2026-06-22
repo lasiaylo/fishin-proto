@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Box, Flex, Text } from "@radix-ui/themes";
 import { FightState } from "../game/FightEngine";
 import { MyButton } from "./MyButton";
@@ -21,16 +21,39 @@ export function ReelView({
   lineHp,
   fading = false,
 }: ReelViewProps) {
+  const isPointerDown = useRef(false);
+
+  useEffect(() => {
+    if (onReelStart && isPointerDown.current) {
+      onReelStart();
+    }
+  }, [onReelStart]);
+
   return (
     <Flex direction="column" width={"100%"} gap="4">
+      <div
+        onPointerDown={() => {
+          isPointerDown.current = true;
+          if (onReelStart) onReelStart();
+        }}
+        onPointerUp={() => {
+          isPointerDown.current = false;
+          if (onReelEnd) onReelEnd();
+        }}
+        onPointerLeave={() => {
+          if (isPointerDown.current) {
+            isPointerDown.current = false;
+            if (onReelEnd) onReelEnd();
+          }
+        }}
+      >
       <MyButton
         disabled={!onReelStart}
-        onMouseDown={onReelStart}
-        onMouseUp={onReelEnd}
         minWidth={200}
       >
         reel
       </MyButton>
+      </div>
       <Flex
         position={"relative"}
         direction="column"

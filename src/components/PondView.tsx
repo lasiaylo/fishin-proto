@@ -297,18 +297,18 @@ export function PondView() {
   let component;
 
   if (gameState === GameState.Idle) {
-    if (invCount >= inventorySize) {
-      component = <Text size={"1"}>the cooler is full.</Text>;
-    }
-    component = (
-      <ChargeButton
-        onRelease={handleCastRelease}
-        maxHoldMs={CAST_CHARGE_DURATION}
-        width={200}
-      >
-        cast
-      </ChargeButton>
-    );
+    component =
+      invCount >= inventorySize ? (
+        <Text size={"1"}>the cooler is full.</Text>
+      ) : (
+        <ChargeButton
+          onRelease={handleCastRelease}
+          maxHoldMs={CAST_CHARGE_DURATION}
+          width={200}
+        >
+          cast
+        </ChargeButton>
+      );
   } else if (gameState === GameState.CastAnimation) {
     component = <ReelView distance={castProgress} lineHp={lineHpRef.current} />;
   } else if (gameState === GameState.Luring) {
@@ -342,14 +342,7 @@ export function PondView() {
   }
 
   return (
-    <Flex
-      className="fade-in"
-      width="100%"
-      direction="column"
-      gap="3"
-      pt="5"
-      p="4"
-    >
+    <Flex className="fade-in" width="100%" direction="column" gap="3" p="4">
       {component}
     </Flex>
   );

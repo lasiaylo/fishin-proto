@@ -39,7 +39,7 @@ export function InventoryView() {
     const delta = end - start;
     if (delta === 0) return;
 
-    const duration = Math.min(600, Math.abs(delta) * 50);
+    const duration = Math.min(600, Math.abs(delta) * 60);
     const startTime = performance.now();
 
     let rafId: number;
