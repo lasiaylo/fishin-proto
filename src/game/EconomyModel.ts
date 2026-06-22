@@ -410,7 +410,6 @@ export function simulateEconomy(
 ): EconomyRound[] {
   const maxTime = maxMinutes * 60;
   const player = { ...start };
-  const ownedLures = new Set<string>();
   const levels: Record<string, number> = Object.fromEntries(
     shopData.map((u) => [u.id, 0]),
   );
@@ -424,6 +423,12 @@ export function simulateEconomy(
       fishByLure.set(fish.requiredLure, []);
     fishByLure.get(fish.requiredLure)!.push(fish);
   }
+  const shopLureIds = new Set(
+    shopData.filter((u) => u.stat === StatName.LURE).map((u) => u.id),
+  );
+  const ownedLures = new Set<string>(
+    [...fishByLure.keys()].filter((id) => id && !shopLureIds.has(id)),
+  );
   const fishWeights = buildFishWeights(fishByLure, locationData);
 
   for (let round = 1; round <= MAX_ROUNDS; round++) {

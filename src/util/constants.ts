@@ -19,8 +19,8 @@ export const CAST_MIN = 5;
 export const CAST_DURATION_MIN = 0.5;
 export const CAST_DURATION_MAX = 2.0;
 export const CAST_CHARGE_DURATION = 1500;
-export const LURING_REEL_MAX_SPEED = 9;
-export const LURING_REEL_ACCEL = 20;
+export const LURING_REEL_MAX_SPEED = 10;
+export const LURING_REEL_ACCEL = 10;
 export const LURING_REEL_DECEL = 20;
 export const REEL_MIN = 5;
 

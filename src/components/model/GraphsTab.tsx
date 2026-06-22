@@ -47,9 +47,9 @@ export function GraphsTab({
   onShopRowsChange: (rows: string[][]) => void;
 }) {
   const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
-  const [minStat, setMinStat] = useState(1);
+  const [minStat, setMinStat] = useState(INITIAL_PLAYER_STATE.attack);
   const [maxStat, setMaxStat] = useState(40);
-  const [trialsPerFish, setTrialsPerFish] = useState(200);
+  const [trialsPerFish, setTrialsPerFish] = useState(100);
   const [inventorySize, setInventorySize] = useState(3);
   const [sweepData, setSweepData] = useState<object[]>([]);
   const [running, setRunning] = useState(false);
@@ -65,6 +65,8 @@ export function GraphsTab({
     trialsPerFish,
   });
   const hasAutoRun = useRef(false);
+  const fishDataReady = useRef(false);
+  const shopDataReady = useRef(false);
   const [gridLayout, setGridLayout] = useState(true);
   const [selectedFishCSV, setSelectedFishCSV] = useState(
     () =>
@@ -85,22 +87,32 @@ export function GraphsTab({
   useEffect(() => {
     if (selectedFishCSV === GENERATED_FISH_CSV) {
       if (generatedFishRows) {
-        loadFishDisplayMap().then((displayMap) =>
-          setActiveFishData(parseFishGameplayRows(generatedFishRows, displayMap)),
-        );
+        loadFishDisplayMap().then((displayMap) => {
+          fishDataReady.current = true;
+          setActiveFishData(
+            parseFishGameplayRows(generatedFishRows, displayMap),
+          );
+        });
       }
     } else {
-      loadFishData(selectedFishCSV).then(setActiveFishData);
+      loadFishData(selectedFishCSV).then((data) => {
+        fishDataReady.current = true;
+        setActiveFishData(data);
+      });
     }
   }, [selectedFishCSV, generatedFishRows]);
 
   useEffect(() => {
     if (selectedShopCSV === GENERATED_SHOP_CSV) {
       if (generatedShopRows) {
+        shopDataReady.current = true;
         setActiveShopData(parseShopGameplayRows(generatedShopRows));
       }
     } else {
-      loadShopGameplayData(selectedShopCSV).then(setActiveShopData);
+      loadShopGameplayData(selectedShopCSV).then((data) => {
+        shopDataReady.current = true;
+        setActiveShopData(data);
+      });
     }
   }, [selectedShopCSV, generatedShopRows]);
 
@@ -132,11 +144,16 @@ export function GraphsTab({
   ]);
 
   useEffect(() => {
-    if (!hasAutoRun.current && activeFishData.length > 0) {
+    if (
+      !hasAutoRun.current &&
+      fishDataReady.current &&
+      activeFishData.length > 0 &&
+      shopDataReady.current
+    ) {
       hasAutoRun.current = true;
       setRunCount((c) => c + 1);
     }
-  }, [activeFishData]);
+  }, [activeFishData, activeShopData]);
 
   useEffect(() => {
     if (runCount === 0) return;
@@ -376,8 +393,8 @@ export function GraphsTab({
             <Legend />
             {lureIds.map((id) => (
               <Line
-                key={id}
-                dataKey={id}
+                key={id || "__no_lure__"}
+                dataKey={id === "" ? (d: any) => d[""] : id}
                 stroke={lureColors[id]}
                 name={id === "" ? "No Lure" : id}
                 {...lineProps}

@@ -87,7 +87,7 @@ function generateFishRows(
   ];
   let idx = 1;
 
-  // Level 0: one fish, no lure required
+  // Level 0: one fish, requires starter lure LURE_0
   const s0 = Math.ceil(evalFn(statsFn, 0));
   const p0 = Math.ceil(evalFn(priceFn, 0));
   rows.push([
@@ -96,7 +96,7 @@ function generateFishRows(
     String(s0),
     "1",
     String(p0),
-    "",
+    "LURE_0",
     "CLOSE",
     "30",
   ]);
@@ -314,7 +314,7 @@ function computeLureCostTable(
 
   const lureShopRows = body.filter((r) => r[0]?.startsWith("LURE_"));
 
-  let prevAD = Math.max(midAD(""), startingAD);
+  let prevAD = Math.max(midAD("LURE_0"), startingAD);
   let attackBought = 0;
   let defenseBought = 0;
 
@@ -322,7 +322,7 @@ function computeLureCostTable(
     const lureId = lureRow[0];
     const lurePrice = Number(lureRow[1]);
     const lureNum = parseInt(lureId.split("_")[1]);
-    const prevLureId = lureNum === 1 ? "" : `LURE_${lureNum - 1}`;
+    const prevLureId = lureNum === 1 ? "LURE_0" : `LURE_${lureNum - 1}`;
     const avg = avgPrice(prevLureId);
     const fishNeeded = avg > 0 ? Math.ceil(lurePrice / avg) : 0;
 

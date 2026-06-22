@@ -8,8 +8,7 @@ export const EventMsg = {
 
   CRIT: "crit!",
   CAUGHT: (name: string) => `caught a ${name}`,
-  SOLD_FISH: (name: string, price: number) =>
-    `sold ${name}  + ${CURRENCY_SYMBOL} ${price} `,
+  SOLD_FISH: (name: string, price: number) => `sold ${name}  +${price} `,
   CASTING: (spot: string) => `casting...`,
   BOUGHT: (id: string, level: number) => `bought ${id} level ${level}`,
 } as const;
