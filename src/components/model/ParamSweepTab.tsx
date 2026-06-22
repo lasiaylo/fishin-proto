@@ -436,7 +436,7 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
   );
   const dragMin = reelMin;
   const dragMax = reelMax;
-  const [trialsPerCell, setTrialsPerCell] = useState(200);
+  const [trialsPerCell, setTrialsPerCell] = useState(100);
   const [engineCfg, setEngineCfg] = useState<FightConfig>(DEFAULT_FIGHT_CONFIG);
   const [cells, setCells] = useState<SweepCell[]>([]);
   const [running, setRunning] = useState(false);

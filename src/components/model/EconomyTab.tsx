@@ -430,7 +430,7 @@ export function EconomyTab({
   }));
 
   const lures = [
-    { id: "", name: "No Lure" },
+    { id: "LURE_0", name: "LURE_0" },
     ...primaryShopData
       .filter((u) => u.stat === StatName.LURE)
       .map((u) => ({ id: u.id, name: u.id })),

@@ -310,7 +310,7 @@ export function FishSelect({
       <select value={value} onChange={(e) => onChange(e.target.value)}>
         {fishData.map((f) => (
           <option key={f.id} value={f.id}>
-            {f.name}
+            {f.id}
           </option>
         ))}
       </select>
