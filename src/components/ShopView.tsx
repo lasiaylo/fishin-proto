@@ -8,6 +8,7 @@ import {
 } from "../stores/shopStore";
 import { usePlayer } from "../stores/playerStore";
 import { MyButton } from "./MyButton";
+import { CURRENCY_SYMBOL } from "../util/constants";
 
 const CATEGORY_ORDER = ["lures", "rod upgrades", "misc"];
 
@@ -26,7 +27,7 @@ export function ShopView() {
   const groups = CATEGORY_ORDER.map((cat) => ({
     label: cat,
     upgrades: upgrades.filter(
-      (u) => u.category === cat && meetsRequirements(u),
+      (u) => u.category === cat && meetsRequirements(u) && !isMaxed(u),
     ),
   })).filter((g) => g.upgrades.length > 0);
 
@@ -49,8 +50,12 @@ export function ShopView() {
                   disabled={disabled}
                   description={upgrade.description}
                   onClick={() => buyUpgrade(upgrade.id)}
+                  minWidth={100}
                 >
-                  {upgrade.name} ({maxed ? "max" : `$${price}`})
+                  <Flex direction="column">
+                    <Text>{upgrade.name}</Text>
+                    <Text size="1">{maxed ? "max" : `${CURRENCY_SYMBOL} ${price}`}</Text>
+                  </Flex>
                 </MyButton>
               );
             })}

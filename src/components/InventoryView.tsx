@@ -4,7 +4,11 @@ import { setSelectedLure, usePlayer } from "../stores/playerStore";
 import { useShop } from "../stores/shopStore";
 import { StatName } from "../util/csvLoader";
 import { useLureXp, lureXpProgress } from "../stores/lureXpStore";
-import { BASE_LURE_ID, BASE_LURE_NAME } from "../util/constants";
+import {
+  BASE_LURE_ID,
+  BASE_LURE_NAME,
+  CURRENCY_SYMBOL,
+} from "../util/constants";
 
 export function InventoryView() {
   const wallet = usePlayer((s) => s.wallet);
@@ -64,23 +68,25 @@ export function InventoryView() {
       gap={"6"}
       pt="40px"
     >
-      <Flex position="relative" style={{ display: "inline-flex" }}>
-        <Code size="2">${displayWallet}</Code>
+      <Flex width={"100%"} direction={"column"}>
+        <Code size="2">
+          {CURRENCY_SYMBOL} {displayWallet}
+        </Code>
         {popup && (
           <Code
             key={popup.key}
             size="2"
-            color="green"
+            color="grass"
             className="sale-popup"
             onAnimationEnd={() => setPopup(null)}
           >
-            +${popup.amount}
+            +{popup.amount}
           </Code>
         )}
       </Flex>
       <Flex direction="column" gap="1">
         <Text size="1" color="gray">
-          fish cooler
+          cooler
         </Text>
         {Array.from({ length: inventorySize }).map((_, i) => {
           const fish = inventory[i];
@@ -92,7 +98,9 @@ export function InventoryView() {
         })}
       </Flex>
       <Flex direction="column" gap="2">
-        <Text size="1">lure</Text>
+        <Text size="1" color={"gray"}>
+          lure
+        </Text>
         <Select.Root
           size="1"
           value={selectedLure ?? BASE_LURE_ID}
@@ -101,13 +109,17 @@ export function InventoryView() {
           <Select.Trigger variant={"soft"} />
           <Select.Content>
             <Select.Item value={BASE_LURE_ID}>
-              {BASE_LURE_NAME} Lvl. {lureXpData[BASE_LURE_ID]?.level ?? 0}
+              <Text color={"gray"}>
+                {BASE_LURE_NAME} Lvl. {lureXpData[BASE_LURE_ID]?.level ?? 0}
+              </Text>
             </Select.Item>
             {ownedLureList.map((u) => {
               const level = lureXpData[u.id]?.level ?? 0;
               return (
                 <Select.Item key={u.id} value={u.id}>
-                  {u.name} Lvl. {level}
+                  <Text color={"gray"}>
+                    {u.name} Lvl. {level}
+                  </Text>
                 </Select.Item>
               );
             })}
