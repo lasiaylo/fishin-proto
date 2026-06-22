@@ -16,7 +16,7 @@ import type {
   LocationFishEntry,
   ShopUpgradeData,
 } from "../../util/csvLoader";
-import { ChartGrid, COLORS, GridToggleButton, NumInput } from "./shared";
+import { ChartGrid, COLORS, NumInput } from "./shared";
 import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
 import { FISH_CSVS, SHOP_CSVS } from "../../stores/csvConfigStore";
 import {
@@ -124,7 +124,7 @@ export function EconomyTab({
   const [simMinutes, setSimMinutes] = useState(20);
   const [evalTrials, setEvalTrials] = useState(100);
   const [running, setRunning] = useState(false);
-  const [gridLayout, setGridLayout] = useState(true);
+
   const [mode, setMode] = useState<"simulation" | "recorded">("simulation");
   const [recordedRounds, setRecordedRounds] = useState<EconomyRound[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -408,6 +408,16 @@ export function EconomyTab({
     ),
   }));
 
+  const lureXpData = primaryRounds.map((r) => ({
+    time: r.cumulativeTime,
+    ...Object.fromEntries(Object.entries(r.lureXp)),
+  }));
+
+  const lureLevelData = primaryRounds.map((r) => ({
+    time: r.cumulativeTime,
+    ...Object.fromEntries(Object.entries(r.lureLevels)),
+  }));
+
   const nonLureUpgrades = primaryShopData.filter(
     (u) => u.stat !== StatName.LURE,
   );
@@ -638,10 +648,7 @@ export function EconomyTab({
         <Button onClick={runSim} disabled={running || !allPairsLoaded}>
           {running ? "Running…" : !allPairsLoaded ? "Loading…" : "Run Economy"}
         </Button>
-        <GridToggleButton
-          gridLayout={gridLayout}
-          onToggle={() => setGridLayout((g) => !g)}
-        />
+
       </Flex>
 
       {/* Mode selector */}
@@ -686,7 +693,7 @@ export function EconomyTab({
               : `${activePairResults.map((r) => `${r.pair.label}: ${r.rounds.length}`).join(" · ")} rounds simulated`}
           </Text>
 
-          <ChartGrid gridLayout={gridLayout}>
+          <ChartGrid gridLayout={true}>
             {/* Income Rate ($/s) — one line per pair */}
             <EconomyChart
               title="Income Rate ($/s)"
@@ -837,6 +844,50 @@ export function EconomyTab({
               {!isSinglePair && <Legend />}
             </EconomyChart>
 
+            {/* Lure Purchases — multi-column */}
+            {allLureNames.length > 0 && (
+              <Flex direction="column" gap="2">
+                <Text size="2" weight="bold">
+                  Lure Purchases
+                </Text>
+                <Table.Root variant="surface">
+                  <Table.Header>
+                    <Table.Row>
+                      <Table.ColumnHeaderCell>Lure</Table.ColumnHeaderCell>
+                      {isSinglePair && (
+                        <Table.ColumnHeaderCell>
+                          Cost ($)
+                        </Table.ColumnHeaderCell>
+                      )}
+                      {activePairResults.map((r) => (
+                        <Table.ColumnHeaderCell key={r.pair.id}>
+                          {(isSinglePair && `Time Since Prev (s)`) ||
+                            (!isSinglePair && `${r.pair.label}`)}
+                        </Table.ColumnHeaderCell>
+                      ))}
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body>
+                    {allLureNames.map((name) => (
+                      <Table.Row key={name}>
+                        <Table.Cell>{name}</Table.Cell>
+                        {isSinglePair && (
+                          <Table.Cell>
+                            {lureCostMap.get(name) ?? "—"}
+                          </Table.Cell>
+                        )}
+                        {pairLureMaps.map((map, i) => (
+                          <Table.Cell key={i}>
+                            {map.has(name) ? Math.round(map.get(name)!) : "—"}
+                          </Table.Cell>
+                        ))}
+                      </Table.Row>
+                    ))}
+                  </Table.Body>
+                </Table.Root>
+              </Flex>
+            )}
+
             {isSinglePair && (
               <EconomyChart
                 title="Lure Income Rates ($/s)"
@@ -899,46 +950,6 @@ export function EconomyTab({
 
             {isSinglePair && (
               <EconomyChart
-                title="Fish Income Rate ($)"
-                data={earningsData}
-                {...chartProps}
-              >
-                <Legend />
-                {primaryFishData.map((f) => (
-                  <Line
-                    key={`${f.id}_earn`}
-                    dataKey={`${f.id}_earn`}
-                    stroke={fishColorMap[f.id]}
-                    {...lineProps}
-                    name={f.name}
-                    connectNulls={false}
-                  />
-                ))}
-              </EconomyChart>
-            )}
-
-            {isSinglePair && (
-              <EconomyChart
-                title="Catch Time (s)"
-                data={catchTimeData}
-                {...chartProps}
-              >
-                <Legend />
-                {primaryFishData.map((f) => (
-                  <Line
-                    key={f.id}
-                    dataKey={f.id}
-                    stroke={fishColorMap[f.id]}
-                    {...lineProps}
-                    name={f.name}
-                    connectNulls={false}
-                  />
-                ))}
-              </EconomyChart>
-            )}
-
-            {isSinglePair && (
-              <EconomyChart
                 title="Player Stats"
                 data={playerStatData}
                 {...chartProps}
@@ -991,49 +1002,93 @@ export function EconomyTab({
               </EconomyChart>
             )}
 
-            {/* Lure Purchases — multi-column */}
-            {allLureNames.length > 0 && (
-              <Flex direction="column" gap="2">
-                <Text size="2" weight="bold">
-                  Lure Purchases
-                </Text>
-                <Table.Root variant="surface">
-                  <Table.Header>
-                    <Table.Row>
-                      <Table.ColumnHeaderCell>Lure</Table.ColumnHeaderCell>
-                      {isSinglePair && (
-                        <Table.ColumnHeaderCell>
-                          Cost ($)
-                        </Table.ColumnHeaderCell>
-                      )}
-                      {activePairResults.map((r) => (
-                        <Table.ColumnHeaderCell key={r.pair.id}>
-                          {(isSinglePair && `Time Since Prev (s)`) ||
-                            (!isSinglePair && `${r.pair.label}`)}
-                        </Table.ColumnHeaderCell>
-                      ))}
-                    </Table.Row>
-                  </Table.Header>
-                  <Table.Body>
-                    {allLureNames.map((name) => (
-                      <Table.Row key={name}>
-                        <Table.Cell>{name}</Table.Cell>
-                        {isSinglePair && (
-                          <Table.Cell>
-                            {lureCostMap.get(name) ?? "—"}
-                          </Table.Cell>
-                        )}
-                        {pairLureMaps.map((map, i) => (
-                          <Table.Cell key={i}>
-                            {map.has(name) ? Math.round(map.get(name)!) : "—"}
-                          </Table.Cell>
-                        ))}
-                      </Table.Row>
-                    ))}
-                  </Table.Body>
-                </Table.Root>
-              </Flex>
+            {isSinglePair && lures.filter((l) => l.id !== "").length > 0 && (
+              <EconomyChart
+                title="Lure XP"
+                data={lureXpData}
+                {...chartProps}
+                integerYAxis
+              >
+                {lurePurchaseLinesTime}
+                <Legend />
+                {lures
+                  .filter((l) => l.id !== "")
+                  .map((l) => (
+                    <Line
+                      key={l.id}
+                      dataKey={l.id}
+                      stroke={lureColorMap[l.id]}
+                      {...lineProps}
+                      name={l.name}
+                    />
+                  ))}
+              </EconomyChart>
             )}
+
+            {isSinglePair && lures.filter((l) => l.id !== "").length > 0 && (
+              <EconomyChart
+                title="Lure Level"
+                data={lureLevelData}
+                {...chartProps}
+                integerYAxis
+              >
+                {lurePurchaseLinesTime}
+                <Legend />
+                {lures
+                  .filter((l) => l.id !== "")
+                  .map((l) => (
+                    <Line
+                      key={l.id}
+                      dataKey={l.id}
+                      type="stepAfter"
+                      stroke={lureColorMap[l.id]}
+                      {...lineProps}
+                      name={l.name}
+                    />
+                  ))}
+              </EconomyChart>
+            )}
+
+            {isSinglePair && (
+              <EconomyChart
+                title="Fish Income Rate ($)"
+                data={earningsData}
+                {...chartProps}
+              >
+                <Legend />
+                {primaryFishData.map((f) => (
+                  <Line
+                    key={`${f.id}_earn`}
+                    dataKey={`${f.id}_earn`}
+                    stroke={fishColorMap[f.id]}
+                    {...lineProps}
+                    name={f.id}
+                    connectNulls={false}
+                  />
+                ))}
+              </EconomyChart>
+            )}
+
+            {isSinglePair && (
+              <EconomyChart
+                title="Catch Time (s)"
+                data={catchTimeData}
+                {...chartProps}
+              >
+                <Legend />
+                {primaryFishData.map((f) => (
+                  <Line
+                    key={f.id}
+                    dataKey={f.id}
+                    stroke={fishColorMap[f.id]}
+                    {...lineProps}
+                    name={f.id}
+                    connectNulls={false}
+                  />
+                ))}
+              </EconomyChart>
+            )}
+
           </ChartGrid>
         </>
       )}
