@@ -26,7 +26,7 @@ export function addLureXp(lureId: string, amount: number): boolean {
 }
 
 export function lureXpProgress(xp: number, level: number): number {
-  const xpFloor = LURE_LEVEL_XP[level - 1] ?? 0;
-  const xpCeil = LURE_LEVEL_XP[level] ?? null;
-  return xpCeil !== null ? (xp - xpFloor) / (xpCeil - xpFloor) : 1;
+  const xpFloor = LURE_LEVEL_XP.slice(0, level).reduce((a, b) => a + b, 0);
+  const nextReq = LURE_LEVEL_XP[level] ?? null;
+  return nextReq !== null ? (xp - xpFloor) / nextReq : 1;
 }

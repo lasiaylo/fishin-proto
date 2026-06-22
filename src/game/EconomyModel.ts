@@ -19,7 +19,7 @@ import {
   CAST_CHARGE_DURATION,
   LURING_REEL_MAX_SPEED,
   RESULT_DURATION,
-} from "../components/PondView";
+} from "../util/constants";
 import { INITIAL_PLAYER_STATE, PlayerStats } from "../stores/playerStore";
 import {
   XP_PER_DISTANCE,

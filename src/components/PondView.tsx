@@ -18,7 +18,20 @@ import { EventMsg } from "../util/eventMessages";
 import { FightEngine, FightState, Outcome } from "../game/FightEngine";
 import { useSessionLog } from "../stores/sessionLogStore";
 import { addLureXp } from "../stores/lureXpStore";
-import { XP_PER_DISTANCE, XP_WIN, XP_LOSS } from "../util/constants";
+import {
+  XP_PER_DISTANCE,
+  XP_WIN,
+  XP_LOSS,
+  RESULT_DURATION,
+  CAST_MIN,
+  CAST_DURATION_MIN,
+  CAST_DURATION_MAX,
+  CAST_CHARGE_DURATION,
+  LURING_REEL_MAX_SPEED,
+  LURING_REEL_ACCEL,
+  LURING_REEL_DECEL,
+  REEL_MIN,
+} from "../util/constants";
 
 import { ReelView } from "./ReelView";
 
@@ -28,16 +41,6 @@ enum GameState {
   Luring = "luring",
   Fighting = "fighting",
 }
-
-export const RESULT_DURATION = 1000;
-export const CAST_MIN = 5;
-export const CAST_DURATION_MIN = 0.5;
-export const CAST_DURATION_MAX = 2.0;
-export const CAST_CHARGE_DURATION = 2500;
-export const LURING_REEL_MAX_SPEED = 9;
-const LURING_REEL_ACCEL = 20;
-const LURING_REEL_DECEL = 20;
-export const REEL_MIN = 5;
 
 export function PondView() {
   const locations = useLocation();

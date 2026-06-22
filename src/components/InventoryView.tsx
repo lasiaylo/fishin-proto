@@ -4,6 +4,7 @@ import { setSelectedLure, usePlayer } from "../stores/playerStore";
 import { useShop } from "../stores/shopStore";
 import { StatName } from "../util/csvLoader";
 import { useLureXp, lureXpProgress } from "../stores/lureXpStore";
+import { BASE_LURE_ID, BASE_LURE_NAME } from "../util/constants";
 
 export function InventoryView() {
   const wallet = usePlayer((s) => s.wallet);
@@ -94,12 +95,14 @@ export function InventoryView() {
         <Text size="1">lure</Text>
         <Select.Root
           size="1"
-          value={selectedLure ?? "__none__"}
-          onValueChange={(v) => setSelectedLure(v === "__none__" ? null : v)}
+          value={selectedLure ?? BASE_LURE_ID}
+          onValueChange={(v) => setSelectedLure(v)}
         >
           <Select.Trigger variant={"soft"} />
           <Select.Content>
-            <Select.Item value="__none__">none</Select.Item>
+            <Select.Item value={BASE_LURE_ID}>
+              {BASE_LURE_NAME} Lvl. {lureXpData[BASE_LURE_ID]?.level ?? 0}
+            </Select.Item>
             {ownedLureList.map((u) => {
               const level = lureXpData[u.id]?.level ?? 0;
               return (
@@ -110,19 +113,20 @@ export function InventoryView() {
             })}
           </Select.Content>
         </Select.Root>
-        {selectedLure && (() => {
-          const entry = lureXpData[selectedLure];
-          const xp = entry?.xp ?? 0;
-          const level = entry?.level ?? 0;
-          const progress = lureXpProgress(xp, level);
-          return (
-            <Progress
-              radius="none"
-              size="2"
-              value={Math.round(progress * 100)}
-            />
-          );
-        })()}
+        {selectedLure &&
+          (() => {
+            const entry = lureXpData[selectedLure];
+            const xp = entry?.xp ?? 0;
+            const level = entry?.level ?? 0;
+            const progress = lureXpProgress(xp, level);
+            return (
+              <Progress
+                radius="none"
+                size="2"
+                value={Math.round(progress * 100)}
+              />
+            );
+          })()}
       </Flex>
     </Flex>
   );

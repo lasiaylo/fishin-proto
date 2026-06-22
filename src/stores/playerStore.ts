@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { FishData } from "../util/csvLoader";
+import { BASE_LURE_ID } from "../util/constants";
 
 export interface PlayerStats {
   attack: number;
@@ -23,8 +24,8 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
   lineHP: 15,
   inventorySize: 3,
   castMax: 40,
-  ownedLures: new Set<string>(),
-  selectedLure: null,
+  ownedLures: new Set<string>([BASE_LURE_ID]),
+  selectedLure: BASE_LURE_ID,
   inventory: [],
 };
 
