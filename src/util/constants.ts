@@ -12,11 +12,11 @@ export const XP_LOSS = 10;
 export const LURE_LEVEL_XP = [300, 400, 500, 600, 700];
 
 // --- Pond / casting / luring ---
-export const RESULT_DURATION = 1000;
+export const RESULT_DURATION = 500;
 export const CAST_MIN = 5;
 export const CAST_DURATION_MIN = 0.5;
 export const CAST_DURATION_MAX = 2.0;
-export const CAST_CHARGE_DURATION = 2500;
+export const CAST_CHARGE_DURATION = 1500;
 export const LURING_REEL_MAX_SPEED = 9;
 export const LURING_REEL_ACCEL = 20;
 export const LURING_REEL_DECEL = 20;

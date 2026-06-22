@@ -288,40 +288,31 @@ export function PondView() {
     cancelAnimationFrame(luringRafRef.current);
     emptyReelCountRef.current += 1;
     const { selectedLure } = usePlayer.getState();
-    console.log("REEL");
     if (selectedLure) {
       addLureXp(selectedLure, castDistanceRef.current * XP_PER_DISTANCE);
     }
     setGameState(GameState.Idle);
   }
 
+  let component;
+
   if (gameState === GameState.Idle) {
     if (invCount >= inventorySize) {
-      return (
-        <Flex className="fade-in" direction="column" gap="3" p="4">
-          <Text size={"1"}>the cooler is full.</Text>
-        </Flex>
-      );
+      component = <Text size={"1"}>the cooler is full.</Text>;
     }
-    return (
-      <Flex className="fade-in" direction="column" gap="4" p="4">
-        <ChargeButton
-          onRelease={handleCastRelease}
-          maxHoldMs={CAST_CHARGE_DURATION}
-          minWidth={200}
-        >
-          cast
-        </ChargeButton>
-      </Flex>
+    component = (
+      <ChargeButton
+        onRelease={handleCastRelease}
+        maxHoldMs={CAST_CHARGE_DURATION}
+        width={200}
+      >
+        cast
+      </ChargeButton>
     );
-  }
-
-  if (gameState === GameState.CastAnimation) {
-    return <ReelView distance={castProgress} lineHp={lineHpRef.current} />;
-  }
-
-  if (gameState === GameState.Luring) {
-    return (
+  } else if (gameState === GameState.CastAnimation) {
+    component = <ReelView distance={castProgress} lineHp={lineHpRef.current} />;
+  } else if (gameState === GameState.Luring) {
+    component = (
       <ReelView
         distance={luringDistance}
         lineHp={lineHpRef.current}
@@ -333,10 +324,8 @@ export function PondView() {
         }}
       />
     );
-  }
-
-  if (gameState === GameState.Fighting && fightState !== null) {
-    return (
+  } else if (gameState === GameState.Fighting && fightState !== null) {
+    component = (
       <ReelView
         distance={fightState.distance}
         fightState={fightState}
@@ -353,8 +342,15 @@ export function PondView() {
   }
 
   return (
-    <Flex direction="column" gap="4" p="4" justify="start">
-      <MyButton onClick={() => setGameState(GameState.Idle)}>go back</MyButton>
+    <Flex
+      className="fade-in"
+      width="100%"
+      direction="column"
+      gap="3"
+      pt="5"
+      p="4"
+    >
+      {component}
     </Flex>
   );
 }

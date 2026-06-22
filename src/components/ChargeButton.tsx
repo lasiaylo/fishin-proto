@@ -7,13 +7,13 @@ interface ChargeButtonProps {
   onRelease: (chargePercent: number) => void;
   maxHoldMs?: number;
   disabled?: boolean;
-  minWidth?: number;
+  width?: number;
 }
 
 export function ChargeButton({
   children,
   onRelease,
-  minWidth,
+  width,
   maxHoldMs = 2000,
   disabled = false,
 }: ChargeButtonProps) {
@@ -27,7 +27,7 @@ export function ChargeButton({
     function tick() {
       if (startRef.current === null) return;
       const t = Math.min(1, (Date.now() - startRef.current) / maxHoldMs);
-      setChargePercent(gsap.parseEase("power2.out")(t) * 100);
+      setChargePercent(gsap.parseEase("power1.out")(t) * 100);
       rafRef.current = requestAnimationFrame(tick);
     }
     rafRef.current = requestAnimationFrame(tick);
@@ -42,21 +42,23 @@ export function ChargeButton({
   }
 
   return (
-    <Button
-      radius="none"
-      variant="outline"
-      disabled={disabled}
-      onPointerDown={startCharge}
-      onPointerUp={releaseCharge}
-      onPointerCancel={releaseCharge}
-      onPointerLeave={releaseCharge}
-      style={{
-        background: `linear-gradient(90deg, white ${chargePercent}%, transparent ${chargePercent}%)`,
-      }}
-    >
-      <Box minWidth={`${minWidth ?? 0}px`}>
-        <Text size="1">{children}</Text>
-      </Box>
-    </Button>
+    <Box flexGrow={"0"}>
+      <Button
+        radius="none"
+        variant="outline"
+        disabled={disabled}
+        onPointerDown={startCharge}
+        onPointerUp={releaseCharge}
+        onPointerCancel={releaseCharge}
+        onPointerLeave={releaseCharge}
+        style={{
+          background: `linear-gradient(90deg, white ${chargePercent}%, transparent ${chargePercent}%)`,
+        }}
+      >
+        <Box width={`${width ?? 0}px`}>
+          <Text size="1">{children}</Text>
+        </Box>
+      </Button>
+    </Box>
   );
 }
