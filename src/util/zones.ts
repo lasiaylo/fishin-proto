@@ -18,18 +18,6 @@ export const BITE_CHECK_INTERVAL = 1;
 export const TARGET_BITE_CHANCE = 0.7;
 export const BITE_CHANCE_INCREMENT = 0.05;
 
-function perCheckChance(zone: Zone): number {
-  const [min, max] = ZONE_RANGES[zone];
-  const n = (max - min) / BITE_CHECK_INTERVAL;
-  return perCheckProbability(TARGET_BITE_CHANCE, n);
-}
-
-export const BITE_CHANCE: Record<Zone, number> = {
-  [Zone.CLOSE]: perCheckChance(Zone.CLOSE),
-  [Zone.MID]: perCheckChance(Zone.MID),
-  [Zone.FAR]: perCheckChance(Zone.FAR),
-};
-
 export function getBiteChance(zones: Zone[], emptyReelCount: number): number {
   const target = Math.min(
     TARGET_BITE_CHANCE + BITE_CHANCE_INCREMENT * emptyReelCount,
