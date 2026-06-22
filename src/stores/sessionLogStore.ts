@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { FishData } from "../util/csvLoader";
 import { EconomyRound } from "../game/EconomyModel";
 import { PlayerStats } from "./playerStore";
+import { useLureXp } from "./lureXpStore";
+import { computeLureLevel } from "../util/constants";
 
 interface CatchRecord {
   fish: FishData;
@@ -219,6 +221,12 @@ export const useSessionLog = create<SessionLogState>((set, get) => ({
       upgradeLevels: { ...s.upgradeLevels },
       boughtLure,
       playerStats: { ...playerStats },
+      lureXp: Object.fromEntries(
+        Object.entries(useLureXp.getState().lures).map(([id, e]) => [id, e.xp]),
+      ),
+      lureLevels: Object.fromEntries(
+        Object.entries(useLureXp.getState().lures).map(([id, e]) => [id, computeLureLevel(e.xp)]),
+      ),
     };
 
     set({

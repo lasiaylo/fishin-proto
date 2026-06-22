@@ -1,8 +1,9 @@
-import { Code, Flex, Select, Text } from "@radix-ui/themes";
+import { Code, Flex, Progress, Select, Text } from "@radix-ui/themes";
 import React, { useEffect, useRef, useState } from "react";
 import { setSelectedLure, usePlayer } from "../stores/playerStore";
 import { useShop } from "../stores/shopStore";
 import { StatName } from "../util/csvLoader";
+import { useLureXp, lureXpProgress } from "../stores/lureXpStore";
 
 export function InventoryView() {
   const wallet = usePlayer((s) => s.wallet);
@@ -15,6 +16,7 @@ export function InventoryView() {
   const ownedLureList = shopUpgrades.filter(
     (u) => u.stat === StatName.LURE && ownedLures.has(u.id),
   );
+  const lureXpData = useLureXp((s) => s.lures);
 
   const [displayWallet, setDisplayWallet] = useState(wallet);
   const displayRef = useRef(wallet);
@@ -98,13 +100,29 @@ export function InventoryView() {
           <Select.Trigger variant={"soft"} />
           <Select.Content>
             <Select.Item value="__none__">none</Select.Item>
-            {ownedLureList.map((u) => (
-              <Select.Item key={u.id} value={u.id}>
-                {u.name}
-              </Select.Item>
-            ))}
+            {ownedLureList.map((u) => {
+              const level = lureXpData[u.id]?.level ?? 0;
+              return (
+                <Select.Item key={u.id} value={u.id}>
+                  {u.name} Lvl. {level}
+                </Select.Item>
+              );
+            })}
           </Select.Content>
         </Select.Root>
+        {selectedLure && (() => {
+          const entry = lureXpData[selectedLure];
+          const xp = entry?.xp ?? 0;
+          const level = entry?.level ?? 0;
+          const progress = lureXpProgress(xp, level);
+          return (
+            <Progress
+              radius="none"
+              size="2"
+              value={Math.round(progress * 100)}
+            />
+          );
+        })()}
       </Flex>
     </Flex>
   );

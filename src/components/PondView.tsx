@@ -17,6 +17,8 @@ import { pushEvent } from "../stores/eventLogStore";
 import { EventMsg } from "../util/eventMessages";
 import { FightEngine, FightState, Outcome } from "../game/FightEngine";
 import { useSessionLog } from "../stores/sessionLogStore";
+import { addLureXp } from "../stores/lureXpStore";
+import { XP_PER_DISTANCE, XP_WIN, XP_LOSS } from "../util/constants";
 
 import { ReelView } from "./ReelView";
 
@@ -32,7 +34,7 @@ export const CAST_MIN = 5;
 export const CAST_DURATION_MIN = 0.5;
 export const CAST_DURATION_MAX = 2.0;
 export const CAST_CHARGE_DURATION = 2500;
-export const LURING_REEL_MAX_SPEED = 8;
+export const LURING_REEL_MAX_SPEED = 9;
 const LURING_REEL_ACCEL = 20;
 const LURING_REEL_DECEL = 20;
 export const REEL_MIN = 5;
@@ -70,6 +72,8 @@ export function PondView() {
   const isReelingRef = useRef<boolean>(false);
   const luringReelSpeedRef = useRef<number>(0);
   const emptyReelCountRef = useRef(0);
+  const castDistanceRef = useRef(0);
+  const hookXpRef = useRef(0);
 
   useEffect(() => {
     return () => {
@@ -114,6 +118,7 @@ export function PondView() {
 
   function startLuringLoop(initialDistance: number) {
     luringDistanceRef.current = initialDistance;
+    castDistanceRef.current = initialDistance;
     lastBiteCheckDistanceRef.current = initialDistance;
     luringLastTimeRef.current = null;
     luringReelSpeedRef.current = 0;
@@ -167,6 +172,8 @@ export function PondView() {
 
   function startFight() {
     cancelAnimationFrame(luringRafRef.current);
+    hookXpRef.current =
+      (castDistanceRef.current - luringDistanceRef.current) * XP_PER_DISTANCE;
     setGameState(GameState.Fighting);
 
     const { attack, defense, lineHP } = usePlayer.getState();
@@ -230,6 +237,13 @@ export function PondView() {
         selectedLure ?? "",
       );
 
+    if (selectedLure) {
+      addLureXp(
+        selectedLure,
+        hookXpRef.current + (result === Outcome.WIN ? XP_WIN : XP_LOSS),
+      );
+    }
+
     if (result === Outcome.WIN) {
       addFishToInventory(fish);
       pushEvent(EventMsg.CAUGHT(fish.name));
@@ -270,6 +284,11 @@ export function PondView() {
   function handleReelIn() {
     cancelAnimationFrame(luringRafRef.current);
     emptyReelCountRef.current += 1;
+    const { selectedLure } = usePlayer.getState();
+    console.log("REEL");
+    if (selectedLure) {
+      addLureXp(selectedLure, castDistanceRef.current * XP_PER_DISTANCE);
+    }
     setGameState(GameState.Idle);
   }
 

@@ -21,6 +21,12 @@ import {
   RESULT_DURATION,
 } from "../components/PondView";
 import { INITIAL_PLAYER_STATE, PlayerStats } from "../stores/playerStore";
+import {
+  XP_PER_DISTANCE,
+  XP_WIN,
+  XP_LOSS,
+  computeLureLevel,
+} from "../util/constants";
 
 const EVAL_TRIALS = 100;
 const MAX_ROUNDS = 100;
@@ -49,6 +55,8 @@ export interface EconomyRound {
   upgradeLevels: Record<string, number>;
   boughtLure: boolean;
   playerStats: PlayerStats;
+  lureLevels: Record<string, number>; // lureId → current level after this round
+  lureXp: Record<string, number>; // lureId → cumulative XP after this round
 }
 
 // ── Helpers ──
@@ -409,6 +417,7 @@ export function simulateEconomy(
   let wallet = 0;
   let cumulativeTime = 0;
   const rounds: EconomyRound[] = [];
+  const lureXpMap: Record<string, number> = {};
   const fishByLure = new Map<string, FishData[]>();
   for (const fish of fishData) {
     if (!fishByLure.has(fish.requiredLure))
@@ -435,6 +444,23 @@ export function simulateEconomy(
     wallet += income;
     cumulativeTime += roundTime;
 
+    if (lureId) {
+      const pool = fishByLure.get(lureId) ?? [];
+      const validZones = [...new Set(pool.flatMap((f) => f.zones))];
+      const maxZoneDist = validZones.length > 0
+        ? Math.max(...validZones.map((z) => ZONE_RANGES[z][1]))
+        : player.castMax;
+      const effectiveCast = Math.min(player.castMax, maxZoneDist);
+      const avgLuringDist = expectedLuringTime(effectiveCast) * LURING_REEL_MAX_SPEED;
+      const winRate = lureWinRates[lureId] ?? 0;
+      const xpPerRound =
+        player.inventorySize *
+        (avgLuringDist * XP_PER_DISTANCE +
+          winRate * XP_WIN +
+          (1 - winRate) * XP_LOSS);
+      lureXpMap[lureId] = (lureXpMap[lureId] ?? 0) + xpPerRound;
+    }
+
     const walletSnapshot = wallet;
     const upgradesBought: string[] = [];
     let boughtLure = false;
@@ -456,6 +482,11 @@ export function simulateEconomy(
       nextUpgrade = pickUpgrade(wallet);
     }
 
+    const lureLevels: Record<string, number> = {};
+    for (const [id, xp] of Object.entries(lureXpMap)) {
+      lureLevels[id] = computeLureLevel(xp);
+    }
+
     rounds.push({
       round,
       cumulativeTime,
@@ -474,6 +505,8 @@ export function simulateEconomy(
       upgradeLevels: { ...levels },
       boughtLure,
       playerStats: { ...player },
+      lureLevels,
+      lureXp: { ...lureXpMap },
     });
 
     if (cumulativeTime >= maxTime) break;

@@ -21,6 +21,8 @@ const HEADERS = [
   "lureRates",
   "lureWinRates",
   "lureRemainingHP",
+  "lureXp",
+  "lureLevels",
 ] as const;
 
 function escapeCell(value: string): string {
@@ -54,6 +56,8 @@ export function roundsToCSV(rounds: EconomyRound[]): string {
       JSON.stringify(r.lureRates),
       JSON.stringify(r.lureWinRates),
       JSON.stringify(r.lureRemainingHP),
+      JSON.stringify(r.lureXp),
+      JSON.stringify(r.lureLevels),
     ].map((v) => escapeCell(String(v)));
     rows.push(cells.join(","));
   }
@@ -127,6 +131,8 @@ export function csvToRounds(csv: string): EconomyRound[] {
       lureRates: obj("lureRates"),
       lureWinRates: obj("lureWinRates"),
       lureRemainingHP: obj("lureRemainingHP"),
+      lureXp: obj("lureXp"),
+      lureLevels: obj("lureLevels"),
     };
   });
 }
