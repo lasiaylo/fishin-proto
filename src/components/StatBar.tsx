@@ -22,7 +22,7 @@ export function StatBar({
           {label}
         </Text>
         <Text size="1" color="gray">
-          {value.toFixed(1)} / {max}
+          {Math.ceil(value)} / {Math.ceil(max)}
         </Text>
       </Flex>
       <Progress radius={"none"} value={pct} color={color} size="3" />
