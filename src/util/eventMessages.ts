@@ -1,3 +1,5 @@
+import { CURRENCY_SYMBOL } from "./constants";
+
 export const EventMsg = {
   WELCOME: "you're a ghost and you must fish.",
   BITING: "something bites!",
@@ -6,7 +8,8 @@ export const EventMsg = {
 
   CRIT: "crit!",
   CAUGHT: (name: string) => `caught a ${name}`,
-  SOLD_FISH: (name: string, price: number) => `sold ${name} for $${price}`,
+  SOLD_FISH: (name: string, price: number) =>
+    `sold ${name}  + ${CURRENCY_SYMBOL} ${price} `,
   CASTING: (spot: string) => `casting...`,
   BOUGHT: (id: string, level: number) => `bought ${id} level ${level}`,
 } as const;
