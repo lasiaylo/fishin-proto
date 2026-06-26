@@ -4,9 +4,9 @@ import {
   loadLocationDisplayData,
   loadLocationGameplayData,
 } from "../util/csvLoader";
-import { Zone } from "../util/zones";
 import { randomizeFishStats, useFish } from "./fishStore";
 import { usePlayer } from "./playerStore";
+import { Zone } from "../util/constants";
 
 export interface LocationEntry {
   name: string;

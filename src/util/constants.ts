@@ -1,3 +1,5 @@
+import { PlayerState } from "../stores/playerStore";
+
 export const CURRENCY_SYMBOL = "࿔";
 
 export const MS_IN_SEC = 1000;
@@ -7,18 +9,29 @@ export const FPS = 60;
 export const BASE_LURE_ID = "LURE_0";
 export const BASE_LURE_NAME = "Worm";
 
-export const XP_PER_DISTANCE = 1;
-export const XP_WIN = 30;
-export const XP_LOSS = 10;
-// XP required to advance from each level to the next (index 0 = level 0→1, etc.)
-export const LURE_LEVEL_XP = [300, 400, 500, 600, 700];
+const CAST_MAX = 60;
+export const INITIAL_PLAYER_STATE: PlayerState = {
+  wallet: 0,
+  attack: 10,
+  defense: 10,
+  lineHP: 20,
+  inventorySize: 3,
+  castMax: CAST_MAX,
+  ownedLures: new Set<string>([BASE_LURE_ID]),
+  selectedLure: BASE_LURE_ID,
+  inventory: [],
+};
 
-// --- Pond / casting / luring ---
+export const XP_PER_DISTANCE = 10 / CAST_MAX;
+export const XP_WIN = 15;
+export const XP_LOSS = 0;
+export const LURE_LEVEL_XP = [100, 120, 150, 170, 200];
+
 export const RESULT_DURATION = 500;
 export const CAST_MIN = 5;
 export const CAST_DURATION_MIN = 0.5;
-export const CAST_DURATION_MAX = 2.0;
-export const CAST_CHARGE_DURATION = 1500;
+export const CAST_DURATION_MAX = 1.5;
+export const CAST_CHARGE_DURATION = 1250;
 export const LURING_REEL_MAX_SPEED = 10;
 export const LURING_REEL_ACCEL = 10;
 export const LURING_REEL_DECEL = 20;
@@ -34,3 +47,19 @@ export function computeLureLevel(xp: number): number {
   }
   return level;
 }
+
+// Bite Chances
+export enum Zone {
+  CLOSE = "CLOSE",
+  MID = "MID",
+  FAR = "FAR",
+}
+
+export const ZONE_RANGES: Record<Zone, [number, number]> = {
+  [Zone.CLOSE]: [20, CAST_MAX],
+  [Zone.MID]: [20, CAST_MAX],
+  [Zone.FAR]: [50, 80],
+};
+export const BITE_CHECK_INTERVAL = 1;
+export const TARGET_BITE_CHANCE = 0.4;
+export const BITE_CHANCE_INCREMENT = 0.1;

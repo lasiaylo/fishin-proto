@@ -1,4 +1,4 @@
-import type { Zone } from "./zones";
+import { Zone } from "./constants";
 
 export interface FishData {
   id: string;

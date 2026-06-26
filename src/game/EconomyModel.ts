@@ -5,12 +5,7 @@ import {
   ShopUpgradeData,
   StatName,
 } from "../util/csvLoader";
-import {
-  avgZoneDistance,
-  Zone,
-  ZONE_RANGES,
-  TARGET_BITE_CHANCE,
-} from "../util/zones";
+import { avgZoneDistance } from "../util/zones";
 import { lerp } from "../util/easing";
 import {
   CAST_MIN,
@@ -19,8 +14,12 @@ import {
   CAST_CHARGE_DURATION,
   LURING_REEL_MAX_SPEED,
   RESULT_DURATION,
+  INITIAL_PLAYER_STATE,
+  TARGET_BITE_CHANCE,
+  ZONE_RANGES,
+  Zone,
 } from "../util/constants";
-import { INITIAL_PLAYER_STATE, PlayerStats } from "../stores/playerStore";
+import { PlayerStats } from "../stores/playerStore";
 import {
   XP_PER_DISTANCE,
   XP_WIN,
@@ -35,7 +34,9 @@ export type UpgradeStrategy =
   | { type: "CHEAPEST_UPGRADE" }
   | { type: "PRIORITIZE_LURE"; lureRoundTrips: number };
 
-export const DEFAULT_UPGRADE_STRATEGY: UpgradeStrategy = { type: "CHEAPEST_UPGRADE" };
+export const DEFAULT_UPGRADE_STRATEGY: UpgradeStrategy = {
+  type: "CHEAPEST_UPGRADE",
+};
 
 export interface EconomyRound {
   round: number;
@@ -299,7 +300,9 @@ function prioritizeLureUpgrade(
   }
 
   if (cheapestLure !== null && income > 0) {
-    const roundsNeeded = Math.ceil(Math.max(0, cheapestLure.price - wallet) / income);
+    const roundsNeeded = Math.ceil(
+      Math.max(0, cheapestLure.price - wallet) / income,
+    );
     if (roundsNeeded <= roundTripsThreshold) {
       if (wallet >= cheapestLure.price) return cheapestLure;
       return null;
@@ -452,11 +455,13 @@ export function simulateEconomy(
     if (lureId) {
       const pool = fishByLure.get(lureId) ?? [];
       const validZones = [...new Set(pool.flatMap((f) => f.zones))];
-      const maxZoneDist = validZones.length > 0
-        ? Math.max(...validZones.map((z) => ZONE_RANGES[z][1]))
-        : player.castMax;
+      const maxZoneDist =
+        validZones.length > 0
+          ? Math.max(...validZones.map((z) => ZONE_RANGES[z][1]))
+          : player.castMax;
       const effectiveCast = Math.min(player.castMax, maxZoneDist);
-      const avgLuringDist = expectedLuringTime(effectiveCast) * LURING_REEL_MAX_SPEED;
+      const avgLuringDist =
+        expectedLuringTime(effectiveCast) * LURING_REEL_MAX_SPEED;
       const winRate = lureWinRates[lureId] ?? 0;
       const xpPerRound =
         player.inventorySize *
@@ -472,7 +477,14 @@ export function simulateEconomy(
 
     const pickUpgrade = (w: number) => {
       if (strategy.type === "PRIORITIZE_LURE") {
-        return prioritizeLureUpgrade(shopData, levels, w, player, income, strategy.lureRoundTrips);
+        return prioritizeLureUpgrade(
+          shopData,
+          levels,
+          w,
+          player,
+          income,
+          strategy.lureRoundTrips,
+        );
       }
       return cheapestUpgrade(shopData, levels, w, player);
     };

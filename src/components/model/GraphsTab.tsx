@@ -22,7 +22,6 @@ import {
   GridToggleButton,
   NumInput,
 } from "./shared";
-import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
 import { FISH_CSVS, SHOP_CSVS } from "../../stores/csvConfigStore";
 import {
   CsvGeneratorPanel,
@@ -30,6 +29,7 @@ import {
   GENERATED_SHOP_CSV,
 } from "./CsvGenerator";
 import { EconomyChart, lineProps } from "./EconomyChart";
+import { INITIAL_PLAYER_STATE } from "../../util/constants";
 
 export function GraphsTab({
   fishData: defaultFishData,

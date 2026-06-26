@@ -1,36 +1,31 @@
 import React, { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { Flex, Text } from "@radix-ui/themes";
-import { MyButton } from "./MyButton";
 import { ChargeButton } from "./ChargeButton";
-import { FishData, StatName } from "../util/csvLoader";
-import { getZones, BITE_CHECK_INTERVAL, getBiteChance } from "../util/zones";
+import { FishData } from "../util/csvLoader";
+import { getBiteChance, getZones } from "../util/zones";
 import { randomizeFishStats, useFish } from "../stores/fishStore";
 import { pickFishForZone, useLocation } from "../stores/locationStore";
-import {
-  addFishToInventory,
-  setSelectedLure,
-  usePlayer,
-} from "../stores/playerStore";
-import { useShop } from "../stores/shopStore";
+import { addFishToInventory, usePlayer } from "../stores/playerStore";
 import { pushEvent } from "../stores/eventLogStore";
 import { EventMsg } from "../util/eventMessages";
 import { FightEngine, FightState, Outcome } from "../game/FightEngine";
 import { useSessionLog } from "../stores/sessionLogStore";
 import { addLureXp } from "../stores/lureXpStore";
 import {
-  XP_PER_DISTANCE,
-  XP_WIN,
-  XP_LOSS,
-  RESULT_DURATION,
-  CAST_MIN,
-  CAST_DURATION_MIN,
-  CAST_DURATION_MAX,
+  BITE_CHECK_INTERVAL,
   CAST_CHARGE_DURATION,
-  LURING_REEL_MAX_SPEED,
+  CAST_DURATION_MAX,
+  CAST_DURATION_MIN,
+  CAST_MIN,
   LURING_REEL_ACCEL,
   LURING_REEL_DECEL,
+  LURING_REEL_MAX_SPEED,
   REEL_MIN,
+  RESULT_DURATION,
+  XP_LOSS,
+  XP_PER_DISTANCE,
+  XP_WIN,
 } from "../util/constants";
 
 import { ReelView } from "./ReelView";
@@ -46,9 +41,7 @@ export function PondView() {
   const locations = useLocation();
   const invCount = usePlayer((s) => s.inventory.length);
   const inventorySize = usePlayer((s) => s.inventorySize);
-  const ownedLures = usePlayer((s) => s.ownedLures);
   const castMax = usePlayer((s) => s.castMax);
-  const shopUpgrades = useShop((s) => s.upgrades);
 
   const [gameState, setGameState] = useState<GameState>(GameState.Idle);
   const [fading, setFading] = useState(false);
@@ -299,7 +292,7 @@ export function PondView() {
   if (gameState === GameState.Idle) {
     component =
       invCount >= inventorySize ? (
-        <Text size={"1"}>the cooler is full.</Text>
+        <Text size={"1"}>the cooler is full</Text>
       ) : (
         <ChargeButton
           onRelease={handleCastRelease}

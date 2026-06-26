@@ -17,7 +17,6 @@ import type {
   ShopUpgradeData,
 } from "../../util/csvLoader";
 import { ChartGrid, COLORS, NumInput } from "./shared";
-import { INITIAL_PLAYER_STATE } from "../../stores/playerStore";
 import { FISH_CSVS, SHOP_CSVS } from "../../stores/csvConfigStore";
 import {
   CsvGeneratorPanel,
@@ -27,6 +26,7 @@ import {
 import { EconomyChart, lineProps } from "./EconomyChart";
 import { CsvPair, newPairId, PairRow } from "./PairRow";
 import { DEFAULT_UPGRADE_STRATEGY } from "../../game/EconomyModel";
+import { INITIAL_PLAYER_STATE } from "../../util/constants";
 
 // ── Helpers ──
 
@@ -648,7 +648,6 @@ export function EconomyTab({
         <Button onClick={runSim} disabled={running || !allPairsLoaded}>
           {running ? "Running…" : !allPairsLoaded ? "Loading…" : "Run Economy"}
         </Button>
-
       </Flex>
 
       {/* Mode selector */}
@@ -1088,7 +1087,6 @@ export function EconomyTab({
                 ))}
               </EconomyChart>
             )}
-
           </ChartGrid>
         </>
       )}

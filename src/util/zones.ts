@@ -1,22 +1,11 @@
-export enum Zone {
-  CLOSE = "CLOSE",
-  MID = "MID",
-  FAR = "FAR",
-}
-
-export const ZONE_RANGES: Record<Zone, [number, number]> = {
-  [Zone.CLOSE]: [1, 20],
-  [Zone.MID]: [21, 50],
-  [Zone.FAR]: [50, 80],
-};
-
 import { perCheckProbability } from "./random";
-
-export const BITE_CHECK_INTERVAL = 1;
-
-// Target probability of getting at least one bite while reeling through a zone.
-export const TARGET_BITE_CHANCE = 0.7;
-export const BITE_CHANCE_INCREMENT = 0.05;
+import {
+  BITE_CHANCE_INCREMENT,
+  BITE_CHECK_INTERVAL,
+  TARGET_BITE_CHANCE,
+  Zone,
+  ZONE_RANGES,
+} from "./constants";
 
 export function getBiteChance(zones: Zone[], emptyReelCount: number): number {
   const target = Math.min(

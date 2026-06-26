@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { FishData } from "../util/csvLoader";
-import { BASE_LURE_ID } from "../util/constants";
+import { INITIAL_PLAYER_STATE } from "../util/constants";
 
 export interface PlayerStats {
   attack: number;
@@ -10,24 +10,13 @@ export interface PlayerStats {
   inventorySize: number;
   castMax: number;
 }
+
 export interface PlayerState extends PlayerStats {
   wallet: number;
   ownedLures: Set<string>;
   selectedLure: string | null;
   inventory: FishData[];
 }
-
-export const INITIAL_PLAYER_STATE: PlayerState = {
-  wallet: 0,
-  attack: 10,
-  defense: 10,
-  lineHP: 15,
-  inventorySize: 3,
-  castMax: 40,
-  ownedLures: new Set<string>([BASE_LURE_ID]),
-  selectedLure: BASE_LURE_ID,
-  inventory: [],
-};
 
 export const usePlayer = create(
   subscribeWithSelector<PlayerState>(() => ({
