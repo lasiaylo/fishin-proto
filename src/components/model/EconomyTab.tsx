@@ -578,6 +578,12 @@ export function EconomyTab({
     allPairLureRows.flatMap(({ rows }) => rows.map((r) => [r.name, r.cost])),
   );
 
+  const tripDurationData = primaryRounds.map((r) => ({
+    round: r.round,
+    duration: parseFloat(r.roundTime.toFixed(2)),
+    lureLevel: r.lureLevels[r.lureId] ?? 0,
+  }));
+
   const chartProps = { maxTime: multiMaxTime, xTicks };
 
   return (
@@ -780,6 +786,7 @@ export function EconomyTab({
               xDataKey="round"
               xDomain={[1, maxRound]}
               xTickFormatter={(v) => `${v}`}
+              integerXAxis
               syncId="economy-round"
               tooltipLabelFormatter={(v, payload) => {
                 const level = payload?.[0]?.payload?.lureLevel ?? 0;
@@ -844,6 +851,57 @@ export function EconomyTab({
                       income: parseFloat(r.income.toFixed(4)),
                     }))}
                     dataKey="income"
+                    stroke={COLORS[i % COLORS.length]}
+                    name={result.pair.label}
+                    {...lineProps}
+                  />
+                ))
+              )}
+              {!isSinglePair && <Legend />}
+            </EconomyChart>
+
+            {/* Trip Duration */}
+            <EconomyChart
+              title="Trip Duration (s/round)"
+              data={isSinglePair ? tripDurationData : []}
+              xDataKey="round"
+              xDomain={[1, maxRound]}
+              xTickFormatter={(v) => `${v}`}
+              integerXAxis
+              syncId="economy-round"
+              tooltipLabelFormatter={(v, payload) => {
+                const level = payload?.[0]?.payload?.lureLevel ?? 0;
+                return `Round ${v} · Lure Lvl ${level}`;
+              }}
+            >
+              {isSinglePair &&
+                lureRegionsByRound.map((region, i) => (
+                  <ReferenceArea
+                    key={i}
+                    x1={region.x1}
+                    x2={region.x2}
+                    fill={lureColorMap[region.lureId]}
+                    fillOpacity={0.12}
+                    ifOverflow="hidden"
+                  />
+                ))}
+              {lurePurchaseLinesRound}
+              {isSinglePair ? (
+                <Line
+                  dataKey="duration"
+                  stroke={COLORS[0]}
+                  {...lineProps}
+                  name="s/round"
+                />
+              ) : (
+                activePairResults.map((result, i) => (
+                  <Line
+                    key={result.pair.id}
+                    data={result.rounds.map((r) => ({
+                      round: r.round,
+                      duration: parseFloat(r.roundTime.toFixed(2)),
+                    }))}
+                    dataKey="duration"
                     stroke={COLORS[i % COLORS.length]}
                     name={result.pair.label}
                     {...lineProps}

@@ -2,14 +2,15 @@ import { perCheckProbability } from "./random";
 import {
   BITE_CHANCE_INCREMENT,
   BITE_CHECK_INTERVAL,
+  LURE_BITE_CHANCE_PER_LEVEL,
   TARGET_BITE_CHANCE,
   Zone,
   ZONE_RANGES,
 } from "./constants";
 
-export function getBiteChance(zones: Zone[], emptyReelCount: number): number {
+export function getBiteChance(zones: Zone[], emptyReelCount: number, lureLevel = 0): number {
   const target = Math.min(
-    TARGET_BITE_CHANCE + BITE_CHANCE_INCREMENT * emptyReelCount,
+    TARGET_BITE_CHANCE + lureLevel * LURE_BITE_CHANCE_PER_LEVEL + BITE_CHANCE_INCREMENT * emptyReelCount,
     1,
   );
   return Math.max(

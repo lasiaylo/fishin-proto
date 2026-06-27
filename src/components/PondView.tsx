@@ -18,8 +18,6 @@ import {
   CAST_DURATION_MAX,
   CAST_DURATION_MIN,
   CAST_MIN,
-  lurePriceMultiplier,
-  lureReelMaxSpeedMultiplier,
   LURING_REEL_ACCEL,
   LURING_REEL_DECEL,
   LURING_REEL_MAX_SPEED,
@@ -97,14 +95,8 @@ export function PondView() {
 
       function addFish(rarity: Rarity) {
         const fish = useFish.getState().allFish[0];
-        const { selectedLure } = usePlayer.getState();
-        const lureLevel = selectedLure
-          ? (useLureXp.getState().lures[selectedLure]?.level ?? 0)
-          : 0;
         fish.rarity = rarity;
-        const effectivePrice = Math.round(
-          lurePriceMultiplier(lureLevel) * fish.basePrice,
-        );
+        const effectivePrice = Math.round(fish.basePrice);
         addFishToInventory(fish, effectivePrice);
       }
       if (e.key === "0") {
@@ -121,10 +113,10 @@ export function PondView() {
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
 
-  function checkBite(distance: number): boolean {
+  function checkBite(distance: number, lureLevel = 0): boolean {
     const zones = getZones(distance);
     if (zones.length === 0) return false;
-    if (Math.random() > getBiteChance(zones, emptyReelCountRef.current))
+    if (Math.random() > getBiteChance(zones, emptyReelCountRef.current, lureLevel))
       return false;
     const fish = pickFishForZone(castLocationRef.current, zones);
     if (!fish) return false;
@@ -143,12 +135,11 @@ export function PondView() {
     luringReelSpeedRef.current = 0;
     isReelingRef.current = false;
 
+    const effectiveReelMaxSpeed = LURING_REEL_MAX_SPEED;
     const { selectedLure } = usePlayer.getState();
     const lureLevel = selectedLure
       ? (useLureXp.getState().lures[selectedLure]?.level ?? 0)
       : 0;
-    const effectiveReelMaxSpeed =
-      lureReelMaxSpeedMultiplier(lureLevel) * LURING_REEL_MAX_SPEED;
 
     function loop(timestamp: number) {
       if (luringLastTimeRef.current === null)
@@ -186,7 +177,7 @@ export function PondView() {
           initialDistance - luringDistanceRef.current >= REEL_MIN
         ) {
           lastBiteCheckDistanceRef.current = luringDistanceRef.current;
-          if (checkBite(luringDistanceRef.current)) return;
+          if (checkBite(luringDistanceRef.current, lureLevel)) return;
         }
       }
 
@@ -251,12 +242,7 @@ export function PondView() {
     cancelAnimationFrame(rafRef.current);
     const fish = caughtFishRef.current!;
     const { lineHP, selectedLure } = usePlayer.getState();
-    const lureLevel = selectedLure
-      ? (useLureXp.getState().lures[selectedLure]?.level ?? 0)
-      : 0;
-    const effectivePrice = Math.round(
-      lurePriceMultiplier(lureLevel) * fish.basePrice,
-    );
+    const effectivePrice = Math.round(fish.basePrice);
 
     useSessionLog
       .getState()

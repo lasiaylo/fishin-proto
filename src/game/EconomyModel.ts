@@ -12,6 +12,7 @@ import {
   CAST_DURATION_MIN,
   CAST_DURATION_MAX,
   CAST_CHARGE_DURATION,
+  LURE_BITE_CHANCE_PER_LEVEL,
   LURING_REEL_MAX_SPEED,
   RESULT_DURATION,
   INITIAL_PLAYER_STATE,
@@ -27,8 +28,6 @@ import {
   XP_LOSS,
   applyLureXp,
   computeLureLevel,
-  lurePriceMultiplier,
-  lureReelMaxSpeedMultiplier,
 } from "../util/constants";
 import { PlayerStats } from "../stores/playerStore";
 
@@ -168,9 +167,6 @@ function evalLure(
   for (const [lureId, pool] of groups) {
     if (lureId && !ownedLures.has(lureId)) continue;
 
-    const lureLevel = computeLureLevel(lureXpMap[lureId] ?? 0);
-    const priceMultiplier = lurePriceMultiplier(lureLevel);
-
     let totalEarnings = 0;
     let totalFightTime = 0;
     let totalWinRate = 0;
@@ -187,7 +183,7 @@ function evalLure(
           player,
           evalTrials,
         );
-        const avgEarnings = (variant.basePrice * priceMultiplier * winCount) / evalTrials;
+        const avgEarnings = (variant.basePrice * winCount) / evalTrials;
         fishTotalTime += avgFightTime * rarityWeight;
         fishTotalEarnings += avgEarnings * rarityWeight;
         totalEarnings += avgEarnings * combinedWeight;
@@ -240,12 +236,12 @@ function perCastOverhead(
     castMax > CAST_MIN ? (effectiveCast - CAST_MIN) / (castMax - CAST_MIN) : 0;
   const chargeTime = lerp(0, CAST_CHARGE_DURATION / 1000, castT);
   const castAnimDuration = lerp(CAST_DURATION_MIN, CAST_DURATION_MAX, castT);
-  const reelMaxSpeed = lureReelMaxSpeedMultiplier(lureLevel) * LURING_REEL_MAX_SPEED;
-  const luringTime = expectedLuringTime(effectiveCast, reelMaxSpeed);
+  const luringTime = expectedLuringTime(effectiveCast, LURING_REEL_MAX_SPEED, lureLevel);
   return chargeTime + castAnimDuration + luringTime + RESULT_DURATION / 1000;
 }
 
-function expectedLuringTime(effectiveCast: number, reelMaxSpeed = LURING_REEL_MAX_SPEED): number {
+function expectedLuringTime(effectiveCast: number, reelMaxSpeed = LURING_REEL_MAX_SPEED, lureLevel = 0): number {
+  const biteChance = TARGET_BITE_CHANCE + lureLevel * LURE_BITE_CHANCE_PER_LEVEL;
   const zoneOrder = [Zone.FAR, Zone.MID, Zone.CLOSE];
   let survivalProb = 1;
   let expectedDistance = 0;
@@ -254,8 +250,8 @@ function expectedLuringTime(effectiveCast: number, reelMaxSpeed = LURING_REEL_MA
     if (effectiveCast < zMin) continue;
     const entryDistance = Math.min(effectiveCast, zMax);
     const reelDistance = entryDistance - zMin;
-    expectedDistance += survivalProb * TARGET_BITE_CHANCE * reelDistance;
-    survivalProb *= 1 - TARGET_BITE_CHANCE;
+    expectedDistance += survivalProb * biteChance * reelDistance;
+    survivalProb *= 1 - biteChance;
   }
 
   // Chance of going through without any hooks
@@ -383,7 +379,6 @@ export function computeLureStats(
   locationData: LocationFishEntry[],
   player: PlayerStats,
   trialsPerFish: number,
-  lureLevels: Record<string, number> = {},
 ): {
   rates: Record<string, number>;
   earnings: Record<string, number>;
@@ -403,7 +398,6 @@ export function computeLureStats(
   const remainingHPs: Record<string, number> = {};
 
   for (const [lureId, pool] of fishByLure) {
-    const priceMultiplier = lurePriceMultiplier(lureLevels[lureId] ?? 0);
     let totalEarnings = 0;
     let totalFightTime = 0;
     let totalWinRate = 0;
@@ -418,7 +412,7 @@ export function computeLureStats(
           player,
           trialsPerFish,
         );
-        const avgEarnings = (variant.basePrice * priceMultiplier * winCount) / trialsPerFish;
+        const avgEarnings = (variant.basePrice * winCount) / trialsPerFish;
         totalEarnings += avgEarnings * combinedWeight;
         totalFightTime += avgFightTime * combinedWeight;
         totalWinRate += (winCount / trialsPerFish) * combinedWeight;
@@ -502,9 +496,8 @@ export function simulateEconomy(
           ? Math.max(...validZones.map((z) => ZONE_RANGES[z][1]))
           : player.castMax;
       const effectiveCast = Math.min(player.castMax, maxZoneDist);
-      const reelMaxSpeed = lureReelMaxSpeedMultiplier(lureLevel) * LURING_REEL_MAX_SPEED;
       const avgLuringDist =
-        expectedLuringTime(effectiveCast, reelMaxSpeed) * reelMaxSpeed;
+        expectedLuringTime(effectiveCast, LURING_REEL_MAX_SPEED, lureLevel) * LURING_REEL_MAX_SPEED;
       const winRate = lureWinRates[lureId] ?? 0;
       const xpPerRound =
         player.inventorySize *

@@ -20,6 +20,7 @@ export function EconomyChart({
   data,
   maxTime = 0,
   xTicks,
+  integerXAxis,
   integerYAxis,
   yDomain,
   yTickFormatter,
@@ -38,6 +39,7 @@ export function EconomyChart({
   data: object[];
   maxTime?: number;
   xTicks?: number[];
+  integerXAxis?: boolean;
   integerYAxis?: boolean;
   yDomain?: [number | string, number | string];
   yTickFormatter?: (v: number) => string;
@@ -68,6 +70,7 @@ export function EconomyChart({
             type="number"
             domain={xDomain ?? [0, maxTime]}
             ticks={xTicks}
+            allowDecimals={!integerXAxis}
             tickFormatter={xTickFormatter ?? ((v: number) => `${v / 60}`)}
             label={
               xLabel
