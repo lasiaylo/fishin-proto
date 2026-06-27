@@ -8,26 +8,25 @@ import {
 import { avgZoneDistance } from "../util/zones";
 import { lerp } from "../util/easing";
 import {
-  CAST_MIN,
-  CAST_DURATION_MIN,
-  CAST_DURATION_MAX,
+  applyLureXp,
   CAST_CHARGE_DURATION,
+  CAST_DURATION_MAX,
+  CAST_DURATION_MIN,
+  CAST_MIN,
+  computeLureLevel,
+  INITIAL_PLAYER_STATE,
   LURE_BITE_CHANCE_PER_LEVEL,
   LURING_REEL_MAX_SPEED,
-  RESULT_DURATION,
-  INITIAL_PLAYER_STATE,
-  TARGET_BITE_CHANCE,
-  ZONE_RANGES,
-  Zone,
   Rarity,
-  RARITY_WEIGHTS,
   RARITY_PRICE_MULTIPLIER,
   RARITY_STAT_MULTIPLIER,
+  RARITY_WEIGHTS,
+  RESULT_DURATION,
+  TARGET_BITE_CHANCE,
   XP_PER_DISTANCE,
   XP_WIN,
-  XP_LOSS,
-  applyLureXp,
-  computeLureLevel,
+  Zone,
+  ZONE_RANGES,
 } from "../util/constants";
 import { PlayerStats } from "../stores/playerStore";
 
@@ -208,15 +207,15 @@ function evalLure(
     if (totalFightTime === 0) continue;
 
     const avgFightTime = totalFightTime;
-    const avgEarningsPerCast = totalEarnings;
-    const rate = avgEarningsPerCast / avgFightTime;
+    const avgEarningsPerFight = totalEarnings;
+    const rate = avgEarningsPerFight / avgFightTime;
     lureRates[lureId] = rate;
     lureWinRates[lureId] = totalWinRate;
     lureRemainingHP[lureId] = totalRemainingHP;
 
     if (bestRate === undefined || rate >= bestRate) {
       bestRate = rate;
-      best = { lureId, avgFightTime, avgEarningsPerCast };
+      best = { lureId, avgFightTime, avgEarningsPerFight };
     }
   }
 
