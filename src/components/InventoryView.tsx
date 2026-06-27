@@ -89,10 +89,10 @@ export function InventoryView() {
           cooler
         </Text>
         {Array.from({ length: inventorySize }).map((_, i) => {
-          const fish = inventory[i];
+          const item = inventory[i];
           return (
-            <Code key={i} size="1" color={fish ? undefined : "gray"}>
-              {fish ? `${fish.name}` : "—"}
+            <Code key={i} size="1" color={item ? undefined : "gray"}>
+              {item ? `${item.fish.name}` : "—"}
             </Code>
           );
         })}

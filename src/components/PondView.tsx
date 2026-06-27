@@ -11,7 +11,7 @@ import { pushEvent } from "../stores/eventLogStore";
 import { EventMsg } from "../util/eventMessages";
 import { FightEngine, FightState, Outcome } from "../game/FightEngine";
 import { useSessionLog } from "../stores/sessionLogStore";
-import { addLureXp } from "../stores/lureXpStore";
+import { addLureXp, useLureXp } from "../stores/lureXpStore";
 import {
   BITE_CHECK_INTERVAL,
   CAST_CHARGE_DURATION,
@@ -26,6 +26,7 @@ import {
   XP_LOSS,
   XP_PER_DISTANCE,
   XP_WIN,
+  lurePriceMultiplier,
 } from "../util/constants";
 
 import { ReelView } from "./ReelView";
@@ -221,6 +222,10 @@ export function PondView() {
     cancelAnimationFrame(rafRef.current);
     const fish = caughtFishRef.current!;
     const { lineHP, selectedLure } = usePlayer.getState();
+    const lureLevel = selectedLure
+      ? (useLureXp.getState().lures[selectedLure]?.level ?? 0)
+      : 0;
+    const effectivePrice = lurePriceMultiplier(lureLevel) * fish.basePrice;
 
     useSessionLog
       .getState()
@@ -231,17 +236,15 @@ export function PondView() {
         finalState.tension,
         lineHP,
         selectedLure ?? "",
+        effectivePrice,
       );
 
     if (selectedLure) {
-      addLureXp(
-        selectedLure,
-        hookXpRef.current + (result === Outcome.WIN ? XP_WIN : XP_LOSS),
-      );
+      addLureXp(selectedLure, result === Outcome.WIN ? XP_WIN : XP_LOSS);
     }
 
     if (result === Outcome.WIN) {
-      addFishToInventory(fish);
+      addFishToInventory(fish, effectivePrice);
       pushEvent(EventMsg.CAUGHT(fish.name));
     } else {
       pushEvent(EventMsg.ESCAPED);

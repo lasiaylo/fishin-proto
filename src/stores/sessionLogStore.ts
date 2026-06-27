@@ -7,6 +7,7 @@ import { computeLureLevel } from "../util/constants";
 
 interface CatchRecord {
   fish: FishData;
+  effectivePrice: number;
   duration: number;
   remainingHP: number; // fraction 0–1
   lureId: string;
@@ -45,6 +46,7 @@ interface SessionLogState {
     finalTension: number,
     lineHP: number,
     lureId: string,
+    effectivePrice: number,
   ) => void;
   logUpgradeBought: (
     upgradeId: string,
@@ -103,7 +105,7 @@ export const useSessionLog = create<SessionLogState>((set, get) => ({
   lureStats: {},
   completedRounds: [],
 
-  logFishResult(fish, won, duration, finalTension, lineHP, lureId) {
+  logFishResult(fish, won, duration, finalTension, lineHP, lureId, effectivePrice) {
     set((s) => {
       const fishStats = { ...s.fishStats };
       const lureStats = { ...s.lureStats };
@@ -118,17 +120,17 @@ export const useSessionLog = create<SessionLogState>((set, get) => ({
         fishStats[fish.id] = applyWin(
           fishStats[fish.id],
           duration,
-          fish.basePrice,
+          effectivePrice,
           remainingHP,
         );
         lureStats[lureId] = applyWin(
           lureStats[lureId],
           duration,
-          fish.basePrice,
+          effectivePrice,
           remainingHP,
         );
         return {
-          catches: [...s.catches, { fish, duration, remainingHP, lureId }],
+          catches: [...s.catches, { fish, effectivePrice, duration, remainingHP, lureId }],
           fishStats,
           lureStats,
         };
@@ -161,7 +163,7 @@ export const useSessionLog = create<SessionLogState>((set, get) => ({
     const cumulativeTime = t - s.sessionStart;
     const roundCount = s.roundCount + 1;
 
-    const income = s.catches.reduce((sum, c) => sum + c.fish.basePrice, 0);
+    const income = s.catches.reduce((sum, c) => sum + c.effectivePrice, 0);
     const rate = roundTime > 0 ? income / roundTime : 0;
 
     const fightDuration =

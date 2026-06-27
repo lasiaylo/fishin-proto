@@ -9,11 +9,12 @@ export const FPS = 60;
 export const BASE_LURE_ID = "LURE_0";
 export const BASE_LURE_NAME = "Worm";
 
+const INIT_AD = 25;
 const CAST_MAX = 60;
 export const INITIAL_PLAYER_STATE: PlayerState = {
   wallet: 0,
-  attack: 10,
-  defense: 10,
+  attack: INIT_AD,
+  defense: INIT_AD,
   lineHP: 20,
   inventorySize: 3,
   castMax: CAST_MAX,
@@ -25,7 +26,13 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
 export const XP_PER_DISTANCE = 10 / CAST_MAX;
 export const XP_WIN = 15;
 export const XP_LOSS = 0;
-export const LURE_LEVEL_XP = [100, 120, 150, 170, 200];
+export const LURE_LEVEL_XP = [75, 120, 150, 170, 200];
+
+export const LURE_PRICE_MULTIPLIER_INCREMENT = 0.1;
+
+export function lurePriceMultiplier(level: number): number {
+  return 1 + level * LURE_PRICE_MULTIPLIER_INCREMENT;
+}
 
 export const RESULT_DURATION = 500;
 export const CAST_MIN = 5;

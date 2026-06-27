@@ -42,7 +42,7 @@ export function EconomyChart({
   yDomain?: [number | string, number | string];
   yTickFormatter?: (v: number) => string;
   tooltipFormatter?: (v: number, name: string, props: any) => any;
-  tooltipLabelFormatter?: (v: number) => string;
+  tooltipLabelFormatter?: (v: number, payload?: any[]) => React.ReactNode;
   header?: React.ReactNode;
   children: React.ReactNode;
   xDataKey?: string;

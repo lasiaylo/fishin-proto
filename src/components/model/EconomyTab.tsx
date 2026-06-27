@@ -121,7 +121,7 @@ export function EconomyTab({
     INITIAL_PLAYER_STATE.inventorySize,
   );
   const [castMax, setCastMax] = useState(INITIAL_PLAYER_STATE.castMax);
-  const [simMinutes, setSimMinutes] = useState(20);
+  const [simMinutes, setSimMinutes] = useState(10);
   const [evalTrials, setEvalTrials] = useState(100);
   const [running, setRunning] = useState(false);
 
@@ -546,6 +546,7 @@ export function EconomyTab({
         rate: parseFloat(r.rate.toFixed(4)),
         upgrade:
           r.upgradesBought.length > 0 ? parseFloat(r.rate.toFixed(4)) : null,
+        lureLevel: r.lureLevels[r.lureId] ?? 0,
       }))
     : [];
   const singlePairRoundData = isSinglePair
@@ -554,6 +555,7 @@ export function EconomyTab({
         income: parseFloat(r.income.toFixed(4)),
         upgrade:
           r.upgradesBought.length > 0 ? parseFloat(r.income.toFixed(4)) : null,
+        lureLevel: r.lureLevels[r.lureId] ?? 0,
       }))
     : [];
 
@@ -697,6 +699,10 @@ export function EconomyTab({
             <EconomyChart
               title="Income Rate ($/s)"
               data={isSinglePair ? singlePairRateData : []}
+              tooltipLabelFormatter={(v, payload) => {
+                const level = payload?.[0]?.payload?.lureLevel ?? 0;
+                return `${(v / 60).toFixed(2)} min · Lure Lvl ${level}`;
+              }}
               {...chartProps}
               header={
                 isSinglePair
@@ -775,6 +781,10 @@ export function EconomyTab({
               xDomain={[1, maxRound]}
               xTickFormatter={(v) => `${v}`}
               syncId="economy-round"
+              tooltipLabelFormatter={(v, payload) => {
+                const level = payload?.[0]?.payload?.lureLevel ?? 0;
+                return `Round ${v} · Lure Lvl ${level}`;
+              }}
               header={
                 isSinglePair
                   ? activeLureIds.map((id) => (

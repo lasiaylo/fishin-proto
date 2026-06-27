@@ -61,10 +61,7 @@ function evalFn(cfg: FunctionConfig, lvl: number): number {
   if (cfg.type === "LINEAR") return cfg.startValue + cfg.scaleFactor * lvl;
   if (cfg.type === "POLYNOMIAL")
     return cfg.startValue + cfg.scaleFactor * Math.pow(lvl, cfg.growthRate);
-  return (
-    cfg.startValue +
-    (cfg.scaleFactor * Math.pow(cfg.growthRate, lvl) - cfg.scaleFactor)
-  );
+  return cfg.startValue * Math.pow(cfg.growthRate, lvl);
 }
 
 function generateFishRows(
@@ -184,7 +181,9 @@ function generateShopRows(
 function fnConfigStr(cfg: FunctionConfig): string {
   if (cfg.type === "LINEAR")
     return `LINEAR startValue=${cfg.startValue} scaleFactor=${cfg.scaleFactor}`;
-  return `${cfg.type} startValue=${cfg.startValue} scaleFactor=${cfg.scaleFactor} growthRate=${cfg.growthRate}`;
+  if (cfg.type === "EXPONENTIAL")
+    return `EXPONENTIAL startValue=${cfg.startValue} growthRate=${cfg.growthRate}`;
+  return `POLYNOMIAL startValue=${cfg.startValue} scaleFactor=${cfg.scaleFactor} growthRate=${cfg.growthRate}`;
 }
 
 function downloadCsv(rows: string[][], filename: string, comment?: string) {
@@ -236,14 +235,16 @@ function FunctionSelect({
           max={99999}
           step={1}
         />
-        <NumInput
-          label="ScaleFactor"
-          value={value.scaleFactor}
-          onChange={(v) => onChange({ ...value, scaleFactor: v })}
-          min={-999}
-          max={99999}
-          step={0.5}
-        />
+        {value.type !== "EXPONENTIAL" && (
+          <NumInput
+            label="ScaleFactor"
+            value={value.scaleFactor}
+            onChange={(v) => onChange({ ...value, scaleFactor: v })}
+            min={-999}
+            max={99999}
+            step={0.5}
+          />
+        )}
         {(value.type === "POLYNOMIAL" || value.type === "EXPONENTIAL") && (
           <NumInput
             label="GrowthRate"

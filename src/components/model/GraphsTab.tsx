@@ -48,7 +48,7 @@ export function GraphsTab({
 }) {
   const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
   const [minStat, setMinStat] = useState(INITIAL_PLAYER_STATE.attack);
-  const [maxStat, setMaxStat] = useState(40);
+  const [maxStat, setMaxStat] = useState(INITIAL_PLAYER_STATE.attack + 10);
   const [trialsPerFish, setTrialsPerFish] = useState(100);
   const [inventorySize, setInventorySize] = useState(3);
   const [sweepData, setSweepData] = useState<object[]>([]);

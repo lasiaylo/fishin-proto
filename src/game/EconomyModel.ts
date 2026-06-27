@@ -25,6 +25,7 @@ import {
   XP_WIN,
   XP_LOSS,
   computeLureLevel,
+  lurePriceMultiplier,
 } from "../util/constants";
 
 const EVAL_TRIALS = 100;
@@ -121,6 +122,7 @@ function evalLure(
   ownedLures: Set<string>,
   fishWeights: Map<string, number>,
   evalTrials: number,
+  lureXpMap: Record<string, number> = {},
 ): {
   best: {
     lureId: string;
@@ -144,6 +146,9 @@ function evalLure(
   for (const [lureId, pool] of groups) {
     if (lureId && !ownedLures.has(lureId)) continue;
 
+    const lureLevel = computeLureLevel(lureXpMap[lureId] ?? 0);
+    const priceMultiplier = lurePriceMultiplier(lureLevel);
+
     let totalEarnings = 0;
     let totalFightTime = 0;
     let totalWinRate = 0;
@@ -157,7 +162,7 @@ function evalLure(
       );
       const weight = fishWeights.get(fish.id) ?? 1 / pool.length;
       catchTimes[fish.id] = avgFightTime;
-      const avgEarnings = (fish.basePrice * winCount) / evalTrials;
+      const avgEarnings = (fish.basePrice * priceMultiplier * winCount) / evalTrials;
       earnings[fish.id] = avgEarnings / avgFightTime;
       totalEarnings += avgEarnings * weight;
       totalFightTime += avgFightTime * weight;
@@ -347,6 +352,7 @@ export function computeLureStats(
   locationData: LocationFishEntry[],
   player: PlayerStats,
   trialsPerFish: number,
+  lureLevels: Record<string, number> = {},
 ): {
   rates: Record<string, number>;
   earnings: Record<string, number>;
@@ -366,6 +372,7 @@ export function computeLureStats(
   const remainingHPs: Record<string, number> = {};
 
   for (const [lureId, pool] of fishByLure) {
+    const priceMultiplier = lurePriceMultiplier(lureLevels[lureId] ?? 0);
     let totalEarnings = 0;
     let totalFightTime = 0;
     let totalWinRate = 0;
@@ -378,7 +385,7 @@ export function computeLureStats(
         trialsPerFish,
       );
       const weight = fishWeights.get(fish.id) ?? 1 / pool.length;
-      const avgEarnings = (fish.basePrice * winCount) / trialsPerFish;
+      const avgEarnings = (fish.basePrice * priceMultiplier * winCount) / trialsPerFish;
       totalEarnings += avgEarnings * weight;
       totalFightTime += avgFightTime * weight;
       totalWinRate += (winCount / trialsPerFish) * weight;
@@ -442,7 +449,7 @@ export function simulateEconomy(
       lureRates,
       lureWinRates,
       lureRemainingHP,
-    } = evalLure(fishByLure, player, ownedLures, fishWeights, evalTrials);
+    } = evalLure(fishByLure, player, ownedLures, fishWeights, evalTrials, lureXpMap);
     if (!best) break;
 
     const { lureId, avgFightTime, avgEarningsPerCast } = best;
