@@ -92,7 +92,13 @@ export function PondView() {
         }
       }
       if (e.key === "=") {
-        addFishToInventory(useFish.getState().allFish[0]);
+        const fish = useFish.getState().allFish[0];
+        const { selectedLure } = usePlayer.getState();
+        const lureLevel = selectedLure
+          ? (useLureXp.getState().lures[selectedLure]?.level ?? 0)
+          : 0;
+        const effectivePrice = Math.round(lurePriceMultiplier(lureLevel) * fish.basePrice);
+        addFishToInventory(fish, effectivePrice);
       }
     }
     window.addEventListener("keydown", handleKey);
@@ -225,7 +231,7 @@ export function PondView() {
     const lureLevel = selectedLure
       ? (useLureXp.getState().lures[selectedLure]?.level ?? 0)
       : 0;
-    const effectivePrice = lurePriceMultiplier(lureLevel) * fish.basePrice;
+    const effectivePrice = Math.round(lurePriceMultiplier(lureLevel) * fish.basePrice);
 
     useSessionLog
       .getState()
