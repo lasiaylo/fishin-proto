@@ -18,16 +18,18 @@ import {
   CAST_DURATION_MAX,
   CAST_DURATION_MIN,
   CAST_MIN,
+  lurePriceMultiplier,
+  lureReelMaxSpeedMultiplier,
   LURING_REEL_ACCEL,
   LURING_REEL_DECEL,
   LURING_REEL_MAX_SPEED,
+  Rarity,
+  RARITY_COLOR,
   REEL_MIN,
   RESULT_DURATION,
   XP_LOSS,
   XP_PER_DISTANCE,
   XP_WIN,
-  lurePriceMultiplier,
-  lureReelMaxSpeedMultiplier,
 } from "../util/constants";
 
 import { ReelView } from "./ReelView";
@@ -92,14 +94,27 @@ export function PondView() {
           startFight();
         }
       }
-      if (e.key === "=") {
+
+      function addFish(rarity: Rarity) {
         const fish = useFish.getState().allFish[0];
         const { selectedLure } = usePlayer.getState();
         const lureLevel = selectedLure
           ? (useLureXp.getState().lures[selectedLure]?.level ?? 0)
           : 0;
-        const effectivePrice = Math.round(lurePriceMultiplier(lureLevel) * fish.basePrice);
+        fish.rarity = rarity;
+        const effectivePrice = Math.round(
+          lurePriceMultiplier(lureLevel) * fish.basePrice,
+        );
         addFishToInventory(fish, effectivePrice);
+      }
+      if (e.key === "0") {
+        addFish(Rarity.COMMON);
+      }
+      if (e.key === "-") {
+        addFish(Rarity.UNCOMMON);
+      }
+      if (e.key === "=") {
+        addFish(Rarity.RARE);
       }
     }
     window.addEventListener("keydown", handleKey);
@@ -132,7 +147,8 @@ export function PondView() {
     const lureLevel = selectedLure
       ? (useLureXp.getState().lures[selectedLure]?.level ?? 0)
       : 0;
-    const effectiveReelMaxSpeed = lureReelMaxSpeedMultiplier(lureLevel) * LURING_REEL_MAX_SPEED;
+    const effectiveReelMaxSpeed =
+      lureReelMaxSpeedMultiplier(lureLevel) * LURING_REEL_MAX_SPEED;
 
     function loop(timestamp: number) {
       if (luringLastTimeRef.current === null)
@@ -238,7 +254,9 @@ export function PondView() {
     const lureLevel = selectedLure
       ? (useLureXp.getState().lures[selectedLure]?.level ?? 0)
       : 0;
-    const effectivePrice = Math.round(lurePriceMultiplier(lureLevel) * fish.basePrice);
+    const effectivePrice = Math.round(
+      lurePriceMultiplier(lureLevel) * fish.basePrice,
+    );
 
     useSessionLog
       .getState()
@@ -258,7 +276,12 @@ export function PondView() {
 
     if (result === Outcome.WIN) {
       addFishToInventory(fish, effectivePrice);
-      pushEvent(EventMsg.CAUGHT(fish.name));
+      const msg = EventMsg.CAUGHT(fish.name);
+      pushEvent(
+        msg[0],
+        msg[1],
+        fish.rarity ? RARITY_COLOR[fish.rarity] : undefined,
+      );
     } else {
       pushEvent(EventMsg.ESCAPED);
     }

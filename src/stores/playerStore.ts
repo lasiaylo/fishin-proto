@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { FishData } from "../util/csvLoader";
-import { INITIAL_PLAYER_STATE } from "../util/constants";
+import { INITIAL_PLAYER_STATE, Rarity } from "../util/constants";
 
 export interface PlayerStats {
   attack: number;
@@ -14,6 +14,7 @@ export interface PlayerStats {
 export interface InventoryFish {
   fish: FishData;
   effectivePrice: number;
+  rarity: Rarity;
 }
 
 export interface PlayerState extends PlayerStats {
@@ -74,7 +75,12 @@ export function setSelectedLure(lureId: string | null) {
 export function addFishToInventory(fish: FishData, effectivePrice: number) {
   usePlayer.setState((s) => {
     if (s.inventory.length >= s.inventorySize) return s;
-    return { inventory: [...s.inventory, { fish, effectivePrice }] };
+    return {
+      inventory: [
+        ...s.inventory,
+        { fish, effectivePrice, rarity: fish.rarity ?? Rarity.COMMON },
+      ],
+    };
   });
 }
 

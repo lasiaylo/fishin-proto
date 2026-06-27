@@ -82,7 +82,7 @@ function generateFishRows(
       "HP",
     ],
   ];
-  let idx = 1;
+  let idx = 0;
 
   // Level 0: one fish, requires starter lure LURE_0
   const s0 = Math.ceil(evalFn(statsFn, 0));

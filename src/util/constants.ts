@@ -12,7 +12,7 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
   wallet: 0,
   attack: INIT_AD,
   defense: INIT_AD,
-  lineHP: 10,
+  lineHP: 15,
   inventorySize: 3,
   castMax: CAST_MAX,
   ownedLures: new Set<string>([BASE_LURE_ID]),
@@ -69,6 +69,45 @@ export function applyLureXp(
     ? LURE_LEVEL_XP.slice(0, newLevel).reduce((a, b) => a + b, 0)
     : rawXp;
   return { xp, level: newLevel, leveledUp };
+}
+
+// Rarity
+export enum Rarity {
+  COMMON = "COMMON",
+  UNCOMMON = "UNCOMMON",
+  RARE = "RARE",
+}
+
+export const RARITY_WEIGHTS: Record<Rarity, number> = {
+  [Rarity.COMMON]: 0.6,
+  [Rarity.UNCOMMON]: 0.35,
+  [Rarity.RARE]: 0.05,
+};
+
+export const RARITY_PRICE_MULTIPLIER: Record<Rarity, number> = {
+  [Rarity.COMMON]: 1.0,
+  [Rarity.UNCOMMON]: 1.5,
+  [Rarity.RARE]: 3.0,
+};
+
+export const RARITY_STAT_MULTIPLIER: Record<Rarity, number> = {
+  [Rarity.COMMON]: 1.0,
+  [Rarity.UNCOMMON]: 1.1,
+  [Rarity.RARE]: 1.3,
+};
+
+export const RARITY_COLOR: Record<Rarity, "gray" | "blue" | "amber"> = {
+  [Rarity.COMMON]: "gray",
+  [Rarity.UNCOMMON]: "blue",
+  [Rarity.RARE]: "amber",
+};
+
+export function rollRarity(): Rarity {
+  const r = Math.random();
+  if (r < RARITY_WEIGHTS[Rarity.RARE]) return Rarity.RARE;
+  if (r < RARITY_WEIGHTS[Rarity.RARE] + RARITY_WEIGHTS[Rarity.UNCOMMON])
+    return Rarity.UNCOMMON;
+  return Rarity.COMMON;
 }
 
 // Bite Chances

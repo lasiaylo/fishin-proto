@@ -24,6 +24,11 @@ export function EventView() {
             color="gray"
           >
             {event.msg}
+            {event.colored && (
+              <Text as="span" size="1" color={event.color as "gray"}>
+                {event.colored}
+              </Text>
+            )}
           </Text>
         ))}
       </Flex>

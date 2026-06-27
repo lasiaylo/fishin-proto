@@ -8,6 +8,7 @@ import {
   BASE_LURE_ID,
   BASE_LURE_NAME,
   CURRENCY_SYMBOL,
+  RARITY_COLOR,
 } from "../util/constants";
 
 export function InventoryView() {
@@ -91,7 +92,7 @@ export function InventoryView() {
         {Array.from({ length: inventorySize }).map((_, i) => {
           const item = inventory[i];
           return (
-            <Code key={i} size="1" color={item ? undefined : "gray"}>
+            <Code key={i} size="1" color={item ? RARITY_COLOR[item.rarity] : "gray"}>
               {item ? `${item.fish.name}` : "—"}
             </Code>
           );

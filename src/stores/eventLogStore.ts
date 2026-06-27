@@ -6,6 +6,8 @@ const MAX_EVENTS = 30;
 export interface LogEvent {
   id: number;
   msg: string;
+  colored?: string;
+  color?: string;
 }
 
 interface EventLogState {
@@ -20,9 +22,9 @@ export const useEventLog = create(
   })),
 );
 
-export function pushEvent(msg: string) {
+export function pushEvent(msg: string, colored?: string, color?: string) {
   useEventLog.setState((state) => ({
-    events: [{ id: state.nextId, msg }, ...state.events].slice(0, MAX_EVENTS),
+    events: [{ id: state.nextId, msg, colored, color }, ...state.events].slice(0, MAX_EVENTS),
     nextId: state.nextId + 1,
   }));
 }

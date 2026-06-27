@@ -1,4 +1,4 @@
-import { Zone } from "./constants";
+import { Rarity, Zone } from "./constants";
 
 export interface FishData {
   id: string;
@@ -10,6 +10,7 @@ export interface FishData {
   thrash: number;
   zones: Zone[];
   hp: number;
+  rarity?: Rarity;
 }
 
 export enum StatName {

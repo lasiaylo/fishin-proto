@@ -4,26 +4,38 @@ import { ShopView } from "./ShopView";
 import { PondView } from "./PondView";
 import { sellAllFish, usePlayer } from "../stores/playerStore";
 import { pushEvent } from "../stores/eventLogStore";
-import { EventMsg } from "../util/eventMessages";
 import { useSessionLog } from "../stores/sessionLogStore";
+import { RARITY_COLOR } from "../util/constants";
+import { EventMsg } from "../util/eventMessages";
 
 export function ActionsSection() {
   const [tab, setTab] = useState("pond");
 
   function handleTabChange(value: string) {
     if (value === "shop") {
-      const { inventory, wallet, attack, defense, lineHP, inventorySize, castMax } =
-        usePlayer.getState();
+      const {
+        inventory,
+        wallet,
+        attack,
+        defense,
+        lineHP,
+        inventorySize,
+        castMax,
+      } = usePlayer.getState();
       if (inventory.length > 0) {
-        useSessionLog
-          .getState()
-          .finalizeRound(wallet, { attack, defense, lineHP, inventorySize, castMax });
+        useSessionLog.getState().finalizeRound(wallet, {
+          attack,
+          defense,
+          lineHP,
+          inventorySize,
+          castMax,
+        });
         sellAllFish();
         inventory.forEach((fish, i) =>
-          setTimeout(
-            () => pushEvent(EventMsg.SOLD_FISH(fish.fish.name, fish.effectivePrice)),
-            i * 400,
-          ),
+          setTimeout(() => {
+            const msg = EventMsg.SOLD_FISH(fish.fish.name, fish.effectivePrice);
+            pushEvent(msg[0], msg[1], RARITY_COLOR[fish.rarity]);
+          }, i * 400),
         );
       }
     }

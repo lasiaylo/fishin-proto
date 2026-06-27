@@ -18,9 +18,10 @@ import {
   TARGET_BITE_CHANCE,
   ZONE_RANGES,
   Zone,
-} from "../util/constants";
-import { PlayerStats } from "../stores/playerStore";
-import {
+  Rarity,
+  RARITY_WEIGHTS,
+  RARITY_PRICE_MULTIPLIER,
+  RARITY_STAT_MULTIPLIER,
   XP_PER_DISTANCE,
   XP_WIN,
   XP_LOSS,
@@ -29,6 +30,7 @@ import {
   lurePriceMultiplier,
   lureReelMaxSpeedMultiplier,
 } from "../util/constants";
+import { PlayerStats } from "../stores/playerStore";
 
 const EVAL_TRIALS = 100;
 const MAX_ROUNDS = 100;
@@ -64,6 +66,24 @@ export interface EconomyRound {
 }
 
 // ── Helpers ──
+
+function expandFishByRarity(
+  fish: FishData,
+): Array<{ fish: FishData; weight: number }> {
+  const rarities = fish.id === "FISH_0" ? [Rarity.COMMON] : (Object.values(Rarity) as Rarity[]);
+  const totalWeight = rarities.reduce((s, r) => s + RARITY_WEIGHTS[r], 0);
+  return rarities.map((rarity) => ({
+    fish: {
+      ...fish,
+      attack: fish.attack * RARITY_STAT_MULTIPLIER[rarity],
+      defense: fish.defense * RARITY_STAT_MULTIPLIER[rarity],
+      thrash: fish.thrash * RARITY_STAT_MULTIPLIER[rarity],
+      hp: fish.hp * RARITY_STAT_MULTIPLIER[rarity],
+      basePrice: fish.basePrice * RARITY_PRICE_MULTIPLIER[rarity],
+    },
+    weight: RARITY_WEIGHTS[rarity] / totalWeight,
+  }));
+}
 
 function runTrials(
   fish: FishData,
@@ -157,20 +177,27 @@ function evalLure(
     let totalRemainingHP = 0;
 
     for (const fish of pool) {
-      const { winCount, avgFightTime, avgWinTension } = runTrials(
-        fish,
-        player,
-        evalTrials,
-      );
-      const weight = fishWeights.get(fish.id) ?? 1 / pool.length;
-      catchTimes[fish.id] = avgFightTime;
-      const avgEarnings = (fish.basePrice * priceMultiplier * winCount) / evalTrials;
-      earnings[fish.id] = avgEarnings / avgFightTime;
-      totalEarnings += avgEarnings * weight;
-      totalFightTime += avgFightTime * weight;
-      totalWinRate += (winCount / evalTrials) * weight;
-      totalRemainingHP +=
-        ((player.lineHP - avgWinTension) / player.lineHP) * 100 * weight;
+      const fishWeight = fishWeights.get(fish.id) ?? 1 / pool.length;
+      let fishTotalTime = 0;
+      let fishTotalEarnings = 0;
+      for (const { fish: variant, weight: rarityWeight } of expandFishByRarity(fish)) {
+        const combinedWeight = fishWeight * rarityWeight;
+        const { winCount, avgFightTime, avgWinTension } = runTrials(
+          variant,
+          player,
+          evalTrials,
+        );
+        const avgEarnings = (variant.basePrice * priceMultiplier * winCount) / evalTrials;
+        fishTotalTime += avgFightTime * rarityWeight;
+        fishTotalEarnings += avgEarnings * rarityWeight;
+        totalEarnings += avgEarnings * combinedWeight;
+        totalFightTime += avgFightTime * combinedWeight;
+        totalWinRate += (winCount / evalTrials) * combinedWeight;
+        totalRemainingHP +=
+          ((player.lineHP - avgWinTension) / player.lineHP) * 100 * combinedWeight;
+      }
+      catchTimes[fish.id] = fishTotalTime;
+      earnings[fish.id] = fishTotalTime > 0 ? fishTotalEarnings / fishTotalTime : 0;
     }
 
     // totalFightTime and totalEarnings are already weighted averages (weights sum to 1)
@@ -383,20 +410,23 @@ export function computeLureStats(
     let totalRemainingHP = 0;
     let totalWinWeight = 0;
     for (const fish of pool) {
-      const { winCount, avgFightTime, avgWinTension } = runTrials(
-        fish,
-        player,
-        trialsPerFish,
-      );
-      const weight = fishWeights.get(fish.id) ?? 1 / pool.length;
-      const avgEarnings = (fish.basePrice * priceMultiplier * winCount) / trialsPerFish;
-      totalEarnings += avgEarnings * weight;
-      totalFightTime += avgFightTime * weight;
-      totalWinRate += (winCount / trialsPerFish) * weight;
-      if (winCount > 0) {
-        totalRemainingHP +=
-          ((player.lineHP - avgWinTension) / player.lineHP) * 100 * weight;
-        totalWinWeight += weight;
+      const fishWeight = fishWeights.get(fish.id) ?? 1 / pool.length;
+      for (const { fish: variant, weight: rarityWeight } of expandFishByRarity(fish)) {
+        const combinedWeight = fishWeight * rarityWeight;
+        const { winCount, avgFightTime, avgWinTension } = runTrials(
+          variant,
+          player,
+          trialsPerFish,
+        );
+        const avgEarnings = (variant.basePrice * priceMultiplier * winCount) / trialsPerFish;
+        totalEarnings += avgEarnings * combinedWeight;
+        totalFightTime += avgFightTime * combinedWeight;
+        totalWinRate += (winCount / trialsPerFish) * combinedWeight;
+        if (winCount > 0) {
+          totalRemainingHP +=
+            ((player.lineHP - avgWinTension) / player.lineHP) * 100 * combinedWeight;
+          totalWinWeight += combinedWeight;
+        }
       }
     }
     // totalFightTime is already a weighted average (weights sum to 1)
