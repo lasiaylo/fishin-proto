@@ -69,7 +69,10 @@ export interface EconomyRound {
 function expandFishByRarity(
   fish: FishData,
 ): Array<{ fish: FishData; weight: number }> {
-  const rarities = fish.id === "FISH_0" ? [Rarity.COMMON] : (Object.values(Rarity) as Rarity[]);
+  const rarities =
+    fish.id === "FISH_0"
+      ? [Rarity.COMMON]
+      : (Object.values(Rarity) as Rarity[]);
   const totalWeight = rarities.reduce((s, r) => s + RARITY_WEIGHTS[r], 0);
   return rarities.map((rarity) => ({
     fish: {
@@ -148,7 +151,7 @@ function evalLure(
   best: {
     lureId: string;
     avgFightTime: number;
-    avgEarningsPerCast: number;
+    avgEarningsPerFight: number;
   } | null;
   catchTimes: Record<string, number>;
   earnings: Record<string, number>;
@@ -176,7 +179,9 @@ function evalLure(
       const fishWeight = fishWeights.get(fish.id) ?? 1 / pool.length;
       let fishTotalTime = 0;
       let fishTotalEarnings = 0;
-      for (const { fish: variant, weight: rarityWeight } of expandFishByRarity(fish)) {
+      for (const { fish: variant, weight: rarityWeight } of expandFishByRarity(
+        fish,
+      )) {
         const combinedWeight = fishWeight * rarityWeight;
         const { winCount, avgFightTime, avgWinTension } = runTrials(
           variant,
@@ -190,10 +195,13 @@ function evalLure(
         totalFightTime += avgFightTime * combinedWeight;
         totalWinRate += (winCount / evalTrials) * combinedWeight;
         totalRemainingHP +=
-          ((player.lineHP - avgWinTension) / player.lineHP) * 100 * combinedWeight;
+          ((player.lineHP - avgWinTension) / player.lineHP) *
+          100 *
+          combinedWeight;
       }
       catchTimes[fish.id] = fishTotalTime;
-      earnings[fish.id] = fishTotalTime > 0 ? fishTotalEarnings / fishTotalTime : 0;
+      earnings[fish.id] =
+        fishTotalTime > 0 ? fishTotalEarnings / fishTotalTime : 0;
     }
 
     // totalFightTime and totalEarnings are already weighted averages (weights sum to 1)
@@ -236,12 +244,21 @@ function perCastOverhead(
     castMax > CAST_MIN ? (effectiveCast - CAST_MIN) / (castMax - CAST_MIN) : 0;
   const chargeTime = lerp(0, CAST_CHARGE_DURATION / 1000, castT);
   const castAnimDuration = lerp(CAST_DURATION_MIN, CAST_DURATION_MAX, castT);
-  const luringTime = expectedLuringTime(effectiveCast, LURING_REEL_MAX_SPEED, lureLevel);
+  const luringTime = expectedLuringTime(
+    effectiveCast,
+    LURING_REEL_MAX_SPEED,
+    lureLevel,
+  );
   return chargeTime + castAnimDuration + luringTime + RESULT_DURATION / 1000;
 }
 
-function expectedLuringTime(effectiveCast: number, reelMaxSpeed = LURING_REEL_MAX_SPEED, lureLevel = 0): number {
-  const biteChance = TARGET_BITE_CHANCE + lureLevel * LURE_BITE_CHANCE_PER_LEVEL;
+function expectedLuringTime(
+  effectiveCast: number,
+  reelMaxSpeed = LURING_REEL_MAX_SPEED,
+  lureLevel = 0,
+): number {
+  const biteChance =
+    TARGET_BITE_CHANCE + lureLevel * LURE_BITE_CHANCE_PER_LEVEL;
   const zoneOrder = [Zone.FAR, Zone.MID, Zone.CLOSE];
   let survivalProb = 1;
   let expectedDistance = 0;
@@ -257,6 +274,20 @@ function expectedLuringTime(effectiveCast: number, reelMaxSpeed = LURING_REEL_MA
   // Chance of going through without any hooks
   expectedDistance += survivalProb * effectiveCast;
   return expectedDistance / reelMaxSpeed;
+}
+
+// Probability of getting at least one bite on a single full cast.
+function castBiteProbability(effectiveCast: number, lureLevel = 0): number {
+  const biteChance =
+    TARGET_BITE_CHANCE + lureLevel * LURE_BITE_CHANCE_PER_LEVEL;
+  const zoneOrder = [Zone.FAR, Zone.MID, Zone.CLOSE];
+  let survivalProb = 1;
+  for (const zone of zoneOrder) {
+    const [zMin] = ZONE_RANGES[zone];
+    if (effectiveCast < zMin) continue;
+    survivalProb *= 1 - biteChance;
+  }
+  return 1 - survivalProb;
 }
 
 function cheapestUpgrade(
@@ -405,7 +436,9 @@ export function computeLureStats(
     let totalWinWeight = 0;
     for (const fish of pool) {
       const fishWeight = fishWeights.get(fish.id) ?? 1 / pool.length;
-      for (const { fish: variant, weight: rarityWeight } of expandFishByRarity(fish)) {
+      for (const { fish: variant, weight: rarityWeight } of expandFishByRarity(
+        fish,
+      )) {
         const combinedWeight = fishWeight * rarityWeight;
         const { winCount, avgFightTime, avgWinTension } = runTrials(
           variant,
@@ -418,7 +451,9 @@ export function computeLureStats(
         totalWinRate += (winCount / trialsPerFish) * combinedWeight;
         if (winCount > 0) {
           totalRemainingHP +=
-            ((player.lineHP - avgWinTension) / player.lineHP) * 100 * combinedWeight;
+            ((player.lineHP - avgWinTension) / player.lineHP) *
+            100 *
+            combinedWeight;
           totalWinWeight += combinedWeight;
         }
       }
@@ -477,33 +512,59 @@ export function simulateEconomy(
       lureRates,
       lureWinRates,
       lureRemainingHP,
-    } = evalLure(fishByLure, player, ownedLures, fishWeights, evalTrials, lureXpMap);
+    } = evalLure(
+      fishByLure,
+      player,
+      ownedLures,
+      fishWeights,
+      evalTrials,
+      lureXpMap,
+    );
     if (!best) break;
 
-    const { lureId, avgFightTime, avgEarningsPerCast } = best;
+    const { lureId, avgFightTime, avgEarningsPerFight } = best;
     const lureLevel = computeLureLevel(lureXpMap[lureId] ?? 0);
-    const overhead = perCastOverhead(player.castMax, lureId, fishByLure, lureLevel);
-    const roundTime = player.inventorySize * (overhead + avgFightTime);
-    const income = player.inventorySize * avgEarningsPerCast;
+    const overhead = perCastOverhead(
+      player.castMax,
+      lureId,
+      fishByLure,
+      lureLevel,
+    );
+    if (!(lureId in lureWinRates))
+      throw new Error(`No win rate for lureId "${lureId}"`);
+    const winRate = Math.max(lureWinRates[lureId], 0.001);
+
+    // pBite: probability of getting a fight on a single cast
+    const pool = fishByLure.get(lureId) ?? [];
+    const validZones = [...new Set(pool.flatMap((f) => f.zones))];
+    const maxZoneDist =
+      validZones.length > 0
+        ? Math.max(...validZones.map((z) => ZONE_RANGES[z][1]))
+        : player.castMax;
+    const effectiveCast = Math.min(player.castMax, maxZoneDist);
+    const pBite = Math.max(
+      castBiteProbability(effectiveCast, lureLevel),
+      0.001,
+    );
+
+    // Each inventory slot needs 1/(pBite*winRate) expected casts.
+    // Each cast costs overhead; a cast that gets a bite also costs a fight.
+    const catchTime = (1 / winRate) * (overhead / pBite + avgFightTime);
+    const roundTime = player.inventorySize * catchTime;
+    // A round always fills the inventory, so income = slots * price-per-catch.
+    const income = player.inventorySize * (avgEarningsPerFight / winRate);
     wallet += income;
     cumulativeTime += roundTime;
 
     if (lureId) {
-      const pool = fishByLure.get(lureId) ?? [];
-      const validZones = [...new Set(pool.flatMap((f) => f.zones))];
-      const maxZoneDist =
-        validZones.length > 0
-          ? Math.max(...validZones.map((z) => ZONE_RANGES[z][1]))
-          : player.castMax;
-      const effectiveCast = Math.min(player.castMax, maxZoneDist);
       const avgLuringDist =
-        expectedLuringTime(effectiveCast, LURING_REEL_MAX_SPEED, lureLevel) * LURING_REEL_MAX_SPEED;
-      const winRate = lureWinRates[lureId] ?? 0;
+        expectedLuringTime(effectiveCast, LURING_REEL_MAX_SPEED, lureLevel) *
+        LURING_REEL_MAX_SPEED;
+      // Total casts per round = inventorySize / (pBite * winRate)
+      const castsPerRound = player.inventorySize / (pBite * winRate);
       const xpPerRound =
-        player.inventorySize *
-        (avgLuringDist * XP_PER_DISTANCE +
-          winRate * XP_WIN +
-          (1 - winRate) * XP_LOSS);
+        castsPerRound *
+        (avgLuringDist * XP_PER_DISTANCE + pBite * winRate * XP_WIN);
       lureXpMap[lureId] = applyLureXp(lureXpMap[lureId] ?? 0, xpPerRound).xp;
     }
 
