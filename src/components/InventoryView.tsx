@@ -132,11 +132,16 @@ export function InventoryView() {
             const level = entry?.level ?? 0;
             const progress = lureXpProgress(xp, level);
             return (
-              <Progress
-                radius="none"
-                size="2"
-                value={Math.round(progress * 100)}
-              />
+              <Flex align={"center"} gap={"2"}>
+                <Text size={"1"} color={"gray"}>
+                  xp
+                </Text>
+                <Progress
+                  radius="none"
+                  size="2"
+                  value={Math.round(progress * 100)}
+                />
+              </Flex>
             );
           })()}
       </Flex>

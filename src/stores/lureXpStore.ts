@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { computeLureLevel, LURE_LEVEL_XP } from "../util/constants";
+import { applyLureXp, LURE_LEVEL_XP } from "../util/constants";
 
 interface LureXpEntry {
   xp: number;
@@ -16,11 +16,9 @@ export const useLureXp = create<LureXpState>(() => ({
 
 export function addLureXp(lureId: string, amount: number): boolean {
   const prev = useLureXp.getState().lures[lureId] ?? { xp: 0, level: 0 };
-  const newXp = prev.xp + amount;
-  const newLevel = computeLureLevel(newXp);
-  const leveledUp = newLevel > prev.level;
+  const { xp, level, leveledUp } = applyLureXp(prev.xp, amount);
   useLureXp.setState((s) => ({
-    lures: { ...s.lures, [lureId]: { xp: newXp, level: newLevel } },
+    lures: { ...s.lures, [lureId]: { xp, level } },
   }));
   return leveledUp;
 }

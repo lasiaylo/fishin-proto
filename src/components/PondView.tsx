@@ -27,6 +27,7 @@ import {
   XP_PER_DISTANCE,
   XP_WIN,
   lurePriceMultiplier,
+  lureReelMaxSpeedMultiplier,
 } from "../util/constants";
 
 import { ReelView } from "./ReelView";
@@ -127,6 +128,12 @@ export function PondView() {
     luringReelSpeedRef.current = 0;
     isReelingRef.current = false;
 
+    const { selectedLure } = usePlayer.getState();
+    const lureLevel = selectedLure
+      ? (useLureXp.getState().lures[selectedLure]?.level ?? 0)
+      : 0;
+    const effectiveReelMaxSpeed = lureReelMaxSpeedMultiplier(lureLevel) * LURING_REEL_MAX_SPEED;
+
     function loop(timestamp: number) {
       if (luringLastTimeRef.current === null)
         luringLastTimeRef.current = timestamp;
@@ -136,7 +143,7 @@ export function PondView() {
       if (isReelingRef.current) {
         luringReelSpeedRef.current = Math.min(
           luringReelSpeedRef.current + LURING_REEL_ACCEL * dt,
-          LURING_REEL_MAX_SPEED,
+          effectiveReelMaxSpeed,
         );
       } else {
         luringReelSpeedRef.current = Math.max(

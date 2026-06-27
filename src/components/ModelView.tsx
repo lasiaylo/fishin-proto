@@ -1,10 +1,11 @@
 import "@radix-ui/themes/styles.css";
-import React, { useState, useEffect } from "react";
-import { Theme, Tabs, Flex, Text } from "@radix-ui/themes";
+import React, { useState, useEffect, useMemo } from "react";
+import { Theme, Tabs, Flex, Text, Select } from "@radix-ui/themes";
 import {
   loadFishData,
   loadLocationGameplayData,
   loadShopGameplayData,
+  parseFishGameplayRows,
   type FishData,
   type LocationFishEntry,
   type ShopUpgradeData,
@@ -13,6 +14,10 @@ import { FightTraceTab } from "./model/FightTraceTab";
 import { ParamSweepTab } from "./model/ParamSweepTab";
 import { EconomyTab } from "./model/EconomyTab";
 import { GraphsTab } from "./model/GraphsTab";
+import {
+  getGeneratedFishRows,
+  getGeneratedShopRows,
+} from "./model/CsvGenerator";
 
 export function ModelView() {
   const [fishData, setFishData] = useState<FishData[]>([]);
@@ -27,8 +32,13 @@ export function ModelView() {
   const [generatedShopRows, setGeneratedShopRows] = useState<string[][] | null>(
     null,
   );
+  const [fishSource, setFishSource] = useState<"csv" | "generated">(
+    () => (localStorage.getItem("debugFishSource") as "csv" | "generated") ?? "csv",
+  );
 
   useEffect(() => {
+    setGeneratedFishRows(getGeneratedFishRows());
+    setGeneratedShopRows(getGeneratedShopRows());
     Promise.all([
       loadFishData(),
       loadShopGameplayData(),
@@ -39,6 +49,13 @@ export function ModelView() {
       setLocationData(location);
     });
   }, []);
+
+  const activeFishData = useMemo(() => {
+    if (fishSource === "generated" && generatedFishRows) {
+      return parseFishGameplayRows(generatedFishRows);
+    }
+    return fishData;
+  }, [fishSource, fishData, generatedFishRows]);
 
   return (
     <Theme
@@ -60,9 +77,30 @@ export function ModelView() {
           minHeight: "100vh",
         }}
       >
-        <Text size="6" weight="bold">
-          Model
-        </Text>
+        <Flex align="center" gap="4">
+          <Text size="6" weight="bold">
+            Model
+          </Text>
+          <Flex align="center" gap="2">
+            <Text size="2" color="gray">Fish source:</Text>
+            <Select.Root
+              value={fishSource}
+              onValueChange={(v) => {
+                const src = v as "csv" | "generated";
+                setFishSource(src);
+                localStorage.setItem("debugFishSource", src);
+              }}
+            >
+              <Select.Trigger />
+              <Select.Content>
+                <Select.Item value="csv">FishGameplay.csv</Select.Item>
+                <Select.Item value="generated" disabled={!generatedFishRows}>
+                  Generated{!generatedFishRows ? " (none yet)" : ""}
+                </Select.Item>
+              </Select.Content>
+            </Select.Root>
+          </Flex>
+        </Flex>
         {fishData.length === 0 ? (
           <Text color="gray">Loading data…</Text>
         ) : (
@@ -80,10 +118,10 @@ export function ModelView() {
               <Tabs.Trigger value="graphs">Graphs</Tabs.Trigger>
             </Tabs.List>
             <Tabs.Content value="fight">
-              <FightTraceTab fishData={fishData} />
+              <FightTraceTab fishData={activeFishData} />
             </Tabs.Content>
             <Tabs.Content value="sweep">
-              <ParamSweepTab fishData={fishData} />
+              <ParamSweepTab fishData={activeFishData} />
             </Tabs.Content>
             <Tabs.Content value="economy">
               <EconomyTab

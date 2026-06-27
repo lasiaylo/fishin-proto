@@ -24,8 +24,10 @@ import {
   XP_PER_DISTANCE,
   XP_WIN,
   XP_LOSS,
+  applyLureXp,
   computeLureLevel,
   lurePriceMultiplier,
+  lureReelMaxSpeedMultiplier,
 } from "../util/constants";
 
 const EVAL_TRIALS = 100;
@@ -201,6 +203,7 @@ function perCastOverhead(
   castMax: number,
   lureId: string,
   fishByLure: Map<string, FishData[]>,
+  lureLevel = 0,
 ): number {
   const pool = fishByLure.get(lureId) ?? [];
   const validZones = [...new Set(pool.flatMap((f) => f.zones))];
@@ -210,11 +213,12 @@ function perCastOverhead(
     castMax > CAST_MIN ? (effectiveCast - CAST_MIN) / (castMax - CAST_MIN) : 0;
   const chargeTime = lerp(0, CAST_CHARGE_DURATION / 1000, castT);
   const castAnimDuration = lerp(CAST_DURATION_MIN, CAST_DURATION_MAX, castT);
-  const luringTime = expectedLuringTime(effectiveCast);
+  const reelMaxSpeed = lureReelMaxSpeedMultiplier(lureLevel) * LURING_REEL_MAX_SPEED;
+  const luringTime = expectedLuringTime(effectiveCast, reelMaxSpeed);
   return chargeTime + castAnimDuration + luringTime + RESULT_DURATION / 1000;
 }
 
-function expectedLuringTime(effectiveCast: number): number {
+function expectedLuringTime(effectiveCast: number, reelMaxSpeed = LURING_REEL_MAX_SPEED): number {
   const zoneOrder = [Zone.FAR, Zone.MID, Zone.CLOSE];
   let survivalProb = 1;
   let expectedDistance = 0;
@@ -229,7 +233,7 @@ function expectedLuringTime(effectiveCast: number): number {
 
   // Chance of going through without any hooks
   expectedDistance += survivalProb * effectiveCast;
-  return expectedDistance / LURING_REEL_MAX_SPEED;
+  return expectedDistance / reelMaxSpeed;
 }
 
 function cheapestUpgrade(
@@ -453,7 +457,8 @@ export function simulateEconomy(
     if (!best) break;
 
     const { lureId, avgFightTime, avgEarningsPerCast } = best;
-    const overhead = perCastOverhead(player.castMax, lureId, fishByLure);
+    const lureLevel = computeLureLevel(lureXpMap[lureId] ?? 0);
+    const overhead = perCastOverhead(player.castMax, lureId, fishByLure, lureLevel);
     const roundTime = player.inventorySize * (overhead + avgFightTime);
     const income = player.inventorySize * avgEarningsPerCast;
     wallet += income;
@@ -467,15 +472,16 @@ export function simulateEconomy(
           ? Math.max(...validZones.map((z) => ZONE_RANGES[z][1]))
           : player.castMax;
       const effectiveCast = Math.min(player.castMax, maxZoneDist);
+      const reelMaxSpeed = lureReelMaxSpeedMultiplier(lureLevel) * LURING_REEL_MAX_SPEED;
       const avgLuringDist =
-        expectedLuringTime(effectiveCast) * LURING_REEL_MAX_SPEED;
+        expectedLuringTime(effectiveCast, reelMaxSpeed) * reelMaxSpeed;
       const winRate = lureWinRates[lureId] ?? 0;
       const xpPerRound =
         player.inventorySize *
         (avgLuringDist * XP_PER_DISTANCE +
           winRate * XP_WIN +
           (1 - winRate) * XP_LOSS);
-      lureXpMap[lureId] = (lureXpMap[lureId] ?? 0) + xpPerRound;
+      lureXpMap[lureId] = applyLureXp(lureXpMap[lureId] ?? 0, xpPerRound).xp;
     }
 
     const walletSnapshot = wallet;

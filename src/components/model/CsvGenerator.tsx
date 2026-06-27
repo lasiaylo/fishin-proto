@@ -111,8 +111,8 @@ function generateFishRows(
         "1",
         String(p),
         `LURE_${l}`,
-        "MID",
-        "50",
+        "CLOSE",
+        "40",
       ]);
     }
   }
@@ -904,12 +904,6 @@ export function CsvGeneratorPanel({
   onOpenChange?: (open: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    onFishRowsChange?.(getGeneratedFishRows());
-    onShopRowsChange?.(getGeneratedShopRows());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   const [showPreview, setShowPreview] = useState(true);
   const [fishRows, setFishRows] = useState<string[][]>([]);
   const [shopRows, setShopRows] = useState<string[][]>([]);

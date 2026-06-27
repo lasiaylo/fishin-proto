@@ -95,6 +95,7 @@ export class FightEngine {
 
   private cfg: FightConfig;
 
+  private startDistance: number = START_DISTANCE;
   private distanceMult: number = 1;
   private critActive: boolean = false;
   private critCheckElapsed: number = 0;
@@ -120,6 +121,7 @@ export class FightEngine {
     this.playerDef = playerDef;
     this.lineHp = lineHp;
     this.cfg = { ...DEFAULT_FIGHT_CONFIG, ...config };
+    this.startDistance = startDistance;
     this.targetDistance = targetDistance;
 
     this.distance = startDistance;
@@ -284,7 +286,7 @@ export class FightEngine {
   }
 
   reset(): void {
-    this.distance = START_DISTANCE;
+    this.distance = this.startDistance;
     this.tension = 0;
     this.fightElapsed = 0;
     this.outcome = null;
