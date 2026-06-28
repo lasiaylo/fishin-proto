@@ -20,6 +20,7 @@ export interface FightConfig {
   thrashMultRange: [number, number];
   critChance: number;
   critMult: number;
+  initialBiteAtkMult: number;
   deltaMode: DeltaMode;
   easeScale: number;
   easeMidpoint: number;
@@ -39,6 +40,7 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   thrashMultRange: [0.95, 1.05],
   critChance: 0.125,
   critMult: 1.5,
+  initialBiteAtkMult: 1.5,
   deltaMode: "EaseInEaseOut",
   easeScale: 2,
   easeMidpoint: 0.4,
@@ -210,8 +212,12 @@ export class FightEngine {
     const reelGrace = this.phaseElapsed <= STRUGGLE_GRACE;
     const reelThrashMult = reelGrace ? 1 : (reel ?? false) ? THRASH_MULT : 1;
     const reelDefenseMult = (reel ?? false) ? REEL_DEFENSE_MULT : 1;
+    const initialBiteAtk =
+      isStruggle && !this.pullDone
+        ? this.fishAtk * this.cfg.initialBiteAtkMult
+        : this.fishAtk;
     const rawDelta = isStruggle
-      ? this.getDelta(this.fishAtk, this.playerDef) * reelDefenseMult
+      ? this.getDelta(initialBiteAtk, this.playerDef) * reelDefenseMult
       : -this.getDelta(this.playerAtk, this.fishDef);
 
     const critMult = !isStruggle && this.critActive ? this.cfg.critMult : 1;
@@ -237,8 +243,7 @@ export class FightEngine {
       if (
         this.phase === Phase.STRUGGLE &&
         !this.pullDone &&
-        this.distance >= this.targetDistance &&
-        this.phaseElapsed > this.cfg.initialFightRange[0]
+        this.distance >= this.targetDistance
       ) {
         this.pullDone = true;
         this.setPhase(Phase.REST);

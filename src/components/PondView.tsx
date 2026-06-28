@@ -18,9 +18,9 @@ import {
   CAST_DURATION_MAX,
   CAST_DURATION_MIN,
   CAST_MIN,
+  lureReelMaxSpeed,
   LURING_REEL_ACCEL,
   LURING_REEL_DECEL,
-  LURING_REEL_MAX_SPEED,
   Rarity,
   RARITY_COLOR,
   REEL_MIN,
@@ -87,7 +87,7 @@ export function PondView() {
       if (digit >= 1 && digit <= 7) {
         const fish = useFish.getState().allFish[digit - 1];
         if (fish) {
-          luringDistanceRef.current = fish.hp;
+          luringDistanceRef.current = fish.hp / 2;
           caughtFishRef.current = randomizeFishStats(fish);
           startFight();
         }
@@ -116,7 +116,9 @@ export function PondView() {
   function checkBite(distance: number, lureLevel = 0): boolean {
     const zones = getZones(distance);
     if (zones.length === 0) return false;
-    if (Math.random() > getBiteChance(zones, emptyReelCountRef.current, lureLevel))
+    if (
+      Math.random() > getBiteChance(zones, emptyReelCountRef.current, lureLevel)
+    )
       return false;
     const fish = pickFishForZone(castLocationRef.current, zones);
     if (!fish) return false;
@@ -135,11 +137,11 @@ export function PondView() {
     luringReelSpeedRef.current = 0;
     isReelingRef.current = false;
 
-    const effectiveReelMaxSpeed = LURING_REEL_MAX_SPEED;
     const { selectedLure } = usePlayer.getState();
     const lureLevel = selectedLure
       ? (useLureXp.getState().lures[selectedLure]?.level ?? 0)
       : 0;
+    const effectiveReelMaxSpeed = lureReelMaxSpeed(lureLevel);
 
     function loop(timestamp: number) {
       if (luringLastTimeRef.current === null)
@@ -224,10 +226,11 @@ export function PondView() {
       if (state.outcome !== null) {
         console.log(
           state.outcome,
-          caughtFishRef.current?.name,
-          caughtFishRef.current?.attack.toFixed(2),
-          caughtFishRef.current?.defense.toFixed(2),
-          +state.time.toFixed(2),
+          `${caughtFishRef.current?.name}`,
+          `${caughtFishRef.current?.rarity}`,
+          `Atk ${caughtFishRef.current?.attack.toFixed(2)}`,
+          `Def ${caughtFishRef.current?.defense.toFixed(2)}`,
+          `Time ${+state.time.toFixed(2)}`,
         );
         finishFight(state.outcome, state);
         return;

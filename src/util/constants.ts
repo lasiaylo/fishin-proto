@@ -15,7 +15,7 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
   wallet: 0,
   attack: INIT_AD,
   defense: INIT_AD,
-  lineHP: 15,
+  lineHP: 20,
   inventorySize: 3,
   castMax: CAST_MAX,
   ownedLures: new Set<string>([BASE_LURE_ID]),
@@ -29,7 +29,11 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
 export const XP_PER_DISTANCE = 10 / CAST_MAX;
 export const XP_WIN = 15;
 export const XP_LOSS = 0;
-export const LURE_LEVEL_XP = [75, 120, 150, 170, 200];
+const START_XP = 50;
+const XP_GROWTH = 1.2;
+export const LURE_LEVEL_XP = Array(5)
+  .fill(START_XP)
+  .map((n, i) => Math.ceil(n * XP_GROWTH ** i));
 
 // ==========================================================================
 // CAST TIMINGS
@@ -41,6 +45,7 @@ export const CAST_DURATION_MAX = 1.5;
 
 export const CAST_CHARGE_DURATION = 1250;
 export const LURING_REEL_MAX_SPEED = 8;
+export const LURE_REEL_SPEED_PER_LEVEL = 1;
 export const LURING_REEL_ACCEL = 10;
 export const LURING_REEL_DECEL = 20;
 
@@ -59,7 +64,7 @@ export const ZONE_RANGES: Record<Zone, [number, number]> = {
   [Zone.FAR]: [60, 90],
 };
 export const BITE_CHECK_INTERVAL = 1;
-export const TARGET_BITE_CHANCE = 0.4;
+export const TARGET_BITE_CHANCE = 0.6;
 export const BITE_CHANCE_INCREMENT = 0.1;
 export const LURE_BITE_CHANCE_PER_LEVEL = 0.1;
 
@@ -108,6 +113,10 @@ export function computeLureLevel(xp: number): number {
     else break;
   }
   return level;
+}
+
+export function lureReelMaxSpeed(level: number): number {
+  return LURING_REEL_MAX_SPEED + level * LURE_REEL_SPEED_PER_LEVEL;
 }
 
 export function applyLureXp(

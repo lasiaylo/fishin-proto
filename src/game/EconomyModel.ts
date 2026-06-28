@@ -16,6 +16,7 @@ import {
   computeLureLevel,
   INITIAL_PLAYER_STATE,
   LURE_BITE_CHANCE_PER_LEVEL,
+  lureReelMaxSpeed,
   LURING_REEL_MAX_SPEED,
   Rarity,
   RARITY_PRICE_MULTIPLIER,
@@ -243,11 +244,7 @@ function perCastOverhead(
     castMax > CAST_MIN ? (effectiveCast - CAST_MIN) / (castMax - CAST_MIN) : 0;
   const chargeTime = lerp(0, CAST_CHARGE_DURATION / 1000, castT);
   const castAnimDuration = lerp(CAST_DURATION_MIN, CAST_DURATION_MAX, castT);
-  const luringTime = expectedLuringTime(
-    effectiveCast,
-    LURING_REEL_MAX_SPEED,
-    lureLevel,
-  );
+  const luringTime = expectedLuringTime(effectiveCast, lureReelMaxSpeed(lureLevel), lureLevel);
   return chargeTime + castAnimDuration + luringTime + RESULT_DURATION / 1000;
 }
 
@@ -556,9 +553,9 @@ export function simulateEconomy(
     cumulativeTime += roundTime;
 
     if (lureId) {
+      const reelMaxSpeed = lureReelMaxSpeed(lureLevel);
       const avgLuringDist =
-        expectedLuringTime(effectiveCast, LURING_REEL_MAX_SPEED, lureLevel) *
-        LURING_REEL_MAX_SPEED;
+        expectedLuringTime(effectiveCast, reelMaxSpeed, lureLevel) * reelMaxSpeed;
       // Total casts per round = inventorySize / (pBite * winRate)
       const castsPerRound = player.inventorySize / (pBite * winRate);
       const xpPerRound =

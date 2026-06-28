@@ -12,12 +12,12 @@ import { pushEvent } from "./stores/eventLogStore";
 import { EventMsg } from "./util/eventMessages";
 import { useCsvConfig } from "./stores/csvConfigStore";
 import {
-  getGeneratedFishRows,
-  getGeneratedShopRows,
   GENERATED_FISH_CSV,
   GENERATED_SHOP_CSV,
+  getGeneratedFishRows,
+  getGeneratedShopRows,
 } from "./components/model/CsvGenerator";
-import { parseFishGameplayRows, loadFishDisplayMap } from "./util/csvLoader";
+import { loadFishDisplayMap, parseFishGameplayRows } from "./util/csvLoader";
 import { InventoryView } from "./components/InventoryView.tsx";
 
 function App() {
