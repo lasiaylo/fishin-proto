@@ -46,7 +46,7 @@ export const CAST_DURATION_MAX = 1.5;
 export const CAST_CHARGE_DURATION = 1250;
 export const LURING_REEL_MAX_SPEED = 8;
 export const LURE_REEL_SPEED_PER_LEVEL = 1;
-export const LURING_REEL_ACCEL = 10;
+export const LURING_REEL_ACCEL = 20;
 export const LURING_REEL_DECEL = 20;
 
 // ==========================================================================
@@ -64,7 +64,7 @@ export const ZONE_RANGES: Record<Zone, [number, number]> = {
   [Zone.FAR]: [60, 90],
 };
 export const BITE_CHECK_INTERVAL = 1;
-export const TARGET_BITE_CHANCE = 0.6;
+export const TARGET_BITE_CHANCE = 0.5;
 export const BITE_CHANCE_INCREMENT = 0.1;
 export const LURE_BITE_CHANCE_PER_LEVEL = 0.1;
 

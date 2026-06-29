@@ -1,8 +1,10 @@
 export const EventMsg = {
-  WELCOME: "you're a ghost and you must fish.",
+  WELCOME: "it's dark and the water is calm.",
+  CAST: "the line whips through the air.",
+  LAND_BAD: "it lands like a rock",
+  LAND_GOOD: "it lands like a feather",
   BITING: "something bites!",
   ESCAPED: "it got away...",
-  NO_FISH: "no fish available to catch.",
 
   CRIT: "crit!",
   CAUGHT: (name: string) => ["caught a ", `${name}`],
