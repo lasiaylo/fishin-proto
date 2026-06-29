@@ -3,7 +3,7 @@ import gsap from "gsap";
 import { Flex, Text } from "@radix-ui/themes";
 import { ChargeButton } from "./ChargeButton";
 import { FishData } from "../util/csvLoader";
-import { getBiteChance, getZones } from "../util/zones";
+import { getBiteChance, getWaitZones, getZones } from "../util/zones";
 import { randomizeFishStats, useFish } from "../stores/fishStore";
 import { pickFishForZone, useLocation } from "../stores/locationStore";
 import { addFishToInventory, usePlayer } from "../stores/playerStore";
@@ -13,11 +13,14 @@ import { FightEngine, FightState, Outcome } from "../game/FightEngine";
 import { useSessionLog } from "../stores/sessionLogStore";
 import { addLureXp, useLureXp } from "../stores/lureXpStore";
 import {
+  BASE_LURE_ID,
   BITE_CHECK_INTERVAL,
   CAST_CHARGE_DURATION,
   CAST_DURATION_MAX,
   CAST_DURATION_MIN,
   CAST_MIN,
+  getLureType,
+  LureType,
   lureReelMaxSpeed,
   LURING_REEL_ACCEL,
   LURING_REEL_DECEL,
@@ -25,6 +28,10 @@ import {
   RARITY_COLOR,
   REEL_MIN,
   RESULT_DURATION,
+  WAIT_DEFAULT_MAX,
+  WAIT_DEFAULT_MIN,
+  WAIT_PRIME_MAX,
+  WAIT_PRIME_MIN,
   XP_LOSS,
   XP_PER_DISTANCE,
   XP_WIN,
@@ -36,6 +43,7 @@ enum GameState {
   Idle = "idle",
   CastAnimation = "cast_animation",
   Luring = "luring",
+  Waiting = "waiting",
   Fighting = "fighting",
 }
 
@@ -71,6 +79,7 @@ export function PondView() {
   const luringReelSpeedRef = useRef<number>(0);
   const emptyReelCountRef = useRef(0);
   const castDistanceRef = useRef(0);
+  const waitCountdownRef = useRef<number | null>(null);
   const hookXpRef = useRef(0);
 
   useEffect(() => {
@@ -129,19 +138,27 @@ export function PondView() {
     return true;
   }
 
-  function startLuringLoop(initialDistance: number) {
+  function startCastLoop(initialDistance: number) {
     luringDistanceRef.current = initialDistance;
     castDistanceRef.current = initialDistance;
     lastBiteCheckDistanceRef.current = initialDistance;
     luringLastTimeRef.current = null;
     luringReelSpeedRef.current = 0;
     isReelingRef.current = false;
+    waitCountdownRef.current = null;
 
     const { selectedLure } = usePlayer.getState();
     const lureLevel = selectedLure
       ? (useLureXp.getState().lures[selectedLure]?.level ?? 0)
       : 0;
     const effectiveReelMaxSpeed = lureReelMaxSpeed(lureLevel);
+    const newGameState =
+      getLureType(selectedLure ?? BASE_LURE_ID) === LureType.CAST_AND_WAIT
+        ? GameState.Waiting
+        : GameState.Luring;
+
+    setGameState(newGameState);
+    setLuringDistance(initialDistance);
 
     function loop(timestamp: number) {
       if (luringLastTimeRef.current === null)
@@ -173,13 +190,37 @@ export function PondView() {
           return;
         }
 
-        if (
-          lastBiteCheckDistanceRef.current - luringDistanceRef.current >=
-            BITE_CHECK_INTERVAL &&
-          initialDistance - luringDistanceRef.current >= REEL_MIN
-        ) {
-          lastBiteCheckDistanceRef.current = luringDistanceRef.current;
-          if (checkBite(luringDistanceRef.current, lureLevel)) return;
+        if (newGameState === GameState.Luring) {
+          if (
+            lastBiteCheckDistanceRef.current - luringDistanceRef.current >=
+              BITE_CHECK_INTERVAL &&
+            initialDistance - luringDistanceRef.current >= REEL_MIN
+          ) {
+            lastBiteCheckDistanceRef.current = luringDistanceRef.current;
+            if (checkBite(luringDistanceRef.current, lureLevel)) return;
+          }
+        } else {
+          waitCountdownRef.current = null;
+        }
+      } else if (newGameState === GameState.Waiting) {
+        if (waitCountdownRef.current === null) {
+          const inPrimeZone = getWaitZones(luringDistanceRef.current).length > 0;
+          const [min, max] = inPrimeZone
+            ? [WAIT_PRIME_MIN, WAIT_PRIME_MAX]
+            : [WAIT_DEFAULT_MIN, WAIT_DEFAULT_MAX];
+          waitCountdownRef.current = min + Math.random() * (max - min);
+        }
+        waitCountdownRef.current -= dt;
+        if (waitCountdownRef.current <= 0) {
+          const waitZones = getWaitZones(luringDistanceRef.current);
+          const fish = pickFishForZone(castLocationRef.current, waitZones);
+          if (fish) {
+            caughtFishRef.current = fish;
+            pushEvent(EventMsg.BITING);
+            startFight();
+            return;
+          }
+          waitCountdownRef.current = null;
         }
       }
 
@@ -298,9 +339,7 @@ export function PondView() {
       ease: "power3.out",
       onUpdate: () => setCastProgress(castProgressObjRef.current.value),
       onComplete: () => {
-        setGameState(GameState.Luring);
-        setLuringDistance(castTarget);
-        startLuringLoop(castTarget);
+        startCastLoop(castTarget);
       },
     });
   }
@@ -332,7 +371,10 @@ export function PondView() {
       );
   } else if (gameState === GameState.CastAnimation) {
     component = <ReelView distance={castProgress} lineHp={lineHpRef.current} />;
-  } else if (gameState === GameState.Luring) {
+  } else if (
+    gameState === GameState.Luring ||
+    gameState === GameState.Waiting
+  ) {
     component = (
       <ReelView
         distance={luringDistance}

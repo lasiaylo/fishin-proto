@@ -4,6 +4,7 @@ import {
   BITE_CHECK_INTERVAL,
   LURE_BITE_CHANCE_PER_LEVEL,
   TARGET_BITE_CHANCE,
+  WAIT_ZONE_RANGES,
   Zone,
   ZONE_RANGES,
 } from "./constants";
@@ -22,11 +23,22 @@ export function getBiteChance(zones: Zone[], emptyReelCount: number, lureLevel =
   );
 }
 
-export function getZones(distance: number): Zone[] {
+function zonesAtDistance(
+  distance: number,
+  ranges: Record<Zone, [number, number]>,
+): Zone[] {
   return [Zone.CLOSE, Zone.MID, Zone.FAR].filter((zone) => {
-    const [min, max] = ZONE_RANGES[zone];
+    const [min, max] = ranges[zone];
     return distance >= min && distance <= max;
   });
+}
+
+export function getZones(distance: number): Zone[] {
+  return zonesAtDistance(distance, ZONE_RANGES);
+}
+
+export function getWaitZones(distance: number): Zone[] {
+  return zonesAtDistance(distance, WAIT_ZONE_RANGES);
 }
 
 export function avgZoneDistance(zones: Zone[]): number {

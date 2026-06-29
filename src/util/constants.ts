@@ -69,6 +69,31 @@ export const BITE_CHANCE_INCREMENT = 0.1;
 export const LURE_BITE_CHANCE_PER_LEVEL = 0.1;
 
 // ==========================================================================
+// LURE TYPES
+// ==========================================================================
+export enum LureType {
+  CAST_AND_WAIT = "cast_and_wait",
+  CAST_AND_LURE = "cast_and_lure",
+}
+
+export function getLureType(lureId: string): LureType {
+  return lureId === BASE_LURE_ID
+    ? LureType.CAST_AND_WAIT
+    : LureType.CAST_AND_LURE;
+}
+
+export const WAIT_ZONE_RANGES: Record<Zone, [number, number]> = {
+  [Zone.CLOSE]: [5, 50],
+  [Zone.MID]: [50, 80],
+  [Zone.FAR]: [50, 80],
+};
+
+export const WAIT_PRIME_MIN = 2;
+export const WAIT_PRIME_MAX = 5;
+export const WAIT_DEFAULT_MIN = 6;
+export const WAIT_DEFAULT_MAX = 14;
+
+// ==========================================================================
 // RARITY
 // ==========================================================================
 export enum Rarity {
