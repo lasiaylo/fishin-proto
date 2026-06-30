@@ -211,6 +211,7 @@ export const useSessionLog = create<SessionLogState>((set, get) => ({
       roundTime,
       fightDuration,
       income,
+      netIncome: income,
       wallet: walletBeforeSell,
       rate,
       lureId,

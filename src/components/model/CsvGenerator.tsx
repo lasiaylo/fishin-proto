@@ -572,6 +572,22 @@ function FishGenerator({
       </Flex>
 
       <Text size="1" weight="bold">
+        BAIT FISH
+      </Text>
+      <Flex direction="row" gap="4" align="start">
+        <FunctionSelect
+          label="Attack / Defense curve"
+          value={baitStatsFn}
+          onChange={setBaitStatsFn}
+        />
+        <FunctionSelect
+          label="Base Price curve"
+          value={baitPriceFn}
+          onChange={setBaitPriceFn}
+        />
+      </Flex>
+
+      <Text size="1" weight="bold">
         LURE FISH
       </Text>
       <Flex direction="row" gap="4" align="start">
@@ -597,39 +613,10 @@ function FishGenerator({
         />
       </Flex>
 
-      <Text size="1" weight="bold">
-        BAIT FISH
-      </Text>
-      <Flex direction="row" gap="4" align="start">
-        <FunctionSelect
-          label="Attack / Defense curve"
-          value={baitStatsFn}
-          onChange={setBaitStatsFn}
-        />
-        <FunctionSelect
-          label="Base Price curve"
-          value={baitPriceFn}
-          onChange={setBaitPriceFn}
-        />
-      </Flex>
-
       {showPreview && (
         <>
           <Text size="1" color="gray">
-            Lure fish (mid per tier)
-          </Text>
-          <PreviewTable
-            rows={[
-              ["ID", "A/D", "BasePrice"],
-              ...rows
-                .slice(1)
-                .filter((r) => r[5]?.startsWith("LURE_"))
-                .filter((_, i) => i % 2 === 0)
-                .map((r) => [r[0], r[1], r[4]]),
-            ]}
-          />
-          <Text size="1" color="gray">
-            Bait fish (mid per tier)
+            Bait fish
           </Text>
           <PreviewTable
             rows={[
@@ -637,6 +624,19 @@ function FishGenerator({
               ...rows
                 .slice(1)
                 .filter((r) => r[5]?.startsWith("BAIT_"))
+                .filter((_, i) => i % 2 === 0)
+                .map((r) => [r[0], r[1], r[4]]),
+            ]}
+          />
+          <Text size="1" color="gray">
+            Lure fish
+          </Text>
+          <PreviewTable
+            rows={[
+              ["ID", "A/D", "BasePrice"],
+              ...rows
+                .slice(1)
+                .filter((r) => r[5]?.startsWith("LURE_"))
                 .filter((_, i) => i % 2 === 0)
                 .map((r) => [r[0], r[1], r[4]]),
             ]}

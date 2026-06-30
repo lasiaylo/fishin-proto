@@ -55,9 +55,10 @@ export interface EconomyRound {
   cumulativeTime: number;
   roundTime: number;
   fightDuration: number;
-  income: number;
+  income: number; // gross fish earnings (revenue)
+  netIncome: number; // income minus amortized bait cost
   wallet: number; // after income, before upgrades
-  rate: number; // $/sec
+  rate: number; // net $/sec (netIncome / roundTime)
   lureId: string; // "" = no lure
   rodCount: number;
   fishCatchTimes: Record<string, number>; // fishId → avgFightTime (all fish in chosen lure pool)
@@ -75,6 +76,11 @@ export interface EconomyRound {
 }
 
 // ── Helpers ──
+
+const trialsCache = new Map<
+  string,
+  { winCount: number; avgFightTime: number; avgWinTension: number }
+>();
 
 function expandFishByRarity(
   fish: FishData,
@@ -104,6 +110,11 @@ function runTrials(
   def: number,
   n: number,
 ): { winCount: number; avgFightTime: number; avgWinTension: number } {
+  const zoneDist = avgZoneDistance(fish.zones);
+  const key = `${fish.attack}|${fish.defense}|${fish.thrash}|${fish.hp}|${zoneDist}|${atk}|${def}|${player.lineHP}|${n}`;
+  const cached = trialsCache.get(key);
+  if (cached) return cached;
+
   const engine = new FightEngine(
     fish.attack,
     fish.defense,
@@ -111,7 +122,7 @@ function runTrials(
     atk,
     def,
     player.lineHP,
-    avgZoneDistance(fish.zones),
+    zoneDist,
     fish.hp,
   );
   let winCount = 0;
@@ -128,11 +139,13 @@ function runTrials(
     totalWinTime += duration;
   }
 
-  return {
+  const result = {
     winCount,
     avgFightTime: totalWinTime / n,
     avgWinTension: winCount > 0 ? totalWinTension / winCount : 0,
   };
+  trialsCache.set(key, result);
+  return result;
 }
 
 function buildFishWeights(
@@ -160,6 +173,7 @@ function evalLure(
   fishWeights: Map<string, number>,
   evalTrials: number,
   lureXpMap: Record<string, number> = {},
+  baitCostPerFight: Record<string, number> = {},
 ): {
   best: {
     lureId: string;
@@ -229,7 +243,11 @@ function evalLure(
 
     const avgFightTime = totalFightTime;
     const avgEarningsPerFight = totalEarnings;
-    const rate = avgEarningsPerFight / avgFightTime;
+    const costPerFight =
+      getTackleType(lureId) === TackleType.BAIT
+        ? (baitCostPerFight[lureId] ?? 0)
+        : 0;
+    const rate = (avgEarningsPerFight - costPerFight) / avgFightTime;
     lureRates[lureId] = rate;
     lureWinRates[lureId] = totalWinRate;
     lureRemainingHP[lureId] = totalRemainingHP;
@@ -585,6 +603,16 @@ export function simulateEconomy(
       baitStock[lureId] = BAIT_MAX_STACK;
     }
   }
+  const baitCostPerFight: Record<string, number> = {};
+  for (const upgrade of shopData) {
+    if (
+      upgrade.stat === StatName.BAIT &&
+      upgrade.prices.length > 0 &&
+      upgrade.valuePerLevel > 0
+    ) {
+      baitCostPerFight[upgrade.id] = upgrade.prices[0] / upgrade.valuePerLevel;
+    }
+  }
   const fishWeights = buildFishWeights(fishByLure, locationData);
   const baitDataMap = new Map(baitData.map((b) => [b.id, b]));
   const initialRod = INITIAL_PLAYER_STATE.ownedRods[0];
@@ -610,6 +638,7 @@ export function simulateEconomy(
       fishWeights,
       evalTrials,
       lureXpMap,
+      baitCostPerFight,
     );
     if (!best) break;
 
@@ -653,6 +682,7 @@ export function simulateEconomy(
     // Bait rods (rods[1+]) earn additional income in parallel during roundTime.
     // Each bait rod uses the best BAIT lure and its own atk/def for fights.
     let baitRodIncome = 0;
+    let baitRodBaitCost = 0;
     const baitRods = rods.slice(1);
     if (baitRods.length > 0 && bestBaitLureId !== null) {
       const baitPool = fishByLure.get(bestBaitLureId) ?? [];
@@ -697,13 +727,19 @@ export function simulateEconomy(
           const baitRate = baitTotalEarnings / baitCatchTime;
           baitRodIncome += roundTime * baitRate;
           const baitRodFights = roundTime / baitCatchTime;
-          baitStock[bestBaitLureId] =
-            (baitStock[bestBaitLureId] ?? 0) - baitRodFights;
+          baitStock[bestBaitLureId!] =
+            (baitStock[bestBaitLureId!] ?? 0) - baitRodFights;
+          baitRodBaitCost +=
+            baitRodFights * (baitCostPerFight[bestBaitLureId!] ?? 0);
         }
       }
     }
 
     const income = lureIncome + baitRodIncome;
+    const lureBaitCost = isBait
+      ? lureFightsPerRound * (baitCostPerFight[lureId] ?? 0)
+      : 0;
+    const netIncome = income - lureBaitCost - baitRodBaitCost;
 
     wallet += income;
     cumulativeTime += roundTime;
@@ -774,8 +810,9 @@ export function simulateEconomy(
       roundTime,
       fightDuration: avgFightTime,
       income,
+      netIncome,
       wallet: walletSnapshot,
-      rate: income / roundTime,
+      rate: netIncome / roundTime,
       lureId,
       rodCount: rods.length,
       fishCatchTimes,

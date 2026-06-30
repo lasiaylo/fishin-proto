@@ -417,7 +417,7 @@ export function EconomyTab({
   }));
 
   const nonLureUpgrades = primaryShopData.filter(
-    (u) => u.stat !== StatName.LURE,
+    (u) => u.stat !== StatName.LURE && u.stat !== StatName.BAIT,
   );
 
   const levelData = primaryRounds.map((r) => ({
@@ -544,15 +544,19 @@ export function EconomyTab({
     ? activePairResults[0].rounds.map((r) => ({
         time: r.cumulativeTime,
         rate: parseFloat(r.rate.toFixed(4)),
+        revenue: parseFloat((r.income / r.roundTime).toFixed(4)),
         lureLevel: r.lureLevels[r.lureId] ?? 0,
       }))
     : [];
   const singlePairRoundData = isSinglePair
     ? activePairResults[0].rounds.map((r) => ({
         round: r.round,
-        income: parseFloat(r.income.toFixed(4)),
+        income: parseFloat(r.netIncome.toFixed(4)),
+        revenue: parseFloat(r.income.toFixed(4)),
         upgrade:
-          r.upgradesBought.length > 0 ? parseFloat(r.income.toFixed(4)) : null,
+          r.upgradesBought.length > 0
+            ? parseFloat(r.netIncome.toFixed(4))
+            : null,
         lureLevel: r.lureLevels[r.lureId] ?? 0,
       }))
     : [];
@@ -740,8 +744,16 @@ export function EconomyTab({
                     dataKey="rate"
                     stroke={COLORS[0]}
                     {...lineProps}
-                    name="$/s"
+                    name="Net $/s"
                   />
+                  <Line
+                    dataKey="revenue"
+                    stroke={COLORS[1]}
+                    {...lineProps}
+                    strokeDasharray="4 2"
+                    name="Revenue $/s"
+                  />
+                  <Legend />
                 </>
               ) : (
                 activePairResults.map((result, i) => (
@@ -814,7 +826,14 @@ export function EconomyTab({
                     dataKey="income"
                     stroke={COLORS[0]}
                     {...lineProps}
-                    name="$/round"
+                    name="Net $/round"
+                  />
+                  <Line
+                    dataKey="revenue"
+                    stroke={COLORS[1]}
+                    {...lineProps}
+                    strokeDasharray="4 2"
+                    name="Revenue $/round"
                   />
                   <Line
                     dataKey="upgrade"
@@ -824,6 +843,7 @@ export function EconomyTab({
                     isAnimationActive={false}
                     name="upgrade"
                   />
+                  <Legend />
                 </>
               ) : (
                 activePairResults.map((result, i) => (
