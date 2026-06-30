@@ -6,7 +6,7 @@ export interface FishData {
   basePrice: number;
   attack: number;
   defense: number;
-  requiredLure: string;
+  requiredTackle: string;
   thrash: number;
   zones: Zone[];
   hp: number;
@@ -150,7 +150,7 @@ function parseFishRow(row: string[]): FishData {
     defense: Number(row[2]),
     thrash: Number(row[3]) || 0,
     basePrice: Number(row[4]),
-    requiredLure: row[5] || "",
+    requiredTackle: row[5] || "",
     zones: row[6] ? (row[6].split(" ").filter(Boolean) as Zone[]) : [],
     hp: Number(row[7]) || 0,
   };

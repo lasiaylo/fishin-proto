@@ -115,7 +115,7 @@ export function GraphsTab({
     }
   }, [selectedShopCSV, generatedShopRows]);
 
-  const lureIds = [...new Set(activeFishData.map((f) => f.requiredLure))];
+  const lureIds = [...new Set(activeFishData.map((f) => f.requiredTackle))];
   const lureColors = Object.fromEntries(
     lureIds.map((id, i) => [id, COLORS[i % COLORS.length]]),
   );
@@ -226,7 +226,7 @@ export function GraphsTab({
   const activeBestLureIds = [...new Set(bestRegions.map((r) => r.lureId))];
 
   const lureTable = lureIds.map((lureId) => {
-    const group = activeFishData.filter((f) => f.requiredLure === lureId);
+    const group = activeFishData.filter((f) => f.requiredTackle === lureId);
     const avgAtk = group.reduce((s, f) => s + f.attack, 0) / group.length;
     const avgDef = group.reduce((s, f) => s + f.defense, 0) / group.length;
     const avgPrice = group.reduce((s, f) => s + f.basePrice, 0) / group.length;

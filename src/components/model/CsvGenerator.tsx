@@ -136,7 +136,7 @@ function generateFishRows(
       "Defense",
       "Thrash",
       "BasePrice",
-      "RequiredLure",
+      "RequiredTackle",
       "Zone",
       "HP",
     ],
@@ -346,14 +346,14 @@ function computeLureCostTable(
 }[] {
   if (fishRows.length < 2 || shopRows.length < 2) return [];
 
-  // Group fish by RequiredLure, preserving insertion order (min, mid, max)
+  // Group fish by RequiredTackle, preserving insertion order (min, mid, max)
   const poolFish = new Map<string, { ad: number; price: number }[]>();
   for (const row of fishRows.slice(1)) {
-    const requiredLure = row[5] ?? "";
+    const requiredTackle = row[5] ?? "";
     const ad = Number(row[1]);
     const price = Number(row[4]);
-    if (!poolFish.has(requiredLure)) poolFish.set(requiredLure, []);
-    poolFish.get(requiredLure)!.push({ ad, price });
+    if (!poolFish.has(requiredTackle)) poolFish.set(requiredTackle, []);
+    poolFish.get(requiredTackle)!.push({ ad, price });
   }
 
   const avgPrice = (lureId: string) => {

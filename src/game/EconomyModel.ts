@@ -512,9 +512,9 @@ export function computeLureStats(
 } {
   const fishByLure = new Map<string, FishData[]>();
   for (const fish of fishData) {
-    if (!fishByLure.has(fish.requiredLure))
-      fishByLure.set(fish.requiredLure, []);
-    fishByLure.get(fish.requiredLure)!.push(fish);
+    if (!fishByLure.has(fish.requiredTackle))
+      fishByLure.set(fish.requiredTackle, []);
+    fishByLure.get(fish.requiredTackle)!.push(fish);
   }
   const fishWeights = buildFishWeights(fishByLure, locationData);
   const rates: Record<string, number> = {};
@@ -587,9 +587,9 @@ export function simulateEconomy(
   const lureXpMap: Record<string, number> = {};
   const fishByLure = new Map<string, FishData[]>();
   for (const fish of fishData) {
-    if (!fishByLure.has(fish.requiredLure))
-      fishByLure.set(fish.requiredLure, []);
-    fishByLure.get(fish.requiredLure)!.push(fish);
+    if (!fishByLure.has(fish.requiredTackle))
+      fishByLure.set(fish.requiredTackle, []);
+    fishByLure.get(fish.requiredTackle)!.push(fish);
   }
   const shopLureIds = new Set(
     shopData.filter((u) => u.stat === StatName.LURE).map((u) => u.id),
