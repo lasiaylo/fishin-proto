@@ -21,9 +21,31 @@ export enum StatName {
   INVENTORY = "INVENTORY",
   CAST_DISTANCE = "CAST_DISTANCE",
   WIN = "win",
+  BAIT = "BAIT",
+  ROD = "ROD",
+  ROD_ATTACK = "ROD_ATTACK",
+  ROD_DEFENSE = "ROD_DEFENSE",
+}
+
+export interface BaitData {
+  id: string;
+  waitMin: number;
+  waitMax: number;
 }
 
 const STAT_NAME_VALUES = new Set<string>(Object.values(StatName));
+
+export async function loadBaitData(
+  baitFile = "BaitGameplay.csv",
+): Promise<BaitData[]> {
+  const res = await fetch(`/data/Bait/${baitFile}`);
+  const rows = parseCSV(await res.text());
+  return rows.slice(1).map((row) => ({
+    id: row[0],
+    waitMin: Number(row[1]),
+    waitMax: Number(row[2]),
+  }));
+}
 
 function parseStatName(value: string): StatName {
   if (STAT_NAME_VALUES.has(value)) return value as StatName;
@@ -154,10 +176,14 @@ export function parseFishGameplayRows(
 
 function categoryFromStat(stat: StatName): string {
   if (stat === StatName.LURE) return "lures";
+  if (stat === StatName.BAIT) return "bait";
   if (
     stat === StatName.ATTACK ||
     stat === StatName.DEFENSE ||
-    stat === StatName.HP
+    stat === StatName.HP ||
+    stat === StatName.ROD ||
+    stat === StatName.ROD_ATTACK ||
+    stat === StatName.ROD_DEFENSE
   )
     return "rod upgrades";
   return "misc";

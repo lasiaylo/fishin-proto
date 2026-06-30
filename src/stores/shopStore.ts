@@ -8,12 +8,17 @@ import {
   parseShopGameplayRows,
 } from "../util/csvLoader";
 import {
+  addBait,
   addLure,
+  addRod,
+  addToRodStat,
   addToStat,
   deductMoney,
   getWallet,
   removeLure,
+  usePlayer,
 } from "./playerStore";
+import { BAIT_MAX_STACK } from "../util/constants";
 import { pushEvent } from "./eventLogStore";
 import { EventMsg } from "../util/eventMessages";
 import { useSessionLog } from "./sessionLogStore";
@@ -88,6 +93,11 @@ export function canAffordUpgrade(upgrade: ShopUpgrade): boolean {
 }
 
 export function isMaxed(upgrade: ShopUpgrade): boolean {
+  if (upgrade.stat === StatName.BAIT) {
+    return (
+      (usePlayer.getState().baitInventory[upgrade.id] ?? 0) >= BAIT_MAX_STACK
+    );
+  }
   return upgrade.level >= upgrade.prices.length;
 }
 
@@ -103,18 +113,19 @@ export function buyUpgrade(id: string) {
 
   deductMoney(price);
 
+  // BAIT: consume the purchase but don't increment level
+  if (upgrade.stat === StatName.BAIT) {
+    addBait(upgrade.id, upgrade.valuePerLevel);
+    pushEvent(EventMsg.BOUGHT(upgrade.name, 1));
+    useSessionLog.getState().logUpgradeBought(upgrade.id, 1, false);
+    return;
+  }
+
   const newLevel = upgrade.level + 1;
 
-  // Apply stat change
   switch (upgrade.stat) {
     case StatName.LURE:
       addLure(upgrade.id);
-      break;
-    case StatName.ATTACK:
-      addToStat("attack", upgrade.valuePerLevel);
-      break;
-    case StatName.DEFENSE:
-      addToStat("defense", upgrade.valuePerLevel);
       break;
     case StatName.HP:
       addToStat("lineHP", upgrade.valuePerLevel);
@@ -125,9 +136,21 @@ export function buyUpgrade(id: string) {
     case StatName.CAST_DISTANCE:
       addToStat("castMax", upgrade.valuePerLevel);
       break;
+    case StatName.ROD:
+      addRod(upgrade.id);
+      break;
+    case StatName.ROD_ATTACK: {
+      const rodId = upgrade.id.replace("ROD_ATTACK_", "");
+      addToRodStat(rodId, "attack", upgrade.valuePerLevel);
+      break;
+    }
+    case StatName.ROD_DEFENSE: {
+      const rodId = upgrade.id.replace("ROD_DEFENSE_", "");
+      addToRodStat(rodId, "defense", upgrade.valuePerLevel);
+      break;
+    }
   }
 
-  // Update upgrade level
   const newUpgrades = [...state.upgrades];
   newUpgrades[idx] = { ...upgrade, level: newLevel };
   useShop.setState({ upgrades: newUpgrades });
@@ -144,6 +167,9 @@ export function setUpgradeLevelDebug(id: string, newLevel: number) {
   if (idx === -1) return;
 
   const upgrade = state.upgrades[idx];
+
+  if (upgrade.stat === StatName.BAIT) return; // bait uses inventory count, not levels
+
   const clamped = Math.max(0, Math.min(newLevel, upgrade.prices.length));
   const delta = clamped - upgrade.level;
   if (delta === 0) return;
@@ -152,12 +178,6 @@ export function setUpgradeLevelDebug(id: string, newLevel: number) {
     case StatName.LURE:
       if (clamped > 0) addLure(upgrade.id);
       else removeLure(upgrade.id);
-      break;
-    case StatName.ATTACK:
-      addToStat("attack", delta * upgrade.valuePerLevel);
-      break;
-    case StatName.DEFENSE:
-      addToStat("defense", delta * upgrade.valuePerLevel);
       break;
     case StatName.HP:
       addToStat("lineHP", delta * upgrade.valuePerLevel);
@@ -168,6 +188,19 @@ export function setUpgradeLevelDebug(id: string, newLevel: number) {
     case StatName.CAST_DISTANCE:
       addToStat("castMax", delta * upgrade.valuePerLevel);
       break;
+    case StatName.ROD:
+      if (delta > 0) addRod(upgrade.id);
+      break;
+    case StatName.ROD_ATTACK: {
+      const rodId = upgrade.id.replace("ROD_ATTACK_", "");
+      addToRodStat(rodId, "attack", delta * upgrade.valuePerLevel);
+      break;
+    }
+    case StatName.ROD_DEFENSE: {
+      const rodId = upgrade.id.replace("ROD_DEFENSE_", "");
+      addToRodStat(rodId, "defense", delta * upgrade.valuePerLevel);
+      break;
+    }
   }
 
   const newUpgrades = [...state.upgrades];
@@ -180,16 +213,11 @@ export function resetAllUpgradesDebug() {
   const { upgrades } = useShop.getState();
   for (const u of upgrades) {
     if (u.level === 0) continue;
+    if (u.stat === StatName.BAIT) continue;
     const delta = -u.level;
     switch (u.stat) {
       case StatName.LURE:
         removeLure(u.id);
-        break;
-      case StatName.ATTACK:
-        addToStat("attack", delta * u.valuePerLevel);
-        break;
-      case StatName.DEFENSE:
-        addToStat("defense", delta * u.valuePerLevel);
         break;
       case StatName.HP:
         addToStat("lineHP", delta * u.valuePerLevel);
@@ -200,6 +228,16 @@ export function resetAllUpgradesDebug() {
       case StatName.CAST_DISTANCE:
         addToStat("castMax", delta * u.valuePerLevel);
         break;
+      case StatName.ROD_ATTACK: {
+        const rodId = u.id.replace("ROD_ATTACK_", "");
+        addToRodStat(rodId, "attack", delta * u.valuePerLevel);
+        break;
+      }
+      case StatName.ROD_DEFENSE: {
+        const rodId = u.id.replace("ROD_DEFENSE_", "");
+        addToRodStat(rodId, "defense", delta * u.valuePerLevel);
+        break;
+      }
     }
   }
   useShop.setState({ upgrades: upgrades.map((u) => ({ ...u, level: 0 })) });

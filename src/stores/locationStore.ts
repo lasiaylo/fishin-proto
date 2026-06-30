@@ -5,7 +5,6 @@ import {
   loadLocationGameplayData,
 } from "../util/csvLoader";
 import { randomizeFishStats, useFish } from "./fishStore";
-import { usePlayer } from "./playerStore";
 import { Zone } from "../util/constants";
 
 export interface LocationEntry {
@@ -57,18 +56,17 @@ function weightedPick(
 export function pickFishForZone(
   locationId: string,
   zones: Zone[],
+  lureId = "",
 ): FishData | null {
   const location = useLocation.getState()[locationId];
   if (!location) return null;
 
   const { allFish } = useFish.getState();
-  const { selectedLure } = usePlayer.getState();
-  const effectiveLure = selectedLure ?? "";
 
   const candidates = location.fish.flatMap(({ fishId, percent }) => {
     const fish = allFish.find((f) => f.id === fishId);
     return fish &&
-      fish.requiredLure === effectiveLure &&
+      fish.requiredLure === lureId &&
       fish.zones.some((z) => zones.includes(z))
       ? [{ fish, percent }]
       : [];

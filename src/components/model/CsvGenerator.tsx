@@ -56,6 +56,24 @@ const DEFAULT_CAST_FN: FunctionConfig = {
   scaleFactor: 10,
   growthRate: 0.8,
 };
+const DEFAULT_BAIT_FN: FunctionConfig = {
+  type: "LINEAR",
+  startValue: 5,
+  scaleFactor: 5,
+  growthRate: 0.8,
+};
+const DEFAULT_WAIT_MIN_FN: FunctionConfig = {
+  type: "LINEAR",
+  startValue: 2,
+  scaleFactor: 1,
+  growthRate: 0.8,
+};
+const DEFAULT_WAIT_MAX_FN: FunctionConfig = {
+  type: "LINEAR",
+  startValue: 8,
+  scaleFactor: 2,
+  growthRate: 0.8,
+};
 
 function evalFn(cfg: FunctionConfig, lvl: number): number {
   if (cfg.type === "LINEAR") return cfg.startValue + cfg.scaleFactor * lvl;
@@ -84,7 +102,7 @@ function generateFishRows(
   ];
   let idx = 0;
 
-  // Level 0: one fish, requires starter lure LURE_0
+  // Level 0: one fish, requires starter bait BAIT_0
   const s0 = Math.ceil(evalFn(statsFn, 0));
   const p0 = Math.ceil(evalFn(priceFn, 0));
   rows.push([
@@ -93,7 +111,7 @@ function generateFishRows(
     String(s0),
     "1",
     String(p0),
-    "LURE_0",
+    "BAIT_0",
     "CLOSE",
     "30",
   ]);
@@ -138,22 +156,24 @@ function generateShopRows(
   castDistanceFn: FunctionConfig,
   castDistanceVPL: number,
   castDistanceCount: number,
+  baitFn: FunctionConfig,
+  baitCount: number,
 ): string[][] {
   const rows: string[][] = [
     ["ID", "Price", "Stat", "ValuePerLevel", "Requirement"],
   ];
 
   rows.push([
-    "ATTACK",
+    "ROD_ATTACK_ROD_1",
     priceList(attackFn, attackCount),
-    "ATTACK",
+    "ROD_ATTACK",
     String(attackVPL),
     "",
   ]);
   rows.push([
-    "DEFENSE",
+    "ROD_DEFENSE_ROD_1",
     priceList(defenseFn, defenseCount),
-    "DEFENSE",
+    "ROD_DEFENSE",
     String(defenseVPL),
     "",
   ]);
@@ -175,6 +195,32 @@ function generateShopRows(
     ]);
   }
 
+  for (let i = 0; i < baitCount; i++) {
+    rows.push([
+      `BAIT_${i}`,
+      String(Math.ceil(evalFn(baitFn, i))),
+      "BAIT",
+      "1",
+      i === 0 ? "" : `LURE_${i}`,
+    ]);
+  }
+
+  return rows;
+}
+
+function generateBaitRows(
+  waitMinFn: FunctionConfig,
+  waitMaxFn: FunctionConfig,
+  baitCount: number,
+): string[][] {
+  const rows: string[][] = [["ID", "WaitMin", "WaitMax"]];
+  for (let i = 0; i < baitCount; i++) {
+    rows.push([
+      `BAIT_${i}`,
+      String(Math.ceil(evalFn(waitMinFn, i))),
+      String(Math.ceil(evalFn(waitMaxFn, i))),
+    ]);
+  }
   return rows;
 }
 
@@ -545,6 +591,10 @@ const SHOP_DEFAULTS = {
   castDistanceVPL: 10,
   castDistanceCount: 3,
   mergeStats: false,
+  baitFn: DEFAULT_BAIT_FN,
+  baitCount: 1,
+  waitMinFn: DEFAULT_WAIT_MIN_FN,
+  waitMaxFn: DEFAULT_WAIT_MAX_FN,
 };
 
 function ShopGenerator({
@@ -582,6 +632,18 @@ function ShopGenerator({
   const [mergeStats, setMergeStats] = useState(
     () => stored.mergeStats ?? false,
   );
+  const [baitFn, setBaitFn] = useState<FunctionConfig>(
+    () => stored.baitFn ?? DEFAULT_BAIT_FN,
+  );
+  const [baitCount, setBaitCount] = useState(
+    () => stored.baitCount ?? 1,
+  );
+  const [waitMinFn, setWaitMinFn] = useState<FunctionConfig>(
+    () => stored.waitMinFn ?? DEFAULT_WAIT_MIN_FN,
+  );
+  const [waitMaxFn, setWaitMaxFn] = useState<FunctionConfig>(
+    () => stored.waitMaxFn ?? DEFAULT_WAIT_MAX_FN,
+  );
 
   function handleAttackFnChange(v: FunctionConfig) {
     setAttackFn(v);
@@ -608,7 +670,10 @@ function ShopGenerator({
     castDistanceFn,
     castDistanceVPL,
     castDistanceCount,
+    baitFn,
+    baitCount,
   );
+  const baitRows = generateBaitRows(waitMinFn, waitMaxFn, baitCount);
 
   useEffect(() => {
     localStorage.setItem(
@@ -625,6 +690,10 @@ function ShopGenerator({
         castDistanceVPL,
         castDistanceCount,
         mergeStats,
+        baitFn,
+        baitCount,
+        waitMinFn,
+        waitMaxFn,
       }),
     );
     onChange?.(rows);
@@ -642,6 +711,10 @@ function ShopGenerator({
     castDistanceVPL,
     castDistanceCount,
     mergeStats,
+    baitFn,
+    baitCount,
+    waitMinFn,
+    waitMaxFn,
   ]);
 
   function reset() {
@@ -656,6 +729,10 @@ function ShopGenerator({
     setCastDistanceVPL(SHOP_DEFAULTS.castDistanceVPL);
     setCastDistanceCount(SHOP_DEFAULTS.castDistanceCount);
     setMergeStats(SHOP_DEFAULTS.mergeStats);
+    setBaitFn(SHOP_DEFAULTS.baitFn);
+    setBaitCount(SHOP_DEFAULTS.baitCount);
+    setWaitMinFn(SHOP_DEFAULTS.waitMinFn);
+    setWaitMaxFn(SHOP_DEFAULTS.waitMaxFn);
   }
 
   return (
@@ -825,27 +902,74 @@ function ShopGenerator({
         </Flex>
       </Flex>
 
+      <Flex direction="column" gap="2">
+        <Text size="1" weight="bold">
+          BAIT
+        </Text>
+        <FunctionSelect
+          label="Price curve"
+          value={baitFn}
+          onChange={setBaitFn}
+        />
+        <Flex gap="3" wrap="wrap" align="end">
+          <NumInput
+            label="Bait tiers"
+            value={baitCount}
+            onChange={setBaitCount}
+            min={1}
+          />
+        </Flex>
+        <FunctionSelect
+          label="Wait Min curve"
+          value={waitMinFn}
+          onChange={setWaitMinFn}
+        />
+        <FunctionSelect
+          label="Wait Max curve"
+          value={waitMaxFn}
+          onChange={setWaitMaxFn}
+        />
+      </Flex>
+
       {showPreview && (
         <PreviewTable
           rows={[["ID", "Price"], ...rows.slice(1).map((r) => [r[0], r[1]])]}
         />
       )}
-      <Button
-        size="1"
-        variant="soft"
-        style={{ width: "fit-content" }}
-        onClick={() => {
-          const comment = [
-            `# ATTACK price curve: ${fnConfigStr(attackFn)} | ValuePerLevel=${attackVPL} | Upgrades=${attackCount}`,
-            `# DEFENSE price curve: ${fnConfigStr(defenseFn)} | ValuePerLevel=${defenseVPL} | Upgrades=${defenseCount}`,
-            `# LURE price curve: ${fnConfigStr(lureFn)} | Lures=${lureCount}`,
-            `# CAST_DISTANCE price curve: ${fnConfigStr(castDistanceFn)} | ValuePerLevel=${castDistanceVPL} | Upgrades=${castDistanceCount}`,
-          ].join("\n");
-          downloadCsv(rows, "ShopGameplay.csv", comment);
-        }}
-      >
-        Download ShopGameplay.csv
-      </Button>
+      {showPreview && <PreviewTable rows={baitRows} />}
+      <Flex gap="3">
+        <Button
+          size="1"
+          variant="soft"
+          style={{ width: "fit-content" }}
+          onClick={() => {
+            const comment = [
+              `# ROD_ATTACK price curve: ${fnConfigStr(attackFn)} | ValuePerLevel=${attackVPL} | Upgrades=${attackCount}`,
+              `# ROD_DEFENSE price curve: ${fnConfigStr(defenseFn)} | ValuePerLevel=${defenseVPL} | Upgrades=${defenseCount}`,
+              `# LURE price curve: ${fnConfigStr(lureFn)} | Lures=${lureCount}`,
+              `# CAST_DISTANCE price curve: ${fnConfigStr(castDistanceFn)} | ValuePerLevel=${castDistanceVPL} | Upgrades=${castDistanceCount}`,
+              `# BAIT price curve: ${fnConfigStr(baitFn)} | Tiers=${baitCount}`,
+            ].join("\n");
+            downloadCsv(rows, "ShopGameplay.csv", comment);
+          }}
+        >
+          Download ShopGameplay.csv
+        </Button>
+        <Button
+          size="1"
+          variant="soft"
+          style={{ width: "fit-content" }}
+          onClick={() => {
+            const comment = [
+              `# WaitMin curve: ${fnConfigStr(waitMinFn)}`,
+              `# WaitMax curve: ${fnConfigStr(waitMaxFn)}`,
+            ].join("\n");
+            downloadCsv(baitRows, "BaitGameplay.csv", comment);
+          }}
+        >
+          Download BaitGameplay.csv
+        </Button>
+      </Flex>
     </Flex>
   );
 }
@@ -878,6 +1002,8 @@ export function getGeneratedShopRows(): string[][] {
     castDistanceFn,
     castDistanceVPL,
     castDistanceCount,
+    baitFn,
+    baitCount,
   } = loadStored(SHOP_STORAGE_KEY, SHOP_DEFAULTS);
   return generateShopRows(
     attackFn,
@@ -891,6 +1017,8 @@ export function getGeneratedShopRows(): string[][] {
     castDistanceFn,
     castDistanceVPL,
     castDistanceCount,
+    baitFn,
+    baitCount,
   );
 }
 

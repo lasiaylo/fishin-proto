@@ -30,43 +30,39 @@ export function ReelView({
   }, [onReelStart]);
 
   return (
-    <Flex direction="column" width={"100%"} gap="4">
-      <div
-        onPointerDown={() => {
-          isPointerDown.current = true;
-          if (onReelStart) onReelStart();
-        }}
-        onPointerUp={() => {
-          isPointerDown.current = false;
-          if (onReelEnd) onReelEnd();
-        }}
-        onPointerLeave={() => {
-          if (isPointerDown.current) {
+    <Flex direction="column" flexGrow={"1"} gap="4">
+      <Flex gap={"4"} align={"center"}>
+        <div
+          onPointerDown={() => {
+            isPointerDown.current = true;
+            if (onReelStart) onReelStart();
+          }}
+          onPointerUp={() => {
             isPointerDown.current = false;
             if (onReelEnd) onReelEnd();
-          }
-        }}
-      >
-      <MyButton
-        disabled={!onReelStart}
-        minWidth={200}
-      >
-        reel
-      </MyButton>
-      </div>
+          }}
+          onPointerLeave={() => {
+            if (isPointerDown.current) {
+              isPointerDown.current = false;
+              if (onReelEnd) onReelEnd();
+            }
+          }}
+        >
+          <MyButton disabled={!onReelStart} minWidth={150}>
+            reel
+          </MyButton>
+        </div>
+        <Text size="2" color="gray">
+          {fightState?.phase ?? " "}
+        </Text>
+      </Flex>
       <Flex
         position={"relative"}
         direction="column"
-        pr={"4"}
         gap="4"
         className={"fade-in"}
         style={{ opacity: fading ? 0 : 1, transition: "opacity 0.6s ease" }}
       >
-        <Box minHeight={"25px"}>
-          <Text size="2" color="gray">
-            {fightState?.phase ?? " "}
-          </Text>
-        </Box>
         <StatBar label="distance" value={distance} max={100} />
         <StatBar
           label="hp"

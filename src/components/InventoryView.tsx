@@ -1,28 +1,15 @@
-import { Code, Flex, Progress, Select, Text } from "@radix-ui/themes";
+import { Code, Flex, Text } from "@radix-ui/themes";
 import React, { useEffect, useRef, useState } from "react";
-import { setSelectedLure, usePlayer } from "../stores/playerStore";
-import { useShop } from "../stores/shopStore";
-import { StatName } from "../util/csvLoader";
-import { useLureXp, lureXpProgress } from "../stores/lureXpStore";
-import {
-  BASE_LURE_ID,
-  BASE_LURE_NAME,
-  CURRENCY_SYMBOL,
-  RARITY_COLOR,
-} from "../util/constants";
+import { usePlayer } from "../stores/playerStore";
+import { useBaitData } from "../stores/baitStore";
+import { CURRENCY_SYMBOL, RARITY_COLOR } from "../util/constants";
 
 export function InventoryView() {
   const wallet = usePlayer((s) => s.wallet);
   const inventory = usePlayer((s) => s.inventory);
   const inventorySize = usePlayer((s) => s.inventorySize);
-  const ownedLures = usePlayer((s) => s.ownedLures);
-  const selectedLure = usePlayer((s) => s.selectedLure);
-  const shopUpgrades = useShop((s) => s.upgrades);
-
-  const ownedLureList = shopUpgrades.filter(
-    (u) => u.stat === StatName.LURE && ownedLures.has(u.id),
-  );
-  const lureXpData = useLureXp((s) => s.lures);
+  const baitInventory = usePlayer((s) => s.baitInventory);
+  const baitData = useBaitData((s) => s.baitData);
 
   const [displayWallet, setDisplayWallet] = useState(wallet);
   const displayRef = useRef(wallet);
@@ -85,6 +72,21 @@ export function InventoryView() {
           </Code>
         )}
       </Flex>
+
+      <Flex direction="column" gap="1">
+        <Text size="1" color="gray">
+          bait
+        </Text>
+        {Object.entries(baitInventory).map(([id, count]) => {
+          const bait = baitData.find((b) => b.id === id);
+          return (
+            <Code key={id} size="1" color={count > 0 ? "gray" : "red"}>
+              {bait?.id ?? id} ×{count}
+            </Code>
+          );
+        })}
+      </Flex>
+
       <Flex direction="column" gap="1">
         <Text size="1" color="gray">
           cooler
@@ -92,59 +94,15 @@ export function InventoryView() {
         {Array.from({ length: inventorySize }).map((_, i) => {
           const item = inventory[i];
           return (
-            <Code key={i} size="1" color={item ? RARITY_COLOR[item.rarity] : "gray"}>
+            <Code
+              key={i}
+              size="1"
+              color={item ? RARITY_COLOR[item.rarity] : "gray"}
+            >
               {item ? `${item.fish.name}` : "—"}
             </Code>
           );
         })}
-      </Flex>
-      <Flex direction="column" gap="2">
-        <Text size="1" color={"gray"}>
-          lure
-        </Text>
-        <Select.Root
-          size="1"
-          value={selectedLure ?? BASE_LURE_ID}
-          onValueChange={(v) => setSelectedLure(v)}
-        >
-          <Select.Trigger variant={"soft"} />
-          <Select.Content>
-            <Select.Item value={BASE_LURE_ID}>
-              <Text color={"gray"}>
-                {BASE_LURE_NAME} Lvl. {lureXpData[BASE_LURE_ID]?.level ?? 0}
-              </Text>
-            </Select.Item>
-            {ownedLureList.map((u) => {
-              const level = lureXpData[u.id]?.level ?? 0;
-              return (
-                <Select.Item key={u.id} value={u.id}>
-                  <Text color={"gray"}>
-                    {u.name} Lvl. {level}
-                  </Text>
-                </Select.Item>
-              );
-            })}
-          </Select.Content>
-        </Select.Root>
-        {selectedLure &&
-          (() => {
-            const entry = lureXpData[selectedLure];
-            const xp = entry?.xp ?? 0;
-            const level = entry?.level ?? 0;
-            const progress = lureXpProgress(xp, level);
-            return (
-              <Flex align={"center"} gap={"2"}>
-                <Text size={"1"} color={"gray"}>
-                  xp
-                </Text>
-                <Progress
-                  radius="none"
-                  size="2"
-                  value={Math.round(progress * 100)}
-                />
-              </Flex>
-            );
-          })()}
       </Flex>
     </Flex>
   );

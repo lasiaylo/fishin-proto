@@ -8,6 +8,7 @@ import { Debug } from "./components/debug";
 import { initShop, initShopFromRows } from "./stores/shopStore";
 import { initFish, initFishFromData } from "./stores/fishStore";
 import { initLocations } from "./stores/locationStore";
+import { initBaitData } from "./stores/baitStore";
 import { pushEvent } from "./stores/eventLogStore";
 import { EventMsg } from "./util/eventMessages";
 import { useCsvConfig } from "./stores/csvConfigStore";
@@ -42,6 +43,7 @@ function App() {
       initShop(shopCSV);
     }
     initLocations();
+    initBaitData();
     pushEvent(EventMsg.WELCOME);
   }, []);
 
