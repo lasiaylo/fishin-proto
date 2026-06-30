@@ -66,7 +66,7 @@ export function pickFishForZone(
   const candidates = location.fish.flatMap(({ fishId, percent }) => {
     const fish = allFish.find((f) => f.id === fishId);
     return fish &&
-      fish.requiredLure === lureId &&
+      fish.requiredTackle === lureId &&
       fish.zones.some((z) => zones.includes(z))
       ? [{ fish, percent }]
       : [];
