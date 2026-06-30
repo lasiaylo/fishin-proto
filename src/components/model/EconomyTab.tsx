@@ -998,37 +998,6 @@ export function EconomyTab({
               </EconomyChart>
             )}
 
-            {isSinglePair && (
-              <EconomyChart
-                title="Player Stats"
-                data={playerStatData}
-                {...chartProps}
-                integerYAxis
-              >
-                <Legend />
-                <Line
-                  dataKey="attack"
-                  type="stepAfter"
-                  stroke="#ff6b6b"
-                  {...lineProps}
-                  name="Attack"
-                />
-                <Line
-                  dataKey="defense"
-                  type="stepAfter"
-                  stroke="#74c0fc"
-                  {...lineProps}
-                  name="Defense"
-                />
-                <Line
-                  dataKey="lineHP"
-                  type="stepAfter"
-                  stroke="#69db7c"
-                  {...lineProps}
-                  name="Line HP"
-                />
-              </EconomyChart>
-            )}
 
             {isSinglePair && (
               <EconomyChart
