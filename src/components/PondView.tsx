@@ -1,26 +1,35 @@
 import React, { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
-import { Flex, Text } from "@radix-ui/themes";
+import { Flex, Progress, Select, Text } from "@radix-ui/themes";
+import { useShallow } from "zustand/react/shallow";
 import { ChargeButton } from "./ChargeButton";
-import { FishData } from "../util/csvLoader";
+import { FishData, StatName } from "../util/csvLoader";
 import { getBiteChance, getWaitZones, getZones } from "../util/zones";
 import { randomizeFishStats, useFish } from "../stores/fishStore";
 import { pickFishForZone, useLocation } from "../stores/locationStore";
-import { addFishToInventory, usePlayer } from "../stores/playerStore";
+import {
+  addFishToInventory,
+  assignRodToSlot,
+  consumeBait,
+  setSlotItem,
+  usePlayer,
+} from "../stores/playerStore";
 import { pushEvent } from "../stores/eventLogStore";
 import { EventMsg } from "../util/eventMessages";
 import { FightEngine, FightState, Outcome } from "../game/FightEngine";
 import { useSessionLog } from "../stores/sessionLogStore";
-import { addLureXp, useLureXp } from "../stores/lureXpStore";
+import { addLureXp, lureXpProgress, useLureXp } from "../stores/lureXpStore";
+import { useShop } from "../stores/shopStore";
+import { useBaitData } from "../stores/baitStore";
 import {
-  BASE_LURE_ID,
+  BAIT_ID_PREFIX,
+  BASE_BAIT_ID,
   BITE_CHECK_INTERVAL,
   CAST_CHARGE_DURATION,
   CAST_DURATION_MAX,
   CAST_DURATION_MIN,
   CAST_MIN,
-  getLureType,
-  LureType,
+  getTackleType,
   lureReelMaxSpeed,
   LURING_REEL_ACCEL,
   LURING_REEL_DECEL,
@@ -28,15 +37,14 @@ import {
   RARITY_COLOR,
   REEL_MIN,
   RESULT_DURATION,
+  TackleType,
   WAIT_DEFAULT_MAX,
   WAIT_DEFAULT_MIN,
-  WAIT_PRIME_MAX,
-  WAIT_PRIME_MIN,
+  WAIT_PRIME_REDUCTION,
   XP_LOSS,
   XP_PER_DISTANCE,
   XP_WIN,
 } from "../util/constants";
-
 import { ReelView } from "./ReelView";
 
 enum GameState {
@@ -47,23 +55,57 @@ enum GameState {
   Fighting = "fighting",
 }
 
-export function PondView() {
+function RodRow({ slotIndex }: { slotIndex: number }) {
+  const {
+    ownedRods,
+    rodSlotAssignments,
+    rodSlotItems,
+    baitInventory,
+    ownedLures,
+    invCount,
+    inventorySize,
+    castMax,
+  } = usePlayer(
+    useShallow((s) => ({
+      ownedRods: s.ownedRods,
+      rodSlotAssignments: s.rodSlotAssignments,
+      rodSlotItems: s.rodSlotItems,
+      baitInventory: s.baitInventory,
+      ownedLures: s.ownedLures,
+      invCount: s.inventory.length,
+      inventorySize: s.inventorySize,
+      castMax: s.castMax,
+    })),
+  );
+  const shopUpgrades = useShop((s) => s.upgrades);
+  const lureXpData = useLureXp((s) => s.lures);
   const locations = useLocation();
-  const invCount = usePlayer((s) => s.inventory.length);
-  const inventorySize = usePlayer((s) => s.inventorySize);
-  const castMax = usePlayer((s) => s.castMax);
+  const baitData = useBaitData((s) => s.baitData);
+
+  const assignment = rodSlotAssignments[slotIndex] ?? null;
+  const selectedItem = rodSlotItems[slotIndex] ?? BASE_BAIT_ID;
+  const isWaitType =
+    getTackleType(selectedItem) === TackleType.BAIT &&
+    selectedItem.startsWith(BAIT_ID_PREFIX);
+
+  const luresUsedElsewhere = new Set(
+    rodSlotItems.filter(
+      (item, i) => i !== slotIndex && item !== null && getTackleType(item) === TackleType.LURE,
+    ),
+  );
+  const ownedLureList = shopUpgrades.filter(
+    (u) => u.stat === StatName.LURE && ownedLures.has(u.id) && !luresUsedElsewhere.has(u.id),
+  );
 
   const [gameState, setGameState] = useState<GameState>(GameState.Idle);
   const [fading, setFading] = useState(false);
   const [fightState, setFightState] = useState<FightState | null>(null);
-  const [selectedLocation, setSelectedLocation] = useState<string>("");
   const [castProgress, setCastProgress] = useState(0);
   const [luringDistance, setLuringDistance] = useState(0);
 
   const castProgressObjRef = useRef({ value: 0 });
   const castTweenRef = useRef<gsap.core.Tween | null>(null);
   const castLocationRef = useRef<string>("");
-
   const caughtFishRef = useRef<FishData | null>(null);
   const fightRef = useRef<FightEngine | null>(null);
   const lineHpRef = useRef<number>(usePlayer.getState().lineHP);
@@ -92,6 +134,7 @@ export function PondView() {
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
+      if (slotIndex !== 0) return;
       const digit = parseInt(e.key);
       if (digit >= 1 && digit <= 7) {
         const fish = useFish.getState().allFish[digit - 1];
@@ -108,28 +151,26 @@ export function PondView() {
         const effectivePrice = Math.round(fish.basePrice);
         addFishToInventory(fish, effectivePrice);
       }
-      if (e.key === "0") {
-        addFish(Rarity.COMMON);
-      }
-      if (e.key === "-") {
-        addFish(Rarity.UNCOMMON);
-      }
-      if (e.key === "=") {
-        addFish(Rarity.RARE);
-      }
+      if (e.key === "0") addFish(Rarity.COMMON);
+      if (e.key === "-") addFish(Rarity.UNCOMMON);
+      if (e.key === "=") addFish(Rarity.RARE);
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
 
-  function checkBite(distance: number, lureLevel = 0): boolean {
+  function checkBite(
+    distance: number,
+    lureId: string,
+    lureLevel: number,
+  ): boolean {
     const zones = getZones(distance);
     if (zones.length === 0) return false;
     if (
       Math.random() > getBiteChance(zones, emptyReelCountRef.current, lureLevel)
     )
       return false;
-    const fish = pickFishForZone(castLocationRef.current, zones);
+    const fish = pickFishForZone(castLocationRef.current, zones, lureId);
     if (!fish) return false;
     emptyReelCountRef.current = 0;
     caughtFishRef.current = fish;
@@ -147,15 +188,18 @@ export function PondView() {
     isReelingRef.current = false;
     waitCountdownRef.current = null;
 
-    const { selectedLure } = usePlayer.getState();
-    const lureLevel = selectedLure
-      ? (useLureXp.getState().lures[selectedLure]?.level ?? 0)
-      : 0;
+    const { rodSlotItems: items } = usePlayer.getState();
+    const item = items[slotIndex] ?? BASE_BAIT_ID;
+    const lureType = getTackleType(item);
+    const lureLevel = useLureXp.getState().lures[item]?.level ?? 0;
     const effectiveReelMaxSpeed = lureReelMaxSpeed(lureLevel);
+
+    const bait = useBaitData.getState().baitData.find((b) => b.id === item);
+    const waitMin = bait?.waitMin ?? WAIT_DEFAULT_MIN;
+    const waitMax = bait?.waitMax ?? WAIT_DEFAULT_MAX;
+
     const newGameState =
-      getLureType(selectedLure ?? BASE_LURE_ID) === LureType.CAST_AND_WAIT
-        ? GameState.Waiting
-        : GameState.Luring;
+      lureType === TackleType.BAIT ? GameState.Waiting : GameState.Luring;
 
     setGameState(newGameState);
     setLuringDistance(initialDistance);
@@ -197,23 +241,28 @@ export function PondView() {
             initialDistance - luringDistanceRef.current >= REEL_MIN
           ) {
             lastBiteCheckDistanceRef.current = luringDistanceRef.current;
-            if (checkBite(luringDistanceRef.current, lureLevel)) return;
+            if (checkBite(luringDistanceRef.current, item, lureLevel)) return;
           }
         } else {
           waitCountdownRef.current = null;
         }
       } else if (newGameState === GameState.Waiting) {
         if (waitCountdownRef.current === null) {
-          const inPrimeZone = getWaitZones(luringDistanceRef.current).length > 0;
-          const [min, max] = inPrimeZone
-            ? [WAIT_PRIME_MIN, WAIT_PRIME_MAX]
-            : [WAIT_DEFAULT_MIN, WAIT_DEFAULT_MAX];
-          waitCountdownRef.current = min + Math.random() * (max - min);
+          const inPrimeZone =
+            getWaitZones(luringDistanceRef.current).length > 0;
+          const raw = waitMin + Math.random() * (waitMax - waitMin);
+          waitCountdownRef.current = inPrimeZone
+            ? raw * (1 - WAIT_PRIME_REDUCTION)
+            : raw;
         }
         waitCountdownRef.current -= dt;
         if (waitCountdownRef.current <= 0) {
           const waitZones = getWaitZones(luringDistanceRef.current);
-          const fish = pickFishForZone(castLocationRef.current, waitZones);
+          const fish = pickFishForZone(
+            castLocationRef.current,
+            waitZones,
+            item,
+          );
           if (fish) {
             caughtFishRef.current = fish;
             pushEvent(EventMsg.BITING);
@@ -236,9 +285,18 @@ export function PondView() {
       (castDistanceRef.current - luringDistanceRef.current) * XP_PER_DISTANCE;
     setGameState(GameState.Fighting);
 
-    const { attack, defense, lineHP } = usePlayer.getState();
-    const fish = caughtFishRef.current!;
+    const {
+      rodSlotAssignments: assignments,
+      ownedRods: rods,
+      lineHP,
+    } = usePlayer.getState();
+    const rodId = assignments[slotIndex];
+    const rod = rods.find((r) => r.id === rodId);
+    const attack = rod?.attack ?? 0;
+    const defense = rod?.defense ?? 0;
     lineHpRef.current = lineHP;
+
+    const fish = caughtFishRef.current!;
 
     fightRef.current = new FightEngine(
       fish.attack,
@@ -265,14 +323,6 @@ export function PondView() {
       prevCritRef.current = state.crit;
       setFightState({ ...state });
       if (state.outcome !== null) {
-        console.log(
-          state.outcome,
-          `${caughtFishRef.current?.name}`,
-          `${caughtFishRef.current?.rarity}`,
-          `Atk ${caughtFishRef.current?.attack.toFixed(2)}`,
-          `Def ${caughtFishRef.current?.defense.toFixed(2)}`,
-          `Time ${+state.time.toFixed(2)}`,
-        );
         finishFight(state.outcome, state);
         return;
       }
@@ -285,7 +335,8 @@ export function PondView() {
   function finishFight(result: Outcome, finalState: FightState) {
     cancelAnimationFrame(rafRef.current);
     const fish = caughtFishRef.current!;
-    const { lineHP, selectedLure } = usePlayer.getState();
+    const { lineHP, rodSlotItems: items } = usePlayer.getState();
+    const item = items[slotIndex] ?? BASE_BAIT_ID;
     const effectivePrice = Math.round(fish.basePrice);
 
     useSessionLog
@@ -296,12 +347,16 @@ export function PondView() {
         finalState.time,
         finalState.tension,
         lineHP,
-        selectedLure ?? "",
+        item,
         effectivePrice,
       );
 
-    if (selectedLure) {
-      addLureXp(selectedLure, result === Outcome.WIN ? XP_WIN : XP_LOSS);
+    if (getTackleType(item) === TackleType.LURE) {
+      addLureXp(item, result === Outcome.WIN ? XP_WIN : XP_LOSS);
+    }
+
+    if (getTackleType(item) === TackleType.BAIT) {
+      consumeBait(item);
     }
 
     if (result === Outcome.WIN) {
@@ -324,7 +379,7 @@ export function PondView() {
   }
 
   function handleCastRelease(chargePercent: number) {
-    const locationId = selectedLocation || Object.keys(locations)[0];
+    const locationId = Object.keys(locations)[0];
     const t = chargePercent / 100;
     const castTarget = CAST_MIN + t * (castMax - CAST_MIN);
     castLocationRef.current = locationId;
@@ -347,35 +402,45 @@ export function PondView() {
   function handleReelIn() {
     cancelAnimationFrame(luringRafRef.current);
     emptyReelCountRef.current += 1;
-    const { selectedLure } = usePlayer.getState();
-    if (selectedLure) {
-      addLureXp(selectedLure, castDistanceRef.current * XP_PER_DISTANCE);
+    const { rodSlotItems: items } = usePlayer.getState();
+    const item = items[slotIndex] ?? BASE_BAIT_ID;
+    if (getTackleType(item) === TackleType.LURE) {
+      addLureXp(item, castDistanceRef.current * XP_PER_DISTANCE);
     }
     setGameState(GameState.Idle);
   }
 
-  let component;
+  const baitCount = baitInventory[selectedItem] ?? 0;
+  const castDisabled =
+    invCount >= inventorySize || (isWaitType && baitCount === 0);
 
+  let controls: React.ReactNode;
   if (gameState === GameState.Idle) {
-    component =
-      invCount >= inventorySize ? (
-        <Text size={"1"}>the cooler is full</Text>
-      ) : (
-        <ChargeButton
-          onRelease={handleCastRelease}
-          maxHoldMs={CAST_CHARGE_DURATION}
-          width={200}
-        >
-          cast
-        </ChargeButton>
+    if (invCount >= inventorySize) {
+      controls = <Text size="1">the cooler is full</Text>;
+    } else if (isWaitType && baitCount === 0) {
+      controls = <Text size="1">no bait</Text>;
+    } else {
+      controls = (
+        <Flex flexGrow={"1"}>
+          <ChargeButton
+            onRelease={handleCastRelease}
+            maxHoldMs={CAST_CHARGE_DURATION}
+            width={150}
+            disabled={castDisabled}
+          >
+            cast
+          </ChargeButton>
+        </Flex>
       );
+    }
   } else if (gameState === GameState.CastAnimation) {
-    component = <ReelView distance={castProgress} lineHp={lineHpRef.current} />;
+    controls = <ReelView distance={castProgress} lineHp={lineHpRef.current} />;
   } else if (
     gameState === GameState.Luring ||
     gameState === GameState.Waiting
   ) {
-    component = (
+    controls = (
       <ReelView
         distance={luringDistance}
         lineHp={lineHpRef.current}
@@ -388,7 +453,7 @@ export function PondView() {
       />
     );
   } else if (gameState === GameState.Fighting && fightState !== null) {
-    component = (
+    controls = (
       <ReelView
         distance={fightState.distance}
         fightState={fightState}
@@ -404,9 +469,88 @@ export function PondView() {
     );
   }
 
+  const lureXpEntry = lureXpData[selectedItem];
+  const lureXpVal = lureXpEntry?.xp ?? 0;
+  const lureLevel = lureXpEntry?.level ?? 0;
+  const lureProgress = lureXpProgress(lureXpVal, lureLevel);
+
   return (
-    <Flex className="fade-in" width="100%" direction="column" gap="3" p="4">
-      {component}
+    <Flex direction="column" gap="2" minHeight={"150px"}>
+      <Flex gap="4">
+        <Flex flexGrow={"1"}>{controls}</Flex>
+        <Flex direction="column" width={"120px"} gap="2">
+          <Select.Root
+            size="1"
+            value={assignment ?? "none"}
+            onValueChange={(v) =>
+              assignRodToSlot(slotIndex, v === "none" ? null : v)
+            }
+          >
+            <Select.Trigger variant="soft" />
+            <Select.Content>
+              <Select.Item value="none">None</Select.Item>
+              {ownedRods.map((rod) => (
+                <Select.Item key={rod.id} value={rod.id}>
+                  {rod.id}
+                </Select.Item>
+              ))}
+            </Select.Content>
+          </Select.Root>
+          {assignment !== null && (
+            <>
+              <Select.Root
+                size="1"
+                value={selectedItem}
+                onValueChange={(v) => setSlotItem(slotIndex, v)}
+              >
+                <Select.Trigger variant="soft" />
+                <Select.Content>
+                  {Object.entries(baitInventory).map(([id, count]) => {
+                    const bait = baitData.find((b) => b.id === id);
+                    return (
+                      <Select.Item key={id} value={id}>
+                        {bait?.id ?? id}
+                      </Select.Item>
+                    );
+                  })}
+                  {ownedLureList.map((u) => {
+                    const lvl = lureXpData[u.id]?.level ?? 0;
+                    return (
+                      <Select.Item key={u.id} value={u.id}>
+                        {u.name}
+                      </Select.Item>
+                    );
+                  })}
+                </Select.Content>
+              </Select.Root>
+              {getTackleType(selectedItem) === TackleType.LURE && (
+                <Flex align="center" gap="2">
+                  <Text size="1" color="gray">
+                    {`lvl ${lureLevel}`}
+                  </Text>
+                  <Progress
+                    radius="none"
+                    size="2"
+                    value={Math.round(lureProgress * 100)}
+                  />
+                </Flex>
+              )}
+            </>
+          )}
+        </Flex>
+      </Flex>
+    </Flex>
+  );
+}
+
+export function PondView() {
+  const rodCount = usePlayer((s) => s.rodSlotAssignments.length);
+
+  return (
+    <Flex className="fade-in" width="100%" direction="column" gap="4" p="3">
+      {Array.from({ length: rodCount }).map((_, i) => (
+        <RodRow key={i} slotIndex={i} />
+      ))}
     </Flex>
   );
 }

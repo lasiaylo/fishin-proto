@@ -1,11 +1,16 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { FishData } from "../util/csvLoader";
-import { INITIAL_PLAYER_STATE, Rarity } from "../util/constants";
+import {
+  BAIT_MAX_STACK,
+  getTackleType,
+  INITIAL_PLAYER_STATE,
+  Rarity,
+  Rod,
+  TackleType,
+} from "../util/constants";
 
 export interface PlayerStats {
-  attack: number;
-  defense: number;
   lineHP: number;
   inventorySize: number;
   castMax: number;
@@ -20,7 +25,10 @@ export interface InventoryFish {
 export interface PlayerState extends PlayerStats {
   wallet: number;
   ownedLures: Set<string>;
-  selectedLure: string | null;
+  baitInventory: Record<string, number>;
+  ownedRods: Rod[];
+  rodSlotAssignments: (string | null)[];
+  rodSlotItems: (string | null)[];
   inventory: InventoryFish[];
 }
 
@@ -68,8 +76,70 @@ export function removeLure(lureId: string) {
   });
 }
 
-export function setSelectedLure(lureId: string | null) {
-  usePlayer.setState({ selectedLure: lureId });
+export function consumeBait(id: string) {
+  usePlayer.setState((s) => ({
+    baitInventory: {
+      ...s.baitInventory,
+      [id]: Math.max(0, (s.baitInventory[id] ?? 0) - 1),
+    },
+  }));
+}
+
+export function addBait(id: string, qty: number) {
+  usePlayer.setState((s) => ({
+    baitInventory: {
+      ...s.baitInventory,
+      [id]: Math.min(BAIT_MAX_STACK, (s.baitInventory[id] ?? 0) + qty),
+    },
+  }));
+}
+
+export function addRod(id: string) {
+  usePlayer.setState((s) => {
+    if (s.ownedRods.some((r) => r.id === id)) return s;
+    return {
+      ownedRods: [...s.ownedRods, { id, attack: 25, defense: 25 }],
+      rodSlotAssignments: [...s.rodSlotAssignments, id],
+      rodSlotItems: [...s.rodSlotItems, "BAIT_0"],
+    };
+  });
+}
+
+export function assignRodToSlot(slotIdx: number, rodId: string | null) {
+  usePlayer.setState((s) => {
+    const arr = [...s.rodSlotAssignments];
+    arr[slotIdx] = rodId;
+    return { rodSlotAssignments: arr };
+  });
+}
+
+export function addToRodStat(
+  rodId: string,
+  stat: "attack" | "defense",
+  value: number,
+) {
+  usePlayer.setState((s) => {
+    const idx = s.ownedRods.findIndex((r) => r.id === rodId);
+    if (idx === -1) return s;
+    const newRods = [...s.ownedRods];
+    newRods[idx] = { ...newRods[idx], [stat]: newRods[idx][stat] + value };
+    return { ownedRods: newRods };
+  });
+}
+
+export function setSlotItem(slotIdx: number, itemId: string | null) {
+  usePlayer.setState((s) => {
+    if (
+      itemId !== null &&
+      getTackleType(itemId) === TackleType.LURE &&
+      s.rodSlotItems.some((item, i) => i !== slotIdx && item === itemId)
+    ) {
+      return s;
+    }
+    const arr = [...s.rodSlotItems];
+    arr[slotIdx] = itemId;
+    return { rodSlotItems: arr };
+  });
 }
 
 export function addFishToInventory(fish: FishData, effectivePrice: number) {

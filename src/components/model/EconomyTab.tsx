@@ -114,8 +114,6 @@ export function EconomyTab({
   onFishRowsChange: (rows: string[][]) => void;
   onShopRowsChange: (rows: string[][]) => void;
 }) {
-  const [reelStr, setReelStr] = useState(INITIAL_PLAYER_STATE.attack);
-  const [drag, setDrag] = useState(INITIAL_PLAYER_STATE.defense);
   const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
   const [inventorySize, setInventorySize] = useState(
     INITIAL_PLAYER_STATE.inventorySize,
@@ -307,7 +305,7 @@ export function EconomyTab({
           data.fish,
           data.shop,
           locationData,
-          { attack: reelStr, defense: drag, lineHP, inventorySize, castMax },
+          { lineHP, inventorySize, castMax },
           simMinutes,
           evalTrials,
           pair.upgradeStrategy,
@@ -378,8 +376,8 @@ export function EconomyTab({
 
   const playerStatData = primaryRounds.map((r) => ({
     time: r.cumulativeTime,
-    attack: r.playerStats.attack,
-    defense: r.playerStats.defense,
+    attack: r.rodStats[0]?.attack ?? 0,
+    defense: r.rodStats[0]?.defense ?? 0,
     lineHP: r.playerStats.lineHP,
   }));
 
@@ -621,13 +619,6 @@ export function EconomyTab({
 
       {/* Simulation controls */}
       <Flex gap="3" wrap="wrap" align="end">
-        <NumInput
-          label="Attack"
-          value={reelStr}
-          onChange={setReelStr}
-          min={1}
-        />
-        <NumInput label="Defense" value={drag} onChange={setDrag} min={1} />
         <NumInput label="Line HP" value={lineHP} onChange={setLineHP} min={1} />
         <NumInput
           label="Inventory"

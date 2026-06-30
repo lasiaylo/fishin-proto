@@ -157,8 +157,8 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
   const [fightStartDistance, setFightStartDistance] = useState(
     avgZoneDistance(fishData[0]?.zones ?? []),
   );
-  const [reelStr, setReelStr] = useState(INITIAL_PLAYER_STATE.attack);
-  const [drag, setDrag] = useState(INITIAL_PLAYER_STATE.defense);
+  const [reelStr, setReelStr] = useState(INITIAL_PLAYER_STATE.ownedRods[0].attack);
+  const [drag, setDrag] = useState(INITIAL_PLAYER_STATE.ownedRods[0].defense);
   const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
   const [trialCount, setTrialCount] = useState(20);
   const [randomize, setRandomize] = useState(false);

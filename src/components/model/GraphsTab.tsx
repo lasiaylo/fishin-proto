@@ -47,8 +47,8 @@ export function GraphsTab({
   onShopRowsChange: (rows: string[][]) => void;
 }) {
   const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
-  const [minStat, setMinStat] = useState(INITIAL_PLAYER_STATE.attack);
-  const [maxStat, setMaxStat] = useState(INITIAL_PLAYER_STATE.attack + 10);
+  const [minStat, setMinStat] = useState(INITIAL_PLAYER_STATE.ownedRods[0].attack);
+  const [maxStat, setMaxStat] = useState(INITIAL_PLAYER_STATE.ownedRods[0].attack + 10);
   const [trialsPerFish, setTrialsPerFish] = useState(100);
   const [inventorySize, setInventorySize] = useState(3);
   const [sweepData, setSweepData] = useState<object[]>([]);
@@ -179,7 +179,9 @@ export function GraphsTab({
         const { rates, earnings, winRates, remainingHPs } = computeLureStats(
           activeFishData,
           locationData,
-          { attack: s, defense: s, lineHP, inventorySize },
+          { lineHP, inventorySize, castMax: INITIAL_PLAYER_STATE.castMax },
+          s,
+          s,
           trialsPerFish,
         );
         const winRateKeyed = Object.fromEntries(
@@ -199,7 +201,7 @@ export function GraphsTab({
           const level = Math.max(
             0,
             Math.floor(
-              (s - INITIAL_PLAYER_STATE.attack) / atkUpgrade.valuePerLevel,
+              (s - INITIAL_PLAYER_STATE.ownedRods[0].attack) / atkUpgrade.valuePerLevel,
             ),
           );
           attackUpgradeCost =

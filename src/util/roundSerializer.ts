@@ -1,4 +1,5 @@
 import { EconomyRound } from "../game/EconomyModel";
+import { INITIAL_PLAYER_STATE } from "../util/constants";
 
 const HEADERS = [
   "round",
@@ -10,8 +11,8 @@ const HEADERS = [
   "rate",
   "lureId",
   "boughtLure",
-  "attack",
-  "defense",
+  "rodAtk",
+  "rodDef",
   "lineHP",
   "inventorySize",
   "upgradesBought",
@@ -45,8 +46,8 @@ export function roundsToCSV(rounds: EconomyRound[]): string {
       r.rate.toFixed(6),
       r.lureId,
       r.boughtLure ? "1" : "0",
-      r.playerStats.attack,
-      r.playerStats.defense,
+      r.rodStats[0]?.attack ?? 0,
+      r.rodStats[0]?.defense ?? 0,
       r.playerStats.lineHP,
       r.playerStats.inventorySize,
       JSON.stringify(r.upgradesBought),
@@ -108,29 +109,33 @@ export function csvToRounds(csv: string): EconomyRound[] {
     const get = (key: string) => c[idx[key]] ?? "";
     const arr = (key: string) => JSON.parse(get(key) || "[]");
     const obj = (key: string) => JSON.parse(get(key) || "{}");
+    const rodAtk = Number(get("rodAtk"));
+    const rodDef = Number(get("rodDef"));
     return {
       round: Number(get("round")),
       cumulativeTime: Number(get("cumulativeTime")),
       roundTime: Number(get("roundTime")),
       fightDuration: Number(get("fightDuration")),
       income: Number(get("income")),
+      baitCost: 0,
       wallet: Number(get("wallet")),
       rate: Number(get("rate")),
       lureId: get("lureId"),
       boughtLure: get("boughtLure") === "1",
+      rodCount: 1,
       playerStats: {
-        attack: Number(get("attack")),
-        defense: Number(get("defense")),
         lineHP: Number(get("lineHP")),
         inventorySize: Number(get("inventorySize")),
+        castMax: INITIAL_PLAYER_STATE.castMax,
       },
-      upgradesBought: arr("upgradesBought"),
-      upgradeLevels: obj("upgradeLevels"),
+      rodStats: [{ id: "ROD_1", attack: rodAtk, defense: rodDef }],
       fishCatchTimes: obj("fishCatchTimes"),
       fishEarnings: obj("fishEarnings"),
       lureRates: obj("lureRates"),
       lureWinRates: obj("lureWinRates"),
       lureRemainingHP: obj("lureRemainingHP"),
+      upgradesBought: arr("upgradesBought"),
+      upgradeLevels: obj("upgradeLevels"),
       lureXp: obj("lureXp"),
       lureLevels: obj("lureLevels"),
     };

@@ -3,6 +3,10 @@ import { PlayerState } from "../stores/playerStore";
 export const CURRENCY_SYMBOL = "࿔";
 export const BASE_LURE_ID = "LURE_0";
 export const BASE_LURE_NAME = "Worm";
+export const BASE_BAIT_ID = "BAIT_0";
+export const BASE_BAIT_NAME = "Worm";
+export const BAIT_ID_PREFIX = "BAIT_";
+export const BAIT_MAX_STACK = 10;
 
 // ==========================================================================
 // PLAYER
@@ -11,15 +15,22 @@ const INIT_AD = 25;
 const CAST_MAX = 40;
 export const REEL_MIN = 5;
 
+export interface Rod {
+  id: string;
+  attack: number;
+  defense: number;
+}
+
 export const INITIAL_PLAYER_STATE: PlayerState = {
   wallet: 0,
-  attack: INIT_AD,
-  defense: INIT_AD,
   lineHP: 20,
   inventorySize: 3,
   castMax: CAST_MAX,
-  ownedLures: new Set<string>([BASE_LURE_ID]),
-  selectedLure: BASE_LURE_ID,
+  ownedLures: new Set<string>(),
+  baitInventory: { [BASE_BAIT_ID]: BAIT_MAX_STACK },
+  ownedRods: [{ id: "ROD_1", attack: INIT_AD, defense: INIT_AD }],
+  rodSlotAssignments: ["ROD_1"],
+  rodSlotItems: [BASE_BAIT_ID],
   inventory: [],
 };
 
@@ -71,15 +82,15 @@ export const LURE_BITE_CHANCE_PER_LEVEL = 0.1;
 // ==========================================================================
 // LURE TYPES
 // ==========================================================================
-export enum LureType {
-  CAST_AND_WAIT = "cast_and_wait",
-  CAST_AND_LURE = "cast_and_lure",
+export enum TackleType {
+  BAIT = "BAIT",
+  LURE = "LURE",
 }
 
-export function getLureType(lureId: string): LureType {
-  return lureId === BASE_LURE_ID
-    ? LureType.CAST_AND_WAIT
-    : LureType.CAST_AND_LURE;
+export function getTackleType(lureId: string): TackleType {
+  return lureId.startsWith(BAIT_ID_PREFIX) || lureId === BASE_LURE_ID
+    ? TackleType.BAIT
+    : TackleType.LURE;
 }
 
 export const WAIT_ZONE_RANGES: Record<Zone, [number, number]> = {
@@ -92,6 +103,7 @@ export const WAIT_PRIME_MIN = 2;
 export const WAIT_PRIME_MAX = 5;
 export const WAIT_DEFAULT_MIN = 6;
 export const WAIT_DEFAULT_MAX = 14;
+export const WAIT_PRIME_REDUCTION = 0.5;
 
 // ==========================================================================
 // RARITY
