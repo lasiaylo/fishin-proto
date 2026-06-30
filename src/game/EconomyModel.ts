@@ -60,6 +60,7 @@ export interface EconomyRound {
   wallet: number; // after income, before upgrades
   rate: number; // net $/sec (netIncome / roundTime)
   lureId: string; // "" = no lure
+  baitId: string; // "" = no bait rod active; otherwise the tackle used by secondary rods
   rodCount: number;
   fishCatchTimes: Record<string, number>; // fishId → avgFightTime (all fish in chosen lure pool)
   fishEarnings: Record<string, number>; // fishId → avgEarnings considering win rate
@@ -180,7 +181,7 @@ function evalLure(
     avgFightTime: number;
     avgEarningsPerFight: number;
   } | null;
-  bestBaitLureId: string | null;
+  bestBaitId: string | null;
   catchTimes: Record<string, number>;
   earnings: Record<string, number>;
   lureRates: Record<string, number>;
@@ -192,7 +193,7 @@ function evalLure(
   let bestRate;
   let best = null;
   let bestBaitRate: number | undefined;
-  let bestBaitLureId: string | null = null;
+  let bestBaitId: string | null = null;
   const catchTimes: Record<string, number> = {};
   const earnings: Record<string, number> = {};
   const lureRates: Record<string, number> = {};
@@ -260,14 +261,14 @@ function evalLure(
     if (getTackleType(lureId) === TackleType.BAIT) {
       if (bestBaitRate === undefined || rate >= bestBaitRate) {
         bestBaitRate = rate;
-        bestBaitLureId = lureId;
+        bestBaitId = lureId;
       }
     }
   }
 
   return {
     best,
-    bestBaitLureId,
+    bestBaitId: bestBaitId,
     catchTimes,
     earnings,
     lureRates,
@@ -585,17 +586,17 @@ export function simulateEconomy(
   let cumulativeTime = 0;
   const rounds: EconomyRound[] = [];
   const lureXpMap: Record<string, number> = {};
-  const fishByLure = new Map<string, FishData[]>();
+  const fishByTackle = new Map<string, FishData[]>();
   for (const fish of fishData) {
-    if (!fishByLure.has(fish.requiredLure))
-      fishByLure.set(fish.requiredLure, []);
-    fishByLure.get(fish.requiredLure)!.push(fish);
+    if (!fishByTackle.has(fish.requiredLure))
+      fishByTackle.set(fish.requiredLure, []);
+    fishByTackle.get(fish.requiredLure)!.push(fish);
   }
   const shopLureIds = new Set(
     shopData.filter((u) => u.stat === StatName.LURE).map((u) => u.id),
   );
   const ownedLures = new Set<string>(
-    [...fishByLure.keys()].filter((id) => id && !shopLureIds.has(id)),
+    [...fishByTackle.keys()].filter((id) => id && !shopLureIds.has(id)),
   );
   const baitStock: Record<string, number> = {};
   for (const lureId of ownedLures) {
@@ -613,7 +614,7 @@ export function simulateEconomy(
       baitCostPerFight[upgrade.id] = upgrade.prices[0] / upgrade.valuePerLevel;
     }
   }
-  const fishWeights = buildFishWeights(fishByLure, locationData);
+  const fishWeights = buildFishWeights(fishByTackle, locationData);
   const baitDataMap = new Map(baitData.map((b) => [b.id, b]));
   const initialRod = INITIAL_PLAYER_STATE.ownedRods[0];
   const rods: EconRod[] = [
@@ -624,14 +625,14 @@ export function simulateEconomy(
   for (let round = 1; round <= MAX_ROUNDS; round++) {
     const {
       best,
-      bestBaitLureId,
+      bestBaitId,
       catchTimes: fishCatchTimes,
       earnings: fishEarnings,
       lureRates,
       lureWinRates,
       lureRemainingHP,
     } = evalLure(
-      fishByLure,
+      fishByTackle,
       rods,
       player,
       ownedLures,
@@ -647,7 +648,7 @@ export function simulateEconomy(
     const overhead = perCastOverhead(
       player.castMax,
       lureId,
-      fishByLure,
+      fishByTackle,
       lureLevel,
       baitDataMap,
     );
@@ -657,7 +658,7 @@ export function simulateEconomy(
 
     // pBite: probability of getting a fight on a single cast
     const isBait = getTackleType(lureId) === TackleType.BAIT;
-    const pool = fishByLure.get(lureId) ?? [];
+    const pool = fishByTackle.get(lureId) ?? [];
     const zoneRanges = isBait ? WAIT_ZONE_RANGES : ZONE_RANGES;
     const validZones = [...new Set(pool.flatMap((f) => f.zones))];
     const maxZoneDist =
@@ -684,12 +685,12 @@ export function simulateEconomy(
     let baitRodIncome = 0;
     let baitRodBaitCost = 0;
     const baitRods = rods.slice(1);
-    if (baitRods.length > 0 && bestBaitLureId !== null) {
-      const baitPool = fishByLure.get(bestBaitLureId) ?? [];
+    if (baitRods.length > 0 && bestBaitId !== null) {
+      const baitPool = fishByTackle.get(bestBaitId) ?? [];
       const baitOverhead = perCastOverhead(
         player.castMax,
-        bestBaitLureId,
-        fishByLure,
+        bestBaitId,
+        fishByTackle,
         0,
         baitDataMap,
       );
@@ -727,10 +728,10 @@ export function simulateEconomy(
           const baitRate = baitTotalEarnings / baitCatchTime;
           baitRodIncome += roundTime * baitRate;
           const baitRodFights = roundTime / baitCatchTime;
-          baitStock[bestBaitLureId!] =
-            (baitStock[bestBaitLureId!] ?? 0) - baitRodFights;
+          baitStock[bestBaitId!] =
+            (baitStock[bestBaitId!] ?? 0) - baitRodFights;
           baitRodBaitCost +=
-            baitRodFights * (baitCostPerFight[bestBaitLureId!] ?? 0);
+            baitRodFights * (baitCostPerFight[bestBaitId!] ?? 0);
         }
       }
     }
@@ -814,6 +815,7 @@ export function simulateEconomy(
       wallet: walletSnapshot,
       rate: netIncome / roundTime,
       lureId,
+      baitId: isBait ? lureId : baitRods.length > 0 ? (bestBaitId ?? "") : "",
       rodCount: rods.length,
       fishCatchTimes,
       fishEarnings,

@@ -482,6 +482,52 @@ export function EconomyTab({
   }
   const activeLureIds = [...new Set(primaryRounds.map((r) => r.lureId))];
 
+  // Bait regions (secondary rods' bait tackle)
+  const activeBaitIds = [
+    ...new Set(primaryRounds.map((r) => r.baitId).filter(Boolean)),
+  ];
+  const baitColorMap = Object.fromEntries(
+    activeBaitIds.map((id, i) => [id, COLORS[(i + 4) % COLORS.length]]),
+  );
+  const baitRegions: { x1: number; x2: number; baitId: string }[] = [];
+  if (primaryRounds.length > 0) {
+    let regionStart = 0;
+    for (let i = 0; i < primaryRounds.length; i++) {
+      const r = primaryRounds[i];
+      if (
+        i === primaryRounds.length - 1 ||
+        primaryRounds[i + 1].baitId !== r.baitId
+      ) {
+        if (r.baitId)
+          baitRegions.push({
+            x1: regionStart,
+            x2: r.cumulativeTime,
+            baitId: r.baitId,
+          });
+        regionStart = r.cumulativeTime;
+      }
+    }
+  }
+  const baitRegionsByRound: { x1: number; x2: number; baitId: string }[] = [];
+  if (primaryRounds.length > 0) {
+    let regionStart = primaryRounds[0].round;
+    for (let i = 0; i < primaryRounds.length; i++) {
+      const r = primaryRounds[i];
+      if (
+        i === primaryRounds.length - 1 ||
+        primaryRounds[i + 1].baitId !== r.baitId
+      ) {
+        if (r.baitId)
+          baitRegionsByRound.push({
+            x1: regionStart,
+            x2: r.round,
+            baitId: r.baitId,
+          });
+        regionStart = r.round;
+      }
+    }
+  }
+
   const pairLureIdSets: Record<string, Set<string>> = {};
   for (const { pair } of activePairResults) {
     const shop =
@@ -707,22 +753,40 @@ export function EconomyTab({
               {...chartProps}
               header={
                 isSinglePair
-                  ? activeLureIds.map((id) => (
-                      <Flex key={id} align="center" gap="1">
-                        <div
-                          style={{
-                            width: 10,
-                            height: 10,
-                            borderRadius: 2,
-                            backgroundColor: lureColorMap[id],
-                            opacity: 0.8,
-                          }}
-                        />
-                        <Text size="1" color="gray">
-                          {lureNameMap[id]}
-                        </Text>
-                      </Flex>
-                    ))
+                  ? [
+                      ...activeLureIds.map((id) => (
+                        <Flex key={`lure-${id}`} align="center" gap="1">
+                          <div
+                            style={{
+                              width: 10,
+                              height: 10,
+                              borderRadius: 2,
+                              backgroundColor: lureColorMap[id],
+                              opacity: 0.8,
+                            }}
+                          />
+                          <Text size="1" color="gray">
+                            {lureNameMap[id]}
+                          </Text>
+                        </Flex>
+                      )),
+                      ...activeBaitIds.map((id) => (
+                        <Flex key={`bait-${id}`} align="center" gap="1">
+                          <div
+                            style={{
+                              width: 10,
+                              height: 10,
+                              borderRadius: "50%",
+                              backgroundColor: baitColorMap[id],
+                              opacity: 0.8,
+                            }}
+                          />
+                          <Text size="1" color="gray">
+                            {id} (bait)
+                          </Text>
+                        </Flex>
+                      )),
+                    ]
                   : undefined
               }
             >
@@ -734,6 +798,17 @@ export function EconomyTab({
                     x2={region.x2}
                     fill={lureColorMap[region.lureId]}
                     fillOpacity={0.12}
+                    ifOverflow="hidden"
+                  />
+                ))}
+              {isSinglePair &&
+                baitRegions.map((region, i) => (
+                  <ReferenceArea
+                    key={`bait-${i}`}
+                    x1={region.x1}
+                    x2={region.x2}
+                    fill={baitColorMap[region.baitId]}
+                    fillOpacity={0.08}
                     ifOverflow="hidden"
                   />
                 ))}
@@ -789,22 +864,40 @@ export function EconomyTab({
               }}
               header={
                 isSinglePair
-                  ? activeLureIds.map((id) => (
-                      <Flex key={id} align="center" gap="1">
-                        <div
-                          style={{
-                            width: 10,
-                            height: 10,
-                            borderRadius: 2,
-                            backgroundColor: lureColorMap[id],
-                            opacity: 0.8,
-                          }}
-                        />
-                        <Text size="1" color="gray">
-                          {lureNameMap[id]}
-                        </Text>
-                      </Flex>
-                    ))
+                  ? [
+                      ...activeLureIds.map((id) => (
+                        <Flex key={`lure-${id}`} align="center" gap="1">
+                          <div
+                            style={{
+                              width: 10,
+                              height: 10,
+                              borderRadius: 2,
+                              backgroundColor: lureColorMap[id],
+                              opacity: 0.8,
+                            }}
+                          />
+                          <Text size="1" color="gray">
+                            {lureNameMap[id]}
+                          </Text>
+                        </Flex>
+                      )),
+                      ...activeBaitIds.map((id) => (
+                        <Flex key={`bait-${id}`} align="center" gap="1">
+                          <div
+                            style={{
+                              width: 10,
+                              height: 10,
+                              borderRadius: "50%",
+                              backgroundColor: baitColorMap[id],
+                              opacity: 0.8,
+                            }}
+                          />
+                          <Text size="1" color="gray">
+                            {id} (bait)
+                          </Text>
+                        </Flex>
+                      )),
+                    ]
                   : undefined
               }
             >
@@ -816,6 +909,17 @@ export function EconomyTab({
                     x2={region.x2}
                     fill={lureColorMap[region.lureId]}
                     fillOpacity={0.12}
+                    ifOverflow="hidden"
+                  />
+                ))}
+              {isSinglePair &&
+                baitRegionsByRound.map((region, i) => (
+                  <ReferenceArea
+                    key={`bait-${i}`}
+                    x1={region.x1}
+                    x2={region.x2}
+                    fill={baitColorMap[region.baitId]}
+                    fillOpacity={0.08}
                     ifOverflow="hidden"
                   />
                 ))}
@@ -885,6 +989,17 @@ export function EconomyTab({
                     x2={region.x2}
                     fill={lureColorMap[region.lureId]}
                     fillOpacity={0.12}
+                    ifOverflow="hidden"
+                  />
+                ))}
+              {isSinglePair &&
+                baitRegionsByRound.map((region, i) => (
+                  <ReferenceArea
+                    key={`bait-${i}`}
+                    x1={region.x1}
+                    x2={region.x2}
+                    fill={baitColorMap[region.baitId]}
+                    fillOpacity={0.08}
                     ifOverflow="hidden"
                   />
                 ))}
