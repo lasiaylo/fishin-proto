@@ -62,6 +62,18 @@ const DEFAULT_BAIT_FN: FunctionConfig = {
   scaleFactor: 5,
   growthRate: 0.8,
 };
+const DEFAULT_BAIT_STATS_FN: FunctionConfig = {
+  type: "LINEAR",
+  startValue: 2,
+  scaleFactor: 4,
+  growthRate: 0.8,
+};
+const DEFAULT_BAIT_PRICE_FN: FunctionConfig = {
+  type: "LINEAR",
+  startValue: 4,
+  scaleFactor: 4,
+  growthRate: 0.8,
+};
 const DEFAULT_ROD_PURCHASE_FN: FunctionConfig = {
   type: "LINEAR",
   startValue: 50,
@@ -76,13 +88,48 @@ function evalFn(cfg: FunctionConfig, lvl: number): number {
   return cfg.startValue * Math.pow(cfg.growthRate, lvl);
 }
 
-function generateFishRows(
+function generateFishPool(
   statsFn: FunctionConfig,
   priceFn: FunctionConfig,
   variance: number,
+  levelStart: number,
+  levelEnd: number,
+  tackleId: (l: number) => string,
+  fishId: (i: number) => string,
+  hp: string,
+  singleFirst = false,
+): string[][] {
+  const rows: string[][] = [];
+  let idx = 0;
+  for (let l = levelStart; l <= levelEnd; l++) {
+    const mults = singleFirst && l === levelStart ? [1] : [1, 1 + variance];
+    for (const mult of mults) {
+      const s = Math.ceil(evalFn(statsFn, l * mult));
+      const p = Math.ceil(evalFn(priceFn, l * mult));
+      rows.push([
+        fishId(idx++),
+        String(s),
+        String(s),
+        "1",
+        String(p),
+        tackleId(l),
+        "CLOSE",
+        hp,
+      ]);
+    }
+  }
+  return rows;
+}
+
+function generateFishRows(
+  statsFn: FunctionConfig,
+  priceFn: FunctionConfig,
+  baitStatsFn: FunctionConfig,
+  baitPriceFn: FunctionConfig,
+  variance: number,
   levels: number,
 ): string[][] {
-  const rows: string[][] = [
+  const header = [
     [
       "ID",
       "Attack",
@@ -94,42 +141,28 @@ function generateFishRows(
       "HP",
     ],
   ];
-  let idx = 0;
-
-  // Level 0: one fish, requires starter bait BAIT_0
-  const s0 = Math.ceil(evalFn(statsFn, 0));
-  const p0 = Math.ceil(evalFn(priceFn, 0));
-  rows.push([
-    `FISH_${idx++}`,
-    String(s0),
-    String(s0),
-    "1",
-    String(p0),
-    "BAIT_0",
-    "CLOSE",
+  const baitRows = generateFishPool(
+    baitStatsFn,
+    baitPriceFn,
+    variance,
+    0,
+    levels,
+    (b) => `BAIT_${b}`,
+    (i) => `FISH_B_${i}`,
     "30",
-  ]);
-
-  // Levels 1..N: three fish each (min, middle, max)
-  for (let l = 1; l <= levels; l++) {
-    for (const mult of [1 - variance, 1, 1 + variance]) {
-      const lvl = l * mult;
-      const s = Math.ceil(evalFn(statsFn, lvl));
-      const p = Math.ceil(evalFn(priceFn, lvl));
-      rows.push([
-        `FISH_${idx++}`,
-        String(s),
-        String(s),
-        "1",
-        String(p),
-        `LURE_${l}`,
-        "CLOSE",
-        "40",
-      ]);
-    }
-  }
-
-  return rows;
+    true,
+  );
+  const lureRows = generateFishPool(
+    statsFn,
+    priceFn,
+    variance,
+    1,
+    levels,
+    (l) => `LURE_${l}`,
+    (i) => `FISH_${i}`,
+    "40",
+  );
+  return [...header, ...baitRows, ...lureRows];
 }
 
 function priceList(fn: FunctionConfig, count: number): string {
@@ -216,7 +249,6 @@ function generateShopRows(
 
   return rows;
 }
-
 
 function fnConfigStr(cfg: FunctionConfig): string {
   if (cfg.type === "LINEAR")
@@ -476,6 +508,8 @@ function PreviewTable({ rows }: { rows: string[][] }) {
 const FISH_DEFAULTS = {
   statsFn: DEFAULT_STATS_FN,
   priceFn: DEFAULT_PRICE_FN,
+  baitStatsFn: DEFAULT_BAIT_STATS_FN,
+  baitPriceFn: DEFAULT_BAIT_PRICE_FN,
   variance: 0.1,
 };
 
@@ -492,23 +526,38 @@ function FishGenerator({
   const [statsFn, setStatsFn] = useState<FunctionConfig>(() => stored.statsFn);
   const [priceFn, setPriceFn] = useState<FunctionConfig>(() => stored.priceFn);
   const [variance, setVariance] = useState(() => stored.variance);
+  const [baitStatsFn, setBaitStatsFn] = useState<FunctionConfig>(
+    () => stored.baitStatsFn ?? DEFAULT_BAIT_STATS_FN,
+  );
+  const [baitPriceFn, setBaitPriceFn] = useState<FunctionConfig>(
+    () => stored.baitPriceFn ?? DEFAULT_BAIT_PRICE_FN,
+  );
 
-  const rows = generateFishRows(statsFn, priceFn, variance, levels);
+  const rows = generateFishRows(
+    statsFn,
+    priceFn,
+    baitStatsFn,
+    baitPriceFn,
+    variance,
+    levels,
+  );
 
   useEffect(() => {
     localStorage.setItem(
       FISH_STORAGE_KEY,
-      JSON.stringify({ statsFn, priceFn, variance }),
+      JSON.stringify({ statsFn, priceFn, variance, baitStatsFn, baitPriceFn }),
     );
     onChange?.(rows);
     // onChange is a stable useState setter — safe to omit from deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statsFn, priceFn, variance, levels]);
+  }, [statsFn, priceFn, variance, levels, baitStatsFn, baitPriceFn]);
 
   function reset() {
     setStatsFn(FISH_DEFAULTS.statsFn);
     setPriceFn(FISH_DEFAULTS.priceFn);
     setVariance(FISH_DEFAULTS.variance);
+    setBaitStatsFn(FISH_DEFAULTS.baitStatsFn);
+    setBaitPriceFn(FISH_DEFAULTS.baitPriceFn);
   }
 
   return (
@@ -521,6 +570,10 @@ function FishGenerator({
           Reset to defaults
         </Button>
       </Flex>
+
+      <Text size="1" weight="bold">
+        LURE FISH
+      </Text>
       <Flex direction="row" gap="4" align="start">
         <FunctionSelect
           label="Attack / Defense curve"
@@ -543,16 +596,52 @@ function FishGenerator({
           step={0.01}
         />
       </Flex>
-      {showPreview && (
-        <PreviewTable
-          rows={[
-            ["ID", "A/D", "BasePrice"],
-            ...rows
-              .slice(1)
-              .filter((_, i) => i === 0 || (i - 2) % 3 === 0)
-              .map((r) => [r[0], r[1], r[4]]),
-          ]}
+
+      <Text size="1" weight="bold">
+        BAIT FISH
+      </Text>
+      <Flex direction="row" gap="4" align="start">
+        <FunctionSelect
+          label="Attack / Defense curve"
+          value={baitStatsFn}
+          onChange={setBaitStatsFn}
         />
+        <FunctionSelect
+          label="Base Price curve"
+          value={baitPriceFn}
+          onChange={setBaitPriceFn}
+        />
+      </Flex>
+
+      {showPreview && (
+        <>
+          <Text size="1" color="gray">
+            Lure fish (mid per tier)
+          </Text>
+          <PreviewTable
+            rows={[
+              ["ID", "A/D", "BasePrice"],
+              ...rows
+                .slice(1)
+                .filter((r) => r[5]?.startsWith("LURE_"))
+                .filter((_, i) => i % 2 === 0)
+                .map((r) => [r[0], r[1], r[4]]),
+            ]}
+          />
+          <Text size="1" color="gray">
+            Bait fish (mid per tier)
+          </Text>
+          <PreviewTable
+            rows={[
+              ["ID", "A/D", "BasePrice"],
+              ...rows
+                .slice(1)
+                .filter((r) => r[5]?.startsWith("BAIT_"))
+                .filter((_, i) => i % 2 === 0)
+                .map((r) => [r[0], r[1], r[4]]),
+            ]}
+          />
+        </>
       )}
       <Button
         size="1"
@@ -629,12 +718,8 @@ function ShopGenerator({
   const [baitFn, setBaitFn] = useState<FunctionConfig>(
     () => stored.baitFn ?? DEFAULT_BAIT_FN,
   );
-  const [baitCount, setBaitCount] = useState(
-    () => stored.baitCount ?? 1,
-  );
-  const [rodCount, setRodCount] = useState(
-    () => stored.rodCount ?? 1,
-  );
+  const [baitCount, setBaitCount] = useState(() => stored.baitCount ?? 1);
+  const [rodCount, setRodCount] = useState(() => stored.rodCount ?? 1);
   const [rodPurchaseFn, setRodPurchaseFn] = useState<FunctionConfig>(
     () => stored.rodPurchaseFn ?? DEFAULT_ROD_PURCHASE_FN,
   );
@@ -968,11 +1053,18 @@ export function getGeneratedFishRows(): string[][] {
     levels: 3,
     startingAD: 10,
   });
-  const { statsFn, priceFn, variance } = loadStored(
+  const { statsFn, priceFn, variance, baitStatsFn, baitPriceFn } = loadStored(
     FISH_STORAGE_KEY,
     FISH_DEFAULTS,
   );
-  return generateFishRows(statsFn, priceFn, variance, levels);
+  return generateFishRows(
+    statsFn,
+    priceFn,
+    baitStatsFn ?? DEFAULT_BAIT_STATS_FN,
+    baitPriceFn ?? DEFAULT_BAIT_PRICE_FN,
+    variance,
+    levels,
+  );
 }
 
 export function getGeneratedShopRows(): string[][] {
@@ -1033,7 +1125,7 @@ export function CsvGeneratorPanel({
   );
   const [startingAD, setStartingAD] = useState<number>(
     () =>
-      loadStored(SHARED_STORAGE_KEY, { levels: 3, startingAD: 10 }).startingAD,
+      loadStored(SHARED_STORAGE_KEY, { levels: 3, startingAD: 25 }).startingAD,
   );
 
   function handleLevelsChange(v: number) {

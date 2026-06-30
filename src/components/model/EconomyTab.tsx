@@ -1061,45 +1061,7 @@ export function EconomyTab({
               </EconomyChart>
             )}
 
-            {isSinglePair && (
-              <EconomyChart
-                title="Fish Income Rate ($)"
-                data={earningsData}
-                {...chartProps}
-              >
-                <Legend />
-                {primaryFishData.map((f) => (
-                  <Line
-                    key={`${f.id}_earn`}
-                    dataKey={`${f.id}_earn`}
-                    stroke={fishColorMap[f.id]}
-                    {...lineProps}
-                    name={f.id}
-                    connectNulls={false}
-                  />
-                ))}
-              </EconomyChart>
-            )}
 
-            {isSinglePair && (
-              <EconomyChart
-                title="Catch Time (s)"
-                data={catchTimeData}
-                {...chartProps}
-              >
-                <Legend />
-                {primaryFishData.map((f) => (
-                  <Line
-                    key={f.id}
-                    dataKey={f.id}
-                    stroke={fishColorMap[f.id]}
-                    {...lineProps}
-                    name={f.id}
-                    connectNulls={false}
-                  />
-                ))}
-              </EconomyChart>
-            )}
           </ChartGrid>
         </>
       )}
