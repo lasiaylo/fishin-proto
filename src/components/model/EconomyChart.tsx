@@ -22,6 +22,7 @@ export function EconomyChart({
   xTicks,
   integerXAxis,
   integerYAxis,
+  integerRightYAxis,
   yDomain,
   yTickFormatter,
   tooltipFormatter,
@@ -41,6 +42,7 @@ export function EconomyChart({
   xTicks?: number[];
   integerXAxis?: boolean;
   integerYAxis?: boolean;
+  integerRightYAxis?: boolean;
   yDomain?: [number | string, number | string];
   yTickFormatter?: (v: number) => string;
   tooltipFormatter?: (v: number, name: string, props: any) => any;
@@ -54,6 +56,7 @@ export function EconomyChart({
   syncId?: string;
   height?: number;
 }) {
+  const hasRightAxis = integerRightYAxis !== undefined;
   return (
     <Flex direction="column" gap="2">
       <Flex align="center" gap="4" wrap="wrap">
@@ -84,10 +87,18 @@ export function EconomyChart({
             }
           />
           <YAxis
+            yAxisId={hasRightAxis ? "left" : undefined}
             allowDecimals={!integerYAxis}
             domain={yDomain}
             tickFormatter={yTickFormatter}
           />
+          {hasRightAxis && (
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              allowDecimals={!integerRightYAxis}
+            />
+          )}
           <Tooltip
             labelStyle={{ color: "#111" }}
             // @ts-ignore

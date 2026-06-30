@@ -117,7 +117,6 @@ export function csvToRounds(csv: string): EconomyRound[] {
       roundTime: Number(get("roundTime")),
       fightDuration: Number(get("fightDuration")),
       income: Number(get("income")),
-      baitCost: 0,
       wallet: Number(get("wallet")),
       rate: Number(get("rate")),
       lureId: get("lureId"),

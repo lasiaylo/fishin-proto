@@ -406,14 +406,14 @@ export function EconomyTab({
     ),
   }));
 
-  const lureXpData = primaryRounds.map((r) => ({
+  const lureXpAndLevelData = primaryRounds.map((r) => ({
     time: r.cumulativeTime,
-    ...Object.fromEntries(Object.entries(r.lureXp)),
-  }));
-
-  const lureLevelData = primaryRounds.map((r) => ({
-    time: r.cumulativeTime,
-    ...Object.fromEntries(Object.entries(r.lureLevels)),
+    ...Object.fromEntries(
+      Object.entries(r.lureXp).map(([k, v]) => [`xp_${k}`, v]),
+    ),
+    ...Object.fromEntries(
+      Object.entries(r.lureLevels).map(([k, v]) => [`lvl_${k}`, v]),
+    ),
   }));
 
   const nonLureUpgrades = primaryShopData.filter(
@@ -428,7 +428,9 @@ export function EconomyTab({
   }));
 
   const lures = [
-    { id: "LURE_0", name: "LURE_0" },
+    ...primaryShopData
+      .filter((u) => u.stat === StatName.BAIT)
+      .map((u) => ({ id: u.id, name: u.id })),
     ...primaryShopData
       .filter((u) => u.stat === StatName.LURE)
       .map((u) => ({ id: u.id, name: u.id })),
@@ -542,8 +544,6 @@ export function EconomyTab({
     ? activePairResults[0].rounds.map((r) => ({
         time: r.cumulativeTime,
         rate: parseFloat(r.rate.toFixed(4)),
-        upgrade:
-          r.upgradesBought.length > 0 ? parseFloat(r.rate.toFixed(4)) : null,
         lureLevel: r.lureLevels[r.lureId] ?? 0,
       }))
     : [];
@@ -741,14 +741,6 @@ export function EconomyTab({
                     stroke={COLORS[0]}
                     {...lineProps}
                     name="$/s"
-                  />
-                  <Line
-                    dataKey="upgrade"
-                    stroke="#ffd43b"
-                    dot={{ fill: "#ffd43b", r: 4 }}
-                    strokeWidth={0}
-                    isAnimationActive={false}
-                    name="upgrade"
                   />
                 </>
               ) : (
@@ -1062,10 +1054,11 @@ export function EconomyTab({
 
             {isSinglePair && lures.filter((l) => l.id !== "").length > 0 && (
               <EconomyChart
-                title="Lure XP"
-                data={lureXpData}
+                title="Lure XP / Level"
+                data={lureXpAndLevelData}
                 {...chartProps}
                 integerYAxis
+                integerRightYAxis
               >
                 {lurePurchaseLinesTime}
                 <Legend />
@@ -1073,35 +1066,27 @@ export function EconomyTab({
                   .filter((l) => l.id !== "")
                   .map((l) => (
                     <Line
-                      key={l.id}
-                      dataKey={l.id}
+                      key={`xp_${l.id}`}
+                      dataKey={`xp_${l.id}`}
+                      yAxisId="left"
                       stroke={lureColorMap[l.id]}
                       {...lineProps}
                       name={l.name}
                     />
                   ))}
-              </EconomyChart>
-            )}
-
-            {isSinglePair && lures.filter((l) => l.id !== "").length > 0 && (
-              <EconomyChart
-                title="Lure Level"
-                data={lureLevelData}
-                {...chartProps}
-                integerYAxis
-              >
-                {lurePurchaseLinesTime}
-                <Legend />
                 {lures
                   .filter((l) => l.id !== "")
                   .map((l) => (
                     <Line
-                      key={l.id}
-                      dataKey={l.id}
+                      key={`lvl_${l.id}`}
+                      dataKey={`lvl_${l.id}`}
+                      yAxisId="right"
                       type="stepAfter"
                       stroke={lureColorMap[l.id]}
+                      strokeDasharray="4 2"
                       {...lineProps}
-                      name={l.name}
+                      name={`${l.name} Lvl`}
+                      legendType="none"
                     />
                   ))}
               </EconomyChart>

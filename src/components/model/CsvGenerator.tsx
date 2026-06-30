@@ -62,16 +62,10 @@ const DEFAULT_BAIT_FN: FunctionConfig = {
   scaleFactor: 5,
   growthRate: 0.8,
 };
-const DEFAULT_WAIT_MIN_FN: FunctionConfig = {
+const DEFAULT_ROD_PURCHASE_FN: FunctionConfig = {
   type: "LINEAR",
-  startValue: 2,
-  scaleFactor: 1,
-  growthRate: 0.8,
-};
-const DEFAULT_WAIT_MAX_FN: FunctionConfig = {
-  type: "LINEAR",
-  startValue: 8,
-  scaleFactor: 2,
+  startValue: 50,
+  scaleFactor: 50,
   growthRate: 0.8,
 };
 
@@ -158,25 +152,40 @@ function generateShopRows(
   castDistanceCount: number,
   baitFn: FunctionConfig,
   baitCount: number,
+  rodCount: number,
+  rodPurchaseFn: FunctionConfig,
 ): string[][] {
   const rows: string[][] = [
     ["ID", "Price", "Stat", "ValuePerLevel", "Requirement"],
   ];
 
-  rows.push([
-    "ROD_ATTACK_ROD_1",
-    priceList(attackFn, attackCount),
-    "ROD_ATTACK",
-    String(attackVPL),
-    "",
-  ]);
-  rows.push([
-    "ROD_DEFENSE_ROD_1",
-    priceList(defenseFn, defenseCount),
-    "ROD_DEFENSE",
-    String(defenseVPL),
-    "",
-  ]);
+  for (let r = 1; r <= rodCount; r++) {
+    const rodId = `ROD_${r}`;
+    const prevRodId = r > 1 ? `ROD_${r - 1}` : "";
+    if (r > 1) {
+      rows.push([
+        rodId,
+        String(Math.ceil(evalFn(rodPurchaseFn, r - 2))),
+        "ROD",
+        "1",
+        prevRodId,
+      ]);
+    }
+    rows.push([
+      `ROD_ATTACK_${rodId}`,
+      priceList(attackFn, attackCount),
+      "ROD_ATTACK",
+      String(attackVPL),
+      r > 1 ? rodId : "",
+    ]);
+    rows.push([
+      `ROD_DEFENSE_${rodId}`,
+      priceList(defenseFn, defenseCount),
+      "ROD_DEFENSE",
+      String(defenseVPL),
+      r > 1 ? rodId : "",
+    ]);
+  }
 
   rows.push([
     "CAST_DISTANCE",
@@ -208,21 +217,6 @@ function generateShopRows(
   return rows;
 }
 
-function generateBaitRows(
-  waitMinFn: FunctionConfig,
-  waitMaxFn: FunctionConfig,
-  baitCount: number,
-): string[][] {
-  const rows: string[][] = [["ID", "WaitMin", "WaitMax"]];
-  for (let i = 0; i < baitCount; i++) {
-    rows.push([
-      `BAIT_${i}`,
-      String(Math.ceil(evalFn(waitMinFn, i))),
-      String(Math.ceil(evalFn(waitMaxFn, i))),
-    ]);
-  }
-  return rows;
-}
 
 function fnConfigStr(cfg: FunctionConfig): string {
   if (cfg.type === "LINEAR")
@@ -593,8 +587,8 @@ const SHOP_DEFAULTS = {
   mergeStats: false,
   baitFn: DEFAULT_BAIT_FN,
   baitCount: 1,
-  waitMinFn: DEFAULT_WAIT_MIN_FN,
-  waitMaxFn: DEFAULT_WAIT_MAX_FN,
+  rodCount: 1,
+  rodPurchaseFn: DEFAULT_ROD_PURCHASE_FN,
 };
 
 function ShopGenerator({
@@ -638,11 +632,11 @@ function ShopGenerator({
   const [baitCount, setBaitCount] = useState(
     () => stored.baitCount ?? 1,
   );
-  const [waitMinFn, setWaitMinFn] = useState<FunctionConfig>(
-    () => stored.waitMinFn ?? DEFAULT_WAIT_MIN_FN,
+  const [rodCount, setRodCount] = useState(
+    () => stored.rodCount ?? 1,
   );
-  const [waitMaxFn, setWaitMaxFn] = useState<FunctionConfig>(
-    () => stored.waitMaxFn ?? DEFAULT_WAIT_MAX_FN,
+  const [rodPurchaseFn, setRodPurchaseFn] = useState<FunctionConfig>(
+    () => stored.rodPurchaseFn ?? DEFAULT_ROD_PURCHASE_FN,
   );
 
   function handleAttackFnChange(v: FunctionConfig) {
@@ -672,8 +666,9 @@ function ShopGenerator({
     castDistanceCount,
     baitFn,
     baitCount,
+    rodCount,
+    rodPurchaseFn,
   );
-  const baitRows = generateBaitRows(waitMinFn, waitMaxFn, baitCount);
 
   useEffect(() => {
     localStorage.setItem(
@@ -692,8 +687,8 @@ function ShopGenerator({
         mergeStats,
         baitFn,
         baitCount,
-        waitMinFn,
-        waitMaxFn,
+        rodCount,
+        rodPurchaseFn,
       }),
     );
     onChange?.(rows);
@@ -713,8 +708,8 @@ function ShopGenerator({
     mergeStats,
     baitFn,
     baitCount,
-    waitMinFn,
-    waitMaxFn,
+    rodCount,
+    rodPurchaseFn,
   ]);
 
   function reset() {
@@ -731,8 +726,8 @@ function ShopGenerator({
     setMergeStats(SHOP_DEFAULTS.mergeStats);
     setBaitFn(SHOP_DEFAULTS.baitFn);
     setBaitCount(SHOP_DEFAULTS.baitCount);
-    setWaitMinFn(SHOP_DEFAULTS.waitMinFn);
-    setWaitMaxFn(SHOP_DEFAULTS.waitMaxFn);
+    setRodCount(SHOP_DEFAULTS.rodCount);
+    setRodPurchaseFn(SHOP_DEFAULTS.rodPurchaseFn);
   }
 
   return (
@@ -879,6 +874,27 @@ function ShopGenerator({
 
       <Flex direction="column" gap="2">
         <Text size="1" weight="bold">
+          RODS
+        </Text>
+        <Flex gap="3" wrap="wrap" align="end">
+          <NumInput
+            label="Rod count"
+            value={rodCount}
+            onChange={setRodCount}
+            min={1}
+          />
+        </Flex>
+        {rodCount > 1 && (
+          <FunctionSelect
+            label="Rod purchase price curve (ROD_2+)"
+            value={rodPurchaseFn}
+            onChange={setRodPurchaseFn}
+          />
+        )}
+      </Flex>
+
+      <Flex direction="column" gap="2">
+        <Text size="1" weight="bold">
           CAST DISTANCE
         </Text>
         <FunctionSelect
@@ -919,16 +935,6 @@ function ShopGenerator({
             min={1}
           />
         </Flex>
-        <FunctionSelect
-          label="Wait Min curve"
-          value={waitMinFn}
-          onChange={setWaitMinFn}
-        />
-        <FunctionSelect
-          label="Wait Max curve"
-          value={waitMaxFn}
-          onChange={setWaitMaxFn}
-        />
       </Flex>
 
       {showPreview && (
@@ -936,40 +942,23 @@ function ShopGenerator({
           rows={[["ID", "Price"], ...rows.slice(1).map((r) => [r[0], r[1]])]}
         />
       )}
-      {showPreview && <PreviewTable rows={baitRows} />}
-      <Flex gap="3">
-        <Button
-          size="1"
-          variant="soft"
-          style={{ width: "fit-content" }}
-          onClick={() => {
-            const comment = [
-              `# ROD_ATTACK price curve: ${fnConfigStr(attackFn)} | ValuePerLevel=${attackVPL} | Upgrades=${attackCount}`,
-              `# ROD_DEFENSE price curve: ${fnConfigStr(defenseFn)} | ValuePerLevel=${defenseVPL} | Upgrades=${defenseCount}`,
-              `# LURE price curve: ${fnConfigStr(lureFn)} | Lures=${lureCount}`,
-              `# CAST_DISTANCE price curve: ${fnConfigStr(castDistanceFn)} | ValuePerLevel=${castDistanceVPL} | Upgrades=${castDistanceCount}`,
-              `# BAIT price curve: ${fnConfigStr(baitFn)} | Tiers=${baitCount}`,
-            ].join("\n");
-            downloadCsv(rows, "ShopGameplay.csv", comment);
-          }}
-        >
-          Download ShopGameplay.csv
-        </Button>
-        <Button
-          size="1"
-          variant="soft"
-          style={{ width: "fit-content" }}
-          onClick={() => {
-            const comment = [
-              `# WaitMin curve: ${fnConfigStr(waitMinFn)}`,
-              `# WaitMax curve: ${fnConfigStr(waitMaxFn)}`,
-            ].join("\n");
-            downloadCsv(baitRows, "BaitGameplay.csv", comment);
-          }}
-        >
-          Download BaitGameplay.csv
-        </Button>
-      </Flex>
+      <Button
+        size="1"
+        variant="soft"
+        style={{ width: "fit-content" }}
+        onClick={() => {
+          const comment = [
+            `# ROD_ATTACK price curve: ${fnConfigStr(attackFn)} | ValuePerLevel=${attackVPL} | Upgrades=${attackCount}`,
+            `# ROD_DEFENSE price curve: ${fnConfigStr(defenseFn)} | ValuePerLevel=${defenseVPL} | Upgrades=${defenseCount}`,
+            `# LURE price curve: ${fnConfigStr(lureFn)} | Lures=${lureCount}`,
+            `# CAST_DISTANCE price curve: ${fnConfigStr(castDistanceFn)} | ValuePerLevel=${castDistanceVPL} | Upgrades=${castDistanceCount}`,
+            `# BAIT price curve: ${fnConfigStr(baitFn)} | Tiers=${baitCount}`,
+          ].join("\n");
+          downloadCsv(rows, "ShopGameplay.csv", comment);
+        }}
+      >
+        Download ShopGameplay.csv
+      </Button>
     </Flex>
   );
 }
@@ -1004,6 +993,8 @@ export function getGeneratedShopRows(): string[][] {
     castDistanceCount,
     baitFn,
     baitCount,
+    rodCount,
+    rodPurchaseFn,
   } = loadStored(SHOP_STORAGE_KEY, SHOP_DEFAULTS);
   return generateShopRows(
     attackFn,
@@ -1019,6 +1010,8 @@ export function getGeneratedShopRows(): string[][] {
     castDistanceCount,
     baitFn,
     baitCount,
+    rodCount,
+    rodPurchaseFn,
   );
 }
 

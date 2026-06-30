@@ -8,7 +8,6 @@ import type {
   ShopUpgradeData,
 } from "../../util/csvLoader";
 import {
-  StatName,
   loadFishData,
   loadFishDisplayMap,
   loadShopGameplayData,
@@ -173,7 +172,6 @@ export function GraphsTab({
       const data: object[] = [];
       const clampedMin = Math.min(minStat, maxStat);
       const clampedMax = Math.max(minStat, maxStat);
-      const atkUpgrade = activeShopData.find((u) => u.stat === StatName.ATTACK);
 
       for (let s = clampedMin; s <= clampedMax; s++) {
         const { rates, earnings, winRates, remainingHPs } = computeLureStats(
@@ -196,17 +194,6 @@ export function GraphsTab({
             ? rateEntries.reduce((a, b) => (b[1] > a[1] ? b : a))
             : ["", 0];
         const bestTripIncome = (earnings[bestLureId] ?? 0) * inventorySize;
-        let attackUpgradeCost: number | null = null;
-        if (atkUpgrade && atkUpgrade.valuePerLevel > 0) {
-          const level = Math.max(
-            0,
-            Math.floor(
-              (s - INITIAL_PLAYER_STATE.ownedRods[0].attack) / atkUpgrade.valuePerLevel,
-            ),
-          );
-          attackUpgradeCost =
-            level < atkUpgrade.prices.length ? atkUpgrade.prices[level] : null;
-        }
         data.push({
           stat: s,
           ...rates,
@@ -215,7 +202,6 @@ export function GraphsTab({
           bestRate,
           bestLureId,
           bestTripIncome,
-          attackUpgradeCost,
         });
       }
 

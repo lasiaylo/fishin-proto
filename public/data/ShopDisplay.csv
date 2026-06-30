@@ -10,4 +10,4 @@ CAST_DISTANCE, Cast Distance, Cast your line further into the water., rod upgrad
 ROD_2, Second Rod, A second fishing rod with its own reel and drag., rod upgrades
 ROD_ATTACK_ROD_2, Reel (Rod 2), Reel in fish faster on the second rod., rod upgrades
 ROD_DEFENSE_ROD_2, Drag (Rod 2), Prevents fish from pulling so hard on the second rod., rod upgrades
-BAIT_0, Worm Bait, Replenish your worm bait (max 10)., bait
+BAIT_0, Worm Bait, Replenish your worm bait,  bait

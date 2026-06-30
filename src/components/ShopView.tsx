@@ -70,7 +70,8 @@ export function ShopView() {
                     {subGroup.map((upgrade) => {
                       const price = getUpgradePrice(upgrade);
                       const maxed = isMaxed(upgrade);
-                      const disabled = maxed || price === null || wallet < price;
+                      const disabled =
+                        maxed || price === null || wallet < price;
                       return (
                         <MyButton
                           key={upgrade.id}
@@ -107,24 +108,16 @@ export function ShopView() {
                 const baitCount = isBait
                   ? (baitInventory[upgrade.id] ?? 0)
                   : null;
-                const baitFull =
-                  isBait && (baitCount ?? 0) >= BAIT_MAX_STACK;
+                const baitFull = isBait && (baitCount ?? 0) >= BAIT_MAX_STACK;
                 const maxed = isMaxed(upgrade);
                 const disabled =
                   maxed || baitFull || price === null || wallet < price;
-
-                const bait = isBait
-                  ? baitData.find((b) => b.id === upgrade.id)
-                  : null;
-                const tooltipContent = bait
-                  ? `Wait: ${bait.waitMin}–${bait.waitMax}s (−${Math.round(50)}% in prime zone). ${upgrade.description}`
-                  : upgrade.description;
 
                 return (
                   <MyButton
                     key={upgrade.id}
                     disabled={disabled}
-                    description={tooltipContent}
+                    description={upgrade.description}
                     onClick={() => buyUpgrade(upgrade.id)}
                     minWidth={100}
                   >
