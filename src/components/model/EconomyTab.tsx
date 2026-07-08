@@ -435,8 +435,10 @@ export function EconomyTab({
       .filter((u) => u.stat === StatName.LURE)
       .map((u) => ({ id: u.id, name: u.id })),
   ];
+  const LURE_COLORS = ["#ff6b6b", "#ff922b", "#ffd43b", "#f76707", "#ff4d6d"];
+  const BAIT_COLORS = ["#60cdff", "#38d9a9", "#74c0fc", "#4dabf7", "#66d9e8"];
   const lureColorMap = Object.fromEntries(
-    lures.map((l, i) => [l.id, COLORS[i % COLORS.length]]),
+    lures.map((l, i) => [l.id, LURE_COLORS[i % LURE_COLORS.length]]),
   );
   const lureNameMap = Object.fromEntries(lures.map((l) => [l.id, l.name]));
   const fishColorMap = Object.fromEntries(
@@ -487,7 +489,7 @@ export function EconomyTab({
     ...new Set(primaryRounds.map((r) => r.baitId).filter(Boolean)),
   ];
   const baitColorMap = Object.fromEntries(
-    activeBaitIds.map((id, i) => [id, COLORS[(i + 4) % COLORS.length]]),
+    activeBaitIds.map((id, i) => [id, BAIT_COLORS[i % BAIT_COLORS.length]]),
   );
   const baitRegions: { x1: number; x2: number; baitId: string }[] = [];
   if (primaryRounds.length > 0) {
@@ -782,7 +784,7 @@ export function EconomyTab({
                             }}
                           />
                           <Text size="1" color="gray">
-                            {id} (bait)
+                            {id}
                           </Text>
                         </Flex>
                       )),
@@ -893,7 +895,7 @@ export function EconomyTab({
                             }}
                           />
                           <Text size="1" color="gray">
-                            {id} (bait)
+                            {id}
                           </Text>
                         </Flex>
                       )),
