@@ -593,6 +593,8 @@ export function EconomyTab({
         time: r.cumulativeTime,
         rate: parseFloat(r.rate.toFixed(4)),
         revenue: parseFloat((r.income / r.roundTime).toFixed(4)),
+        upgrade:
+          r.upgradesBought.length > 0 ? parseFloat(r.rate.toFixed(4)) : null,
         lureLevel: r.lureLevels[r.lureId] ?? 0,
       }))
     : [];
@@ -810,7 +812,7 @@ export function EconomyTab({
                     x1={region.x1}
                     x2={region.x2}
                     fill={baitColorMap[region.baitId]}
-                    fillOpacity={0.08}
+                    fillOpacity={0.15}
                     ifOverflow="hidden"
                   />
                 ))}
@@ -829,6 +831,14 @@ export function EconomyTab({
                     {...lineProps}
                     strokeDasharray="4 2"
                     name="Revenue $/s"
+                  />
+                  <Line
+                    dataKey="upgrade"
+                    stroke="#ffd43b"
+                    dot={{ fill: "#ffd43b", r: 4 }}
+                    strokeWidth={0}
+                    isAnimationActive={false}
+                    name="upgrade"
                   />
                   <Legend />
                 </>
@@ -921,7 +931,7 @@ export function EconomyTab({
                     x1={region.x1}
                     x2={region.x2}
                     fill={baitColorMap[region.baitId]}
-                    fillOpacity={0.08}
+                    fillOpacity={0.15}
                     ifOverflow="hidden"
                   />
                 ))}
@@ -1001,7 +1011,7 @@ export function EconomyTab({
                     x1={region.x1}
                     x2={region.x2}
                     fill={baitColorMap[region.baitId]}
-                    fillOpacity={0.08}
+                    fillOpacity={0.15}
                     ifOverflow="hidden"
                   />
                 ))}

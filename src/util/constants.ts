@@ -1,6 +1,7 @@
 import { PlayerState } from "../stores/playerStore";
 
 export const CURRENCY_SYMBOL = "࿔";
+export const BASE_FISH_ID = "FISH_B_0";
 export const BASE_LURE_ID = "LURE_0";
 export const BASE_LURE_NAME = "Worm";
 export const BASE_BAIT_ID = "BAIT_0";

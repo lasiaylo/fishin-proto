@@ -36,6 +36,7 @@ import {
   XP_WIN,
   Zone,
   ZONE_RANGES,
+  BASE_FISH_ID,
 } from "../util/constants";
 import { PlayerStats } from "../stores/playerStore";
 
@@ -87,7 +88,7 @@ function expandFishByRarity(
   fish: FishData,
 ): Array<{ fish: FishData; weight: number }> {
   const rarities =
-    fish.id === "FISH_0"
+    fish.id === BASE_FISH_ID
       ? [Rarity.COMMON]
       : (Object.values(Rarity) as Rarity[]);
   const totalWeight = rarities.reduce((s, r) => s + RARITY_WEIGHTS[r], 0);

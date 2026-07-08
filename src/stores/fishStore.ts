@@ -7,12 +7,13 @@ import {
   rollRarity,
   RARITY_STAT_MULTIPLIER,
   RARITY_PRICE_MULTIPLIER,
+  BASE_FISH_ID,
 } from "../util/constants";
 
 const HOOK_ROLL: [number, number] = [0.95, 1.05];
 
 export function randomizeFishStats(fish: FishData): FishData {
-  const rarity = fish.id === "FISH_0" ? Rarity.COMMON : rollRarity();
+  const rarity = fish.id === BASE_FISH_ID ? Rarity.COMMON : rollRarity();
   const statMult = RARITY_STAT_MULTIPLIER[rarity];
   const hookRoll = randomRange(...HOOK_ROLL);
   const thrashRoll = randomRange(...HOOK_ROLL);
@@ -25,7 +26,7 @@ export function randomizeFishStats(fish: FishData): FishData {
     defense: parseFloat((fish.defense * hookRoll * statMult).toFixed(2)),
     thrash: parseFloat((fish.thrash * thrashRoll * statMult).toFixed(2)),
     hp: parseFloat((fish.hp * hookRoll * statMult).toFixed(1)),
-    basePrice: fish.id === "FISH_0" ? fish.basePrice : randomizedPrice,
+    basePrice: fish.id === "FISH_B_0" ? fish.basePrice : randomizedPrice,
     rarity,
   };
 }
