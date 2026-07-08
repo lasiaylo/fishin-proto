@@ -183,7 +183,7 @@ function categoryFromStat(stat: StatName): string {
     stat === StatName.ROD_ATTACK ||
     stat === StatName.ROD_DEFENSE
   )
-    return "rod upgrades";
+    return "rods";
   return "misc";
 }
 

@@ -12,21 +12,19 @@ import { MyButton } from "./MyButton";
 import { BAIT_MAX_STACK, CURRENCY_SYMBOL } from "../util/constants";
 import { StatName } from "../util/csvLoader";
 
-const CATEGORY_ORDER = ["lures", "rod upgrades", "bait", "misc"];
+const CATEGORY_ORDER = ["lures", "rods", "bait", "misc"];
 
 function LevelPips({ level, maxLevel }: { level: number; maxLevel: number }) {
   if (maxLevel <= 1) return null;
   return (
-    <Flex gap="1" mt="1">
+    <Flex gap="1" mt="1" width="100%" justify="center">
       {Array.from({ length: maxLevel }, (_, i) => (
         <Box
           key={i}
-          width="6px"
-          height="6px"
+          flexGrow="1"
+          height="5px"
           style={{
-            borderRadius: "9999px",
-            backgroundColor:
-              i < level ? "var(--accent-9)" : "var(--gray-a5)",
+            backgroundColor: i < level ? "var(--accent-9)" : "var(--gray-a5)",
           }}
         />
       ))}
@@ -48,10 +46,16 @@ export function ShopView() {
       return req ? isMaxed(req) : true;
     });
 
+  const isAttackOrDefense = (u: (typeof upgrades)[number]) =>
+    u.stat === StatName.ROD_ATTACK || u.stat === StatName.ROD_DEFENSE;
+
   const groups = CATEGORY_ORDER.map((cat) => ({
     label: cat,
     upgrades: upgrades.filter(
-      (u) => u.category === cat && meetsRequirements(u) && !isMaxed(u),
+      (u) =>
+        u.category === cat &&
+        meetsRequirements(u) &&
+        (!isMaxed(u) || isAttackOrDefense(u)),
     ),
   })).filter((g) => g.upgrades.length > 0);
 

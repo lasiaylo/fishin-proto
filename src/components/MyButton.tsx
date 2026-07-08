@@ -29,8 +29,9 @@ export function MyButton({
         onMouseDown={onMouseDown}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseUp}
+        style={{ height: "auto" }}
       >
-        <Box minWidth={`${minWidth ?? 0}px`}>
+        <Box minWidth={`${minWidth ?? 0}px`} py={"2"}>
           <Text size={"1"}>{children}</Text>
         </Box>
       </Button>
