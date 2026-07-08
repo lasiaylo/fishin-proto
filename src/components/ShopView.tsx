@@ -12,7 +12,13 @@ import { MyButton } from "./MyButton";
 import { BAIT_MAX_STACK, CURRENCY_SYMBOL } from "../util/constants";
 import { StatName } from "../util/csvLoader";
 
-const CATEGORY_ORDER = ["lures", "rod upgrades", "bait", "misc"];
+const CATEGORY_ORDER = [
+  "lures",
+  "rod upgrades",
+  "second rod",
+  "bait",
+  "misc",
+];
 
 function rodGroupKey(id: string): string | null {
   if (id.startsWith("ROD_ATTACK_") || id.startsWith("ROD_DEFENSE_")) {
