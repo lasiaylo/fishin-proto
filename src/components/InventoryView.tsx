@@ -98,11 +98,10 @@ export function InventoryView() {
         })}
       </Flex>
 
-      <Flex direction="column" gap="3">
-        <Text size="1" color="gray">
+      <Flex direction="column" gap="2">
+        <Text size="1" color="gray" weight={"medium"}>
           tackle box
         </Text>
-
         <Flex direction="column" gap="1">
           <Text size="1" color="gray">
             bait

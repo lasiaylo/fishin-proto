@@ -23,6 +23,7 @@ export enum StatName {
   ROD = "ROD",
   ROD_ATTACK = "ROD_ATTACK",
   ROD_DEFENSE = "ROD_DEFENSE",
+  ROD_SLOT = "ROD_SLOT",
 }
 
 export interface BaitData {

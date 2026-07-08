@@ -365,6 +365,7 @@ function cheapestUpgrade(
       case StatName.CAST_DISTANCE:
         return player.castMax;
       case StatName.ROD:
+      case StatName.ROD_SLOT:
       case StatName.ROD_ATTACK:
       case StatName.ROD_DEFENSE:
       case StatName.BAIT:
@@ -454,6 +455,8 @@ function applyUpgrade(
   rods: EconRod[],
   rodCountRef: { value: number },
   baitStock: Record<string, number>,
+  benchedRods: EconRod[],
+  openSlotsRef: { value: number },
 ): void {
   if (upgrade.stat !== StatName.BAIT) {
     levels[upgrade.id] = (levels[upgrade.id] ?? 0) + 1;
@@ -476,23 +479,44 @@ function applyUpgrade(
       baitStock[upgrade.id] =
         (baitStock[upgrade.id] ?? 0) + upgrade.valuePerLevel;
       break;
-    case StatName.ROD:
-      rodCountRef.value++;
-      rods.push({
+    case StatName.ROD: {
+      const newRod = {
         id: upgrade.id,
         attack: rods[0].attack,
         defense: rods[0].defense,
-      });
+      };
+      if (openSlotsRef.value > 0) {
+        openSlotsRef.value--;
+        rodCountRef.value++;
+        rods.push(newRod);
+      } else {
+        benchedRods.push(newRod);
+      }
       break;
+    }
+    case StatName.ROD_SLOT: {
+      const benched = benchedRods.shift();
+      if (benched) {
+        rodCountRef.value++;
+        rods.push(benched);
+      } else {
+        openSlotsRef.value++;
+      }
+      break;
+    }
     case StatName.ROD_ATTACK: {
       const rodId = upgrade.id.replace("_ATTACK", "");
-      const rod = rods.find((r) => r.id === rodId);
+      const rod =
+        rods.find((r) => r.id === rodId) ??
+        benchedRods.find((r) => r.id === rodId);
       if (rod) rod.attack += upgrade.valuePerLevel;
       break;
     }
     case StatName.ROD_DEFENSE: {
       const rodId = upgrade.id.replace("_DEFENSE", "");
-      const rod = rods.find((r) => r.id === rodId);
+      const rod =
+        rods.find((r) => r.id === rodId) ??
+        benchedRods.find((r) => r.id === rodId);
       if (rod) rod.defense += upgrade.valuePerLevel;
       break;
     }
@@ -629,6 +653,8 @@ export function simulateEconomy(
     { id: "ROD_1", attack: initialRod.attack, defense: initialRod.defense },
   ];
   const rodCountRef = { value: 1 };
+  const benchedRods: EconRod[] = [];
+  const openSlotsRef = { value: 0 };
 
   for (let round = 1; round <= MAX_ROUNDS; round++) {
     const {
@@ -802,6 +828,8 @@ export function simulateEconomy(
         rods,
         rodCountRef,
         baitStock,
+        benchedRods,
+        openSlotsRef,
       );
       upgradesBought.push(`${upgrade.id} L${levels[upgrade.id] ?? 1}`);
       if (upgrade.stat === StatName.LURE) boughtLure = true;

@@ -88,6 +88,12 @@ const DEFAULT_ROD_PURCHASE_FN: FunctionConfig = {
   scaleFactor: 50,
   growthRate: 0.8,
 };
+const DEFAULT_ROD_HOLDER_FN: FunctionConfig = {
+  type: "LINEAR",
+  startValue: 40,
+  scaleFactor: 40,
+  growthRate: 0.8,
+};
 
 function evalFn(cfg: FunctionConfig, lvl: number): number {
   if (cfg.type === "LINEAR") return cfg.startValue + cfg.scaleFactor * lvl;
@@ -189,6 +195,8 @@ function generateShopRows(
   baitCount: number,
   rodCount: number,
   rodPurchaseFn: FunctionConfig,
+  rodHolderFn: FunctionConfig,
+  rodHolderLevels: number,
 ): string[][] {
   const rows: string[][] = [
     ["ID", "Price", "Stat", "ValuePerLevel", "Requirement"],
@@ -234,6 +242,16 @@ function generateShopRows(
 
   for (let i = 0; i < baitCount; i++) {
     rows.push([`BAIT_${i}`, String(Math.ceil(evalFn(baitFn, i))), "BAIT", "1"]);
+  }
+
+  if (rodHolderLevels > 0) {
+    rows.push([
+      "ROD_HOLDER",
+      priceList(rodHolderFn, rodHolderLevels),
+      "ROD_SLOT",
+      "1",
+      rodCount > 1 ? "ROD_2" : "",
+    ]);
   }
 
   return rows;
@@ -712,6 +730,8 @@ const SHOP_DEFAULTS = {
   baitCount: 1,
   rodCount: 1,
   rodPurchaseFn: DEFAULT_ROD_PURCHASE_FN,
+  rodHolderLevels: 3,
+  rodHolderFn: DEFAULT_ROD_HOLDER_FN,
 };
 
 function ShopGenerator({
@@ -745,6 +765,12 @@ function ShopGenerator({
   const [rodPurchaseFn, setRodPurchaseFn] = useState<FunctionConfig>(
     () => stored.rodPurchaseFn ?? DEFAULT_ROD_PURCHASE_FN,
   );
+  const [rodHolderLevels, setRodHolderLevels] = useState(
+    () => stored.rodHolderLevels ?? 3,
+  );
+  const [rodHolderFn, setRodHolderFn] = useState<FunctionConfig>(
+    () => stored.rodHolderFn ?? DEFAULT_ROD_HOLDER_FN,
+  );
 
   const rows = generateShopRows(
     attackFn,
@@ -759,6 +785,8 @@ function ShopGenerator({
     baitCount,
     rodCount,
     rodPurchaseFn,
+    rodHolderFn,
+    rodHolderLevels,
   );
 
   useEffect(() => {
@@ -776,6 +804,8 @@ function ShopGenerator({
         baitCount,
         rodCount,
         rodPurchaseFn,
+        rodHolderLevels,
+        rodHolderFn,
       }),
     );
     onChange?.(rows);
@@ -793,6 +823,8 @@ function ShopGenerator({
     baitCount,
     rodCount,
     rodPurchaseFn,
+    rodHolderLevels,
+    rodHolderFn,
   ]);
 
   function reset() {
@@ -807,6 +839,8 @@ function ShopGenerator({
     setBaitCount(SHOP_DEFAULTS.baitCount);
     setRodCount(SHOP_DEFAULTS.rodCount);
     setRodPurchaseFn(SHOP_DEFAULTS.rodPurchaseFn);
+    setRodHolderLevels(SHOP_DEFAULTS.rodHolderLevels);
+    setRodHolderFn(SHOP_DEFAULTS.rodHolderFn);
   }
 
   return (
@@ -905,6 +939,27 @@ function ShopGenerator({
 
         <Flex direction="column" gap="2">
           <Text size="1" weight="bold">
+            ROD HOLDER
+          </Text>
+          <Flex gap="3" wrap="wrap" align="end">
+            <NumInput
+              label="Levels"
+              value={rodHolderLevels}
+              onChange={setRodHolderLevels}
+              min={0}
+            />
+          </Flex>
+          {rodHolderLevels > 0 && (
+            <FunctionSelect
+              label="Price curve"
+              value={rodHolderFn}
+              onChange={setRodHolderFn}
+            />
+          )}
+        </Flex>
+
+        <Flex direction="column" gap="2">
+          <Text size="1" weight="bold">
             BAIT
           </Text>
           <FunctionSelect
@@ -938,6 +993,7 @@ function ShopGenerator({
             `# ROD_DEFENSE price curve: ${fnConfigStr(defenseFn)} | ValuePerLevel=${defenseVPL} | Upgrades=${defenseCount}`,
             `# LURE price curve: ${fnConfigStr(lureFn)} | Lures=${lureCount}`,
             `# BAIT price curve: ${fnConfigStr(baitFn)} | Tiers=${baitCount}`,
+            `# ROD_HOLDER price curve: ${fnConfigStr(rodHolderFn)} | Levels=${rodHolderLevels}`,
           ].join("\n");
           downloadCsv(rows, "ShopGameplay.csv", comment);
         }}
@@ -991,6 +1047,8 @@ export function getGeneratedShopRows(): string[][] {
     baitCount,
     rodCount,
     rodPurchaseFn,
+    rodHolderLevels,
+    rodHolderFn,
   } = loadStored(SHOP_STORAGE_KEY, SHOP_DEFAULTS);
   return generateShopRows(
     attackFn,
@@ -1005,6 +1063,8 @@ export function getGeneratedShopRows(): string[][] {
     baitCount,
     rodCount,
     rodPurchaseFn,
+    rodHolderFn ?? DEFAULT_ROD_HOLDER_FN,
+    rodHolderLevels ?? 3,
   );
 }
 

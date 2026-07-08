@@ -11,6 +11,7 @@ import {
   addBait,
   addLure,
   addRod,
+  addRodSlot,
   addToRodStat,
   addToStat,
   deductMoney,
@@ -136,6 +137,9 @@ export function buyUpgrade(id: string) {
     case StatName.ROD:
       addRod(upgrade.id);
       break;
+    case StatName.ROD_SLOT:
+      addRodSlot();
+      break;
     case StatName.ROD_ATTACK: {
       const rodId = upgrade.id.replace("_ATTACK", "");
       addToRodStat(rodId, "attack", upgrade.valuePerLevel);
@@ -186,6 +190,9 @@ export function setUpgradeLevelDebug(id: string, newLevel: number) {
       break;
     case StatName.ROD:
       if (delta > 0) addRod(upgrade.id);
+      break;
+    case StatName.ROD_SLOT:
+      if (delta > 0) addRodSlot();
       break;
     case StatName.ROD_ATTACK: {
       const rodId = upgrade.id.replace("_ATTACK", "");
