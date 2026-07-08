@@ -67,6 +67,7 @@ export interface ShopUpgradeData {
   name: string;
   description: string;
   category: string;
+  subcategory: string;
   prices: number[];
   stat: StatName;
   valuePerLevel: number;
@@ -135,6 +136,7 @@ export async function loadShopGameplayData(
     name: row[0],
     description: "",
     category: "",
+    subcategory: "",
     prices: row[1].split(" ").map(Number),
     stat: parseStatName(row[2]),
     valuePerLevel: Number(row[3]),
@@ -185,27 +187,35 @@ function categoryFromStat(stat: StatName): string {
   return "misc";
 }
 
+interface ShopDisplayEntry {
+  name: string;
+  description: string;
+  category: string;
+  subcategory: string;
+}
+
+function parseShopDisplayRow(row: string[]): ShopDisplayEntry {
+  return {
+    name: row[1],
+    description: row[2],
+    category: row[3] ?? "",
+    subcategory: row[4] ?? "",
+  };
+}
+
 export async function loadShopDisplayMap(): Promise<
-  Map<string, { name: string; description: string; category: string }>
+  Map<string, ShopDisplayEntry>
 > {
   const res = await fetch("/data/ShopDisplay.csv");
   const rows = parseCSV(await res.text());
   return new Map(
-    rows
-      .slice(1)
-      .map((row) => [
-        row[0],
-        { name: row[1], description: row[2], category: row[3] ?? "" },
-      ]),
+    rows.slice(1).map((row) => [row[0], parseShopDisplayRow(row)]),
   );
 }
 
 export function parseShopGameplayRows(
   rows: string[][],
-  displayMap?: Map<
-    string,
-    { name: string; description: string; category: string }
-  >,
+  displayMap?: Map<string, ShopDisplayEntry>,
 ): ShopUpgradeData[] {
   return rows.slice(1).map((row) => {
     const stat = parseStatName(row[2]);
@@ -215,6 +225,7 @@ export function parseShopGameplayRows(
       name: display?.name ?? row[0],
       description: display?.description ?? "",
       category: display?.category ?? categoryFromStat(stat),
+      subcategory: display?.subcategory ?? "",
       prices: row[1].split(" ").map(Number),
       stat,
       valuePerLevel: Number(row[3]),
@@ -236,12 +247,7 @@ export async function loadShopData(
   ];
 
   const displayById = new Map(
-    displayRows
-      .slice(1)
-      .map((row) => [
-        row[0],
-        { name: row[1], description: row[2], category: row[3] ?? "" },
-      ]),
+    displayRows.slice(1).map((row) => [row[0], parseShopDisplayRow(row)]),
   );
 
   return gameplayRows.slice(1).map((row) => {
@@ -251,6 +257,7 @@ export async function loadShopData(
       name: display?.name ?? row[0],
       description: display?.description ?? "",
       category: display?.category ?? "",
+      subcategory: display?.subcategory ?? "",
       prices: row[1].split(" ").map(Number),
       stat: parseStatName(row[2]),
       valuePerLevel: Number(row[3]),

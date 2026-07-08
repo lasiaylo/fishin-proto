@@ -1,13 +1,13 @@
-ID, Name, Description, Category
-ROD_ATTACK_ROD_1, Reel (Rod 1), Reel in fish faster when they're resting., rod upgrades
-ROD_DEFENSE_ROD_1, Drag (Rod 1), Prevents fish from pulling so hard., rod upgrades
-HP, Line, Increases how much tension the line can take before it snaps., rod upgrades
-LURE_1, Floater, Catch more fish, lures
-LURE_2, Spinner, Attract rarer fish, lures
-LURE_3, Deep Diver, Reach fish that won't bite near the surface, lures
-COOLER, Big Cooler, Fits one more fish in your cooler., misc
-CAST_DISTANCE, Cast Distance, Cast your line further into the water., rod upgrades
-ROD_2, Second Rod, A second fishing rod with its own reel and drag., second rod
-ROD_ATTACK_ROD_2, Reel (Rod 2), Reel in fish faster on the second rod., rod upgrades
-ROD_DEFENSE_ROD_2, Drag (Rod 2), Prevents fish from pulling so hard on the second rod., rod upgrades
-BAIT_0, Worm Bait, Replenish your worm bait,  bait
+ID, Name, Description, Category, Subcategory
+ROD_ATTACK_ROD_1, Reel, Reel in fish faster when they're resting., rod upgrades,
+ROD_DEFENSE_ROD_1, Drag, Prevents fish from pulling so hard., rod upgrades,
+HP, Line, Increases how much tension the line can take before it snaps., rod upgrades,
+LURE_1, Floater, Catch more fish, lures,
+LURE_2, Spinner, Attract rarer fish, lures,
+LURE_3, Deep Diver, Reach fish that won't bite near the surface, lures,
+COOLER, Big Cooler, Fits one more fish in your cooler., misc,
+CAST_DISTANCE, Cast Distance, Cast your line further into the water., rod upgrades,
+ROD_2, Second Rod, A second fishing rod with its own reel and drag., rod upgrades, second rod
+ROD_ATTACK_ROD_2, Reel (Rod 2), Reel in fish faster on the second rod., rod upgrades, second rod
+ROD_DEFENSE_ROD_2, Drag (Rod 2), Prevents fish from pulling so hard on the second rod., rod upgrades, second rod
+BAIT_0, Worm Bait, Replenish your worm bait,  bait,

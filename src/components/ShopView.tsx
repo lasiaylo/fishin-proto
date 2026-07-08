@@ -12,21 +12,7 @@ import { MyButton } from "./MyButton";
 import { BAIT_MAX_STACK, CURRENCY_SYMBOL } from "../util/constants";
 import { StatName } from "../util/csvLoader";
 
-const CATEGORY_ORDER = [
-  "lures",
-  "rod upgrades",
-  "second rod",
-  "bait",
-  "misc",
-];
-
-function rodGroupKey(id: string): string | null {
-  if (id.startsWith("ROD_ATTACK_") || id.startsWith("ROD_DEFENSE_")) {
-    const parts = id.split("_");
-    return `${parts[parts.length - 2]}_${parts[parts.length - 1]}`;
-  }
-  return null;
-}
+const CATEGORY_ORDER = ["lures", "rod upgrades", "bait", "misc"];
 
 export function ShopView() {
   const upgrades = useShop((s) => s.upgrades);
@@ -52,54 +38,11 @@ export function ShopView() {
   return (
     <Flex p="4" direction={"column"} gap="4" align={"start"}>
       {groups.map(({ label, upgrades: group }) => {
-        if (label === "rod upgrades") {
-          const byGroup = new Map<string | null, typeof group>();
-          for (const u of group) {
-            const key = rodGroupKey(u.id);
-            if (!byGroup.has(key)) byGroup.set(key, []);
-            byGroup.get(key)!.push(u);
-          }
-
-          return (
-            <Flex key={label} direction="column" gap="2">
-              <Text size="2" weight="bold" color="gray">
-                {label}
-              </Text>
-              {[...byGroup.entries()].map(([key, subGroup]) => (
-                <Flex key={key ?? "misc"} direction="column" gap="1">
-                  {key && (
-                    <Text size="1" color="gray">
-                      {key.replace("_", " ").toLowerCase()}
-                    </Text>
-                  )}
-                  <Grid columns="2" gapY="3" gapX="8">
-                    {subGroup.map((upgrade) => {
-                      const price = getUpgradePrice(upgrade);
-                      const maxed = isMaxed(upgrade);
-                      const disabled =
-                        maxed || price === null || wallet < price;
-                      return (
-                        <MyButton
-                          key={upgrade.id}
-                          disabled={disabled}
-                          description={upgrade.description}
-                          onClick={() => buyUpgrade(upgrade.id)}
-                          minWidth={100}
-                        >
-                          <Flex direction="column">
-                            <Text>{upgrade.name}</Text>
-                            <Text size="1">
-                              {maxed ? "max" : `${CURRENCY_SYMBOL} ${price}`}
-                            </Text>
-                          </Flex>
-                        </MyButton>
-                      );
-                    })}
-                  </Grid>
-                </Flex>
-              ))}
-            </Flex>
-          );
+        const bySubcategory = new Map<string, typeof group>();
+        for (const u of group) {
+          const key = u.subcategory || "";
+          if (!bySubcategory.has(key)) bySubcategory.set(key, []);
+          bySubcategory.get(key)!.push(u);
         }
 
         return (
@@ -107,45 +50,55 @@ export function ShopView() {
             <Text size="2" weight="bold" color="gray">
               {label}
             </Text>
-            <Grid columns="2" gapY="3" gapX="8">
-              {group.map((upgrade) => {
-                const price = getUpgradePrice(upgrade);
-                const isBait = upgrade.stat === StatName.BAIT;
-                const baitCount = isBait
-                  ? (baitInventory[upgrade.id] ?? 0)
-                  : null;
-                const baitFull = isBait && (baitCount ?? 0) >= BAIT_MAX_STACK;
-                const maxed = isMaxed(upgrade);
-                const disabled =
-                  maxed || baitFull || price === null || wallet < price;
+            {[...bySubcategory.entries()].map(([subcategory, subGroup]) => (
+              <Flex key={subcategory || "_default"} direction="column" gap="1">
+                {subcategory && (
+                  <Text size="1" color="gray">
+                    {subcategory}
+                  </Text>
+                )}
+                <Grid columns="2" gapY="3" gapX="8">
+                  {subGroup.map((upgrade) => {
+                    const price = getUpgradePrice(upgrade);
+                    const isBait = upgrade.stat === StatName.BAIT;
+                    const baitCount = isBait
+                      ? (baitInventory[upgrade.id] ?? 0)
+                      : null;
+                    const baitFull =
+                      isBait && (baitCount ?? 0) >= BAIT_MAX_STACK;
+                    const maxed = isMaxed(upgrade);
+                    const disabled =
+                      maxed || baitFull || price === null || wallet < price;
 
-                return (
-                  <MyButton
-                    key={upgrade.id}
-                    disabled={disabled}
-                    description={upgrade.description}
-                    onClick={() => buyUpgrade(upgrade.id)}
-                    minWidth={100}
-                  >
-                    <Flex direction="column">
-                      <Text>{upgrade.name}</Text>
-                      <Text size="1">
-                        {baitFull
-                          ? "full"
-                          : maxed
-                            ? "max"
-                            : `${CURRENCY_SYMBOL} ${price}`}
-                      </Text>
-                      {isBait && baitCount !== null && (
-                        <Text size="1" color="gray">
-                          ×{baitCount}/{BAIT_MAX_STACK}
-                        </Text>
-                      )}
-                    </Flex>
-                  </MyButton>
-                );
-              })}
-            </Grid>
+                    return (
+                      <MyButton
+                        key={upgrade.id}
+                        disabled={disabled}
+                        description={upgrade.description}
+                        onClick={() => buyUpgrade(upgrade.id)}
+                        minWidth={100}
+                      >
+                        <Flex direction="column">
+                          <Text>{upgrade.name}</Text>
+                          <Text size="1">
+                            {baitFull
+                              ? "full"
+                              : maxed
+                                ? "max"
+                                : `${CURRENCY_SYMBOL} ${price}`}
+                          </Text>
+                          {isBait && baitCount !== null && (
+                            <Text size="1" color="gray">
+                              ×{baitCount}/{BAIT_MAX_STACK}
+                            </Text>
+                          )}
+                        </Flex>
+                      </MyButton>
+                    );
+                  })}
+                </Grid>
+              </Flex>
+            ))}
           </Flex>
         );
       })}
