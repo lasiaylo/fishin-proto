@@ -215,14 +215,14 @@ function generateShopRows(
       ]);
     }
     rows.push([
-      `ROD_ATTACK_${rodId}`,
+      `${rodId}_ATTACK`,
       priceList(attackFn, attackCount),
       "ROD_ATTACK",
       String(attackVPL),
       r > 1 ? rodId : "",
     ]);
     rows.push([
-      `ROD_DEFENSE_${rodId}`,
+      `${rodId}_DEFENSE`,
       priceList(defenseFn, defenseCount),
       "ROD_DEFENSE",
       String(defenseVPL),

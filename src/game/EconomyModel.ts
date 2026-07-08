@@ -485,13 +485,13 @@ function applyUpgrade(
       });
       break;
     case StatName.ROD_ATTACK: {
-      const rodId = upgrade.id.replace("ROD_ATTACK_", "");
+      const rodId = upgrade.id.replace("_ATTACK", "");
       const rod = rods.find((r) => r.id === rodId);
       if (rod) rod.attack += upgrade.valuePerLevel;
       break;
     }
     case StatName.ROD_DEFENSE: {
-      const rodId = upgrade.id.replace("ROD_DEFENSE_", "");
+      const rodId = upgrade.id.replace("_DEFENSE", "");
       const rod = rods.find((r) => r.id === rodId);
       if (rod) rod.defense += upgrade.valuePerLevel;
       break;

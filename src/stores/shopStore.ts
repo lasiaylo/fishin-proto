@@ -140,12 +140,12 @@ export function buyUpgrade(id: string) {
       addRod(upgrade.id);
       break;
     case StatName.ROD_ATTACK: {
-      const rodId = upgrade.id.replace("ROD_ATTACK_", "");
+      const rodId = upgrade.id.replace("_ATTACK", "");
       addToRodStat(rodId, "attack", upgrade.valuePerLevel);
       break;
     }
     case StatName.ROD_DEFENSE: {
-      const rodId = upgrade.id.replace("ROD_DEFENSE_", "");
+      const rodId = upgrade.id.replace("_DEFENSE", "");
       addToRodStat(rodId, "defense", upgrade.valuePerLevel);
       break;
     }
@@ -192,12 +192,12 @@ export function setUpgradeLevelDebug(id: string, newLevel: number) {
       if (delta > 0) addRod(upgrade.id);
       break;
     case StatName.ROD_ATTACK: {
-      const rodId = upgrade.id.replace("ROD_ATTACK_", "");
+      const rodId = upgrade.id.replace("_ATTACK", "");
       addToRodStat(rodId, "attack", delta * upgrade.valuePerLevel);
       break;
     }
     case StatName.ROD_DEFENSE: {
-      const rodId = upgrade.id.replace("ROD_DEFENSE_", "");
+      const rodId = upgrade.id.replace("_DEFENSE", "");
       addToRodStat(rodId, "defense", delta * upgrade.valuePerLevel);
       break;
     }
@@ -229,12 +229,12 @@ export function resetAllUpgradesDebug() {
         addToStat("castMax", delta * u.valuePerLevel);
         break;
       case StatName.ROD_ATTACK: {
-        const rodId = u.id.replace("ROD_ATTACK_", "");
+        const rodId = u.id.replace("_ATTACK", "");
         addToRodStat(rodId, "attack", delta * u.valuePerLevel);
         break;
       }
       case StatName.ROD_DEFENSE: {
-        const rodId = u.id.replace("ROD_DEFENSE_", "");
+        const rodId = u.id.replace("_DEFENSE", "");
         addToRodStat(rodId, "defense", delta * u.valuePerLevel);
         break;
       }
