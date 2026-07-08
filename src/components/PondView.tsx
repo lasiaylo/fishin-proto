@@ -90,11 +90,17 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
 
   const luresUsedElsewhere = new Set(
     rodSlotItems.filter(
-      (item, i) => i !== slotIndex && item !== null && getTackleType(item) === TackleType.LURE,
+      (item, i) =>
+        i !== slotIndex &&
+        item !== null &&
+        getTackleType(item) === TackleType.LURE,
     ),
   );
   const ownedLureList = shopUpgrades.filter(
-    (u) => u.stat === StatName.LURE && ownedLures.has(u.id) && !luresUsedElsewhere.has(u.id),
+    (u) =>
+      u.stat === StatName.LURE &&
+      ownedLures.has(u.id) &&
+      !luresUsedElsewhere.has(u.id),
   );
 
   const [gameState, setGameState] = useState<GameState>(GameState.Idle);
@@ -416,7 +422,9 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
 
   let controls: React.ReactNode;
   if (gameState === GameState.Idle) {
-    if (invCount >= inventorySize) {
+    if (assignment === null) {
+      controls = null;
+    } else if (invCount >= inventorySize) {
       controls = <Text size="1">the cooler is full</Text>;
     } else if (isWaitType && baitCount === 0) {
       controls = <Text size="1">no bait</Text>;
@@ -485,13 +493,15 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
             onValueChange={(v) =>
               assignRodToSlot(slotIndex, v === "none" ? null : v)
             }
+            disabled={gameState !== GameState.Idle}
           >
             <Select.Trigger variant="soft" />
             <Select.Content>
               <Select.Item value="none">None</Select.Item>
               {ownedRods.map((rod) => (
                 <Select.Item key={rod.id} value={rod.id}>
-                  {rod.id}
+                  {shopUpgrades.find((u) => u.id === rod.id)?.name ??
+                    "lil guppy"}
                 </Select.Item>
               ))}
             </Select.Content>
@@ -502,25 +512,40 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
                 size="1"
                 value={selectedItem}
                 onValueChange={(v) => setSlotItem(slotIndex, v)}
+                disabled={gameState !== GameState.Idle}
               >
                 <Select.Trigger variant="soft" />
                 <Select.Content>
-                  {Object.entries(baitInventory).map(([id, count]) => {
-                    const bait = baitData.find((b) => b.id === id);
-                    return (
-                      <Select.Item key={id} value={id}>
-                        {bait?.id ?? id}
-                      </Select.Item>
-                    );
-                  })}
-                  {ownedLureList.map((u) => {
-                    const lvl = lureXpData[u.id]?.level ?? 0;
-                    return (
-                      <Select.Item key={u.id} value={u.id}>
-                        {u.name}
-                      </Select.Item>
-                    );
-                  })}
+                  <Select.Group>
+                    <Select.Label>baits</Select.Label>
+                    {Object.entries(baitInventory).map(([id, count]) => {
+                      const bait = baitData.find((b) => b.id === id);
+                      return (
+                        <Select.Item
+                          key={id}
+                          value={id}
+                          style={{ paddingLeft: "var(--space-6)" }}
+                        >
+                          {bait?.name ?? id}
+                        </Select.Item>
+                      );
+                    })}
+                  </Select.Group>
+                  <Select.Group>
+                    <Select.Label>lures</Select.Label>
+                    {ownedLureList.map((u) => {
+                      const lvl = lureXpData[u.id]?.level ?? 0;
+                      return (
+                        <Select.Item
+                          key={u.id}
+                          value={u.id}
+                          style={{ paddingLeft: "var(--space-6)" }}
+                        >
+                          {u.name}
+                        </Select.Item>
+                      );
+                    })}
+                  </Select.Group>
                 </Select.Content>
               </Select.Root>
               {getTackleType(selectedItem) === TackleType.LURE && (
