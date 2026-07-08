@@ -1,11 +1,13 @@
 ID, Name, Description, Category, Subcategory
-ROD_1_ATTACK, Reel, Reel in fish faster when they're resting., rods, lil guppy
-ROD_1_DEFENSE, Drag, Prevents fish from pulling so hard., rods, lil guppy
-ROD_2, Second Rod, A second fishing rod with its own reel and drag., rods, maple scout
-ROD_2_ATTACK, Reel , Reel in fish faster on the second rod., rods, maple scout
-ROD_2_DEFENSE, Drag , Prevents fish from pulling so hard on the second rod., rods, maple scout
-LURE_1, Floater, Catch more fish, lures,
-LURE_2, Spinner, Attract rarer fish, lures,
-LURE_3, Deep Diver, Reach fish that won't bite near the surface, lures,
-COOLER, Big Cooler, Fits one more fish in your cooler., misc,
-BAIT_0, Worm Bait, Replenish your worm bait,  bait,
+ROD_1_ATTACK, reel, Reel in fish faster when they're resting., rods, lil guppy
+ROD_1_DEFENSE, drag, Prevents fish from pulling so hard., rods, lil guppy
+ROD_2, maple scout, A second fishing rod with its own reel and drag., rods, maple scout
+ROD_2_ATTACK, reel , Reel in fish faster on the second rod., rods, maple scout
+ROD_2_DEFENSE, drag , Prevents fish from pulling so hard on the second rod., rods, maple scout
+LURE_0, jighead, Catch more fish, lures,
+LURE_1, spinner, Attract rarer fish, lures,
+LURE_2, deep diver, Reach fish that won't bite near the surface, lures,
+BAIT_0, bread, Replenish your worm bait, bait,
+BAIT_1, worm, Replenish your worm bait,  bait,
+BAIT_2, boilie ball, Replenish your worm bait,  bait,
+COOLER, big cooler, Fits one more fish in your cooler., misc,

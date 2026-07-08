@@ -94,9 +94,7 @@ export function canAffordUpgrade(upgrade: ShopUpgrade): boolean {
 
 export function isMaxed(upgrade: ShopUpgrade): boolean {
   if (upgrade.stat === StatName.BAIT) {
-    return (
-      (usePlayer.getState().baitInventory[upgrade.id] ?? 0) >= BAIT_MAX_STACK
-    );
+    return false;
   }
   return upgrade.level >= upgrade.prices.length;
 }

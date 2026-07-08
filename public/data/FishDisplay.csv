@@ -1,13 +1,13 @@
 ID, Name
-FISH_0, minnow
-FISH_1, walleye
-FISH_2, bluegill sunfish
-FISH_3, smallmouth bass
-FISH_4, bullhead catfish
-FISH_5, largemouth bass
-FISH_6, burbot
-FISH_7, shorthead redhorse
+FISH_0, walleye
+FISH_1, bluegill sunfish
+FISH_2, smallmouth bass
+FISH_3, bullhead catfish
+FISH_4, largemouth bass
+FISH_5, burbot
+FISH_6, shorthead redhorse
 
+FISH_B_0, minnow
 FISH_B_1, threadfin shad
 FISH_B_2, creek chub
 FISH_B_3, lake trout

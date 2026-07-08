@@ -141,16 +141,7 @@ function generateFishRows(
   levels: number,
 ): string[][] {
   const header = [
-    [
-      "ID",
-      "ATK",
-      "DEF",
-      "Thrash",
-      "BasePrice",
-      "RequiredTackle",
-      "Zone",
-      "HP",
-    ],
+    ["ID", "ATK", "DEF", "Thrash", "BasePrice", "RequiredTackle", "Zone", "HP"],
   ];
   const baitRows = generateFishPool(
     baitAttackFn,
@@ -241,13 +232,7 @@ function generateShopRows(
   }
 
   for (let i = 0; i < baitCount; i++) {
-    rows.push([
-      `BAIT_${i}`,
-      String(Math.ceil(evalFn(baitFn, i))),
-      "BAIT",
-      "1",
-      i === 0 ? "" : `LURE_${i}`,
-    ]);
+    rows.push([`BAIT_${i}`, String(Math.ceil(evalFn(baitFn, i))), "BAIT", "1"]);
   }
 
   return rows;
@@ -528,8 +513,12 @@ function FishGenerator({
   levels: number;
 }) {
   const stored = loadStored(FISH_STORAGE_KEY, FISH_DEFAULTS);
-  const [attackFn, setAttackFn] = useState<FunctionConfig>(() => stored.attackFn);
-  const [defenseFn, setDefenseFn] = useState<FunctionConfig>(() => stored.defenseFn);
+  const [attackFn, setAttackFn] = useState<FunctionConfig>(
+    () => stored.attackFn,
+  );
+  const [defenseFn, setDefenseFn] = useState<FunctionConfig>(
+    () => stored.defenseFn,
+  );
   const [priceFn, setPriceFn] = useState<FunctionConfig>(() => stored.priceFn);
   const [variance, setVariance] = useState(() => stored.variance);
   const [baitAttackFn, setBaitAttackFn] = useState<FunctionConfig>(
@@ -556,12 +545,29 @@ function FishGenerator({
   useEffect(() => {
     localStorage.setItem(
       FISH_STORAGE_KEY,
-      JSON.stringify({ attackFn, defenseFn, priceFn, variance, baitAttackFn, baitDefenseFn, baitPriceFn }),
+      JSON.stringify({
+        attackFn,
+        defenseFn,
+        priceFn,
+        variance,
+        baitAttackFn,
+        baitDefenseFn,
+        baitPriceFn,
+      }),
     );
     onChange?.(rows);
     // onChange is a stable useState setter — safe to omit from deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [attackFn, defenseFn, priceFn, variance, levels, baitAttackFn, baitDefenseFn, baitPriceFn]);
+  }, [
+    attackFn,
+    defenseFn,
+    priceFn,
+    variance,
+    levels,
+    baitAttackFn,
+    baitDefenseFn,
+    baitPriceFn,
+  ]);
 
   function reset() {
     setAttackFn(FISH_DEFAULTS.attackFn);
@@ -586,17 +592,45 @@ function FishGenerator({
 
       <Grid columns="2" gap="4">
         <Flex direction="column" gap="2">
-          <Text size="1" weight="bold">BAIT FISH</Text>
-          <FunctionSelect label="ATK curve" value={baitAttackFn} onChange={setBaitAttackFn} />
-          <FunctionSelect label="DEF curve" value={baitDefenseFn} onChange={setBaitDefenseFn} />
-          <FunctionSelect label="Base Price curve" value={baitPriceFn} onChange={setBaitPriceFn} />
+          <Text size="1" weight="bold">
+            BAIT FISH
+          </Text>
+          <FunctionSelect
+            label="ATK curve"
+            value={baitAttackFn}
+            onChange={setBaitAttackFn}
+          />
+          <FunctionSelect
+            label="DEF curve"
+            value={baitDefenseFn}
+            onChange={setBaitDefenseFn}
+          />
+          <FunctionSelect
+            label="Base Price curve"
+            value={baitPriceFn}
+            onChange={setBaitPriceFn}
+          />
         </Flex>
 
         <Flex direction="column" gap="2">
-          <Text size="1" weight="bold">LURE FISH</Text>
-          <FunctionSelect label="ATK curve" value={attackFn} onChange={setAttackFn} />
-          <FunctionSelect label="DEF curve" value={defenseFn} onChange={setDefenseFn} />
-          <FunctionSelect label="Base Price curve" value={priceFn} onChange={setPriceFn} />
+          <Text size="1" weight="bold">
+            LURE FISH
+          </Text>
+          <FunctionSelect
+            label="ATK curve"
+            value={attackFn}
+            onChange={setAttackFn}
+          />
+          <FunctionSelect
+            label="DEF curve"
+            value={defenseFn}
+            onChange={setDefenseFn}
+          />
+          <FunctionSelect
+            label="Base Price curve"
+            value={priceFn}
+            onChange={setPriceFn}
+          />
         </Flex>
       </Grid>
 
@@ -614,7 +648,9 @@ function FishGenerator({
       {showPreview && (
         <Grid columns="2" gap="4">
           <Flex direction="column" gap="1">
-            <Text size="1" color="gray">Bait fish</Text>
+            <Text size="1" color="gray">
+              Bait fish
+            </Text>
             <PreviewTable
               rows={[
                 ["ID", "ATK", "DEF", "BasePrice"],
@@ -627,7 +663,9 @@ function FishGenerator({
             />
           </Flex>
           <Flex direction="column" gap="1">
-            <Text size="1" color="gray">Lure fish</Text>
+            <Text size="1" color="gray">
+              Lure fish
+            </Text>
             <PreviewTable
               rows={[
                 ["ID", "ATK", "DEF", "BasePrice"],
@@ -783,32 +821,77 @@ function ShopGenerator({
 
       <Grid columns="2" gap="4">
         <Flex direction="column" gap="2">
-          <Text size="1" weight="bold">ATTACK</Text>
-          <FunctionSelect label="Price curve" value={attackFn} onChange={setAttackFn} />
+          <Text size="1" weight="bold">
+            ATTACK
+          </Text>
+          <FunctionSelect
+            label="Price curve"
+            value={attackFn}
+            onChange={setAttackFn}
+          />
           <Flex gap="3" wrap="wrap" align="end">
-            <NumInput label="ValuePerLevel" value={attackVPL} onChange={setAttackVPL} min={1} />
-            <NumInput label="Upgrades" value={attackCount} onChange={setAttackCount} min={1} />
+            <NumInput
+              label="ValuePerLevel"
+              value={attackVPL}
+              onChange={setAttackVPL}
+              min={1}
+            />
+            <NumInput
+              label="Upgrades"
+              value={attackCount}
+              onChange={setAttackCount}
+              min={1}
+            />
           </Flex>
         </Flex>
 
         <Flex direction="column" gap="2">
-          <Text size="1" weight="bold">DEFENSE</Text>
-          <FunctionSelect label="Price curve" value={defenseFn} onChange={setDefenseFn} />
+          <Text size="1" weight="bold">
+            DEFENSE
+          </Text>
+          <FunctionSelect
+            label="Price curve"
+            value={defenseFn}
+            onChange={setDefenseFn}
+          />
           <Flex gap="3" wrap="wrap" align="end">
-            <NumInput label="ValuePerLevel" value={defenseVPL} onChange={setDefenseVPL} min={1} />
-            <NumInput label="Upgrades" value={defenseCount} onChange={setDefenseCount} min={1} />
+            <NumInput
+              label="ValuePerLevel"
+              value={defenseVPL}
+              onChange={setDefenseVPL}
+              min={1}
+            />
+            <NumInput
+              label="Upgrades"
+              value={defenseCount}
+              onChange={setDefenseCount}
+              min={1}
+            />
           </Flex>
         </Flex>
 
         <Flex direction="column" gap="2">
-          <Text size="1" weight="bold">LURE</Text>
-          <FunctionSelect label="Price curve" value={lureFn} onChange={setLureFn} />
+          <Text size="1" weight="bold">
+            LURE
+          </Text>
+          <FunctionSelect
+            label="Price curve"
+            value={lureFn}
+            onChange={setLureFn}
+          />
         </Flex>
 
         <Flex direction="column" gap="2">
-          <Text size="1" weight="bold">RODS</Text>
+          <Text size="1" weight="bold">
+            RODS
+          </Text>
           <Flex gap="3" wrap="wrap" align="end">
-            <NumInput label="Rod count" value={rodCount} onChange={setRodCount} min={1} />
+            <NumInput
+              label="Rod count"
+              value={rodCount}
+              onChange={setRodCount}
+              min={1}
+            />
           </Flex>
           {rodCount > 1 && (
             <FunctionSelect
@@ -820,10 +903,21 @@ function ShopGenerator({
         </Flex>
 
         <Flex direction="column" gap="2">
-          <Text size="1" weight="bold">BAIT</Text>
-          <FunctionSelect label="Price curve" value={baitFn} onChange={setBaitFn} />
+          <Text size="1" weight="bold">
+            BAIT
+          </Text>
+          <FunctionSelect
+            label="Price curve"
+            value={baitFn}
+            onChange={setBaitFn}
+          />
           <Flex gap="3" wrap="wrap" align="end">
-            <NumInput label="Bait tiers" value={baitCount} onChange={setBaitCount} min={1} />
+            <NumInput
+              label="Bait tiers"
+              value={baitCount}
+              onChange={setBaitCount}
+              min={1}
+            />
           </Flex>
         </Flex>
       </Grid>
@@ -858,8 +952,15 @@ export function getGeneratedFishRows(): string[][] {
     levels: 3,
     startingAD: 10,
   });
-  const { attackFn, defenseFn, priceFn, variance, baitAttackFn, baitDefenseFn, baitPriceFn } =
-    loadStored(FISH_STORAGE_KEY, FISH_DEFAULTS);
+  const {
+    attackFn,
+    defenseFn,
+    priceFn,
+    variance,
+    baitAttackFn,
+    baitDefenseFn,
+    baitPriceFn,
+  } = loadStored(FISH_STORAGE_KEY, FISH_DEFAULTS);
   return generateFishRows(
     attackFn,
     defenseFn,

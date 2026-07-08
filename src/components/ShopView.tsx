@@ -12,7 +12,7 @@ import { MyButton } from "./MyButton";
 import { BAIT_MAX_STACK, CURRENCY_SYMBOL } from "../util/constants";
 import { StatName } from "../util/csvLoader";
 
-const CATEGORY_ORDER = ["lures", "rods", "bait", "misc"];
+const CATEGORY_ORDER = ["bait", "lures", "rods", "misc"];
 
 function LevelPips({ level, maxLevel }: { level: number; maxLevel: number }) {
   if (maxLevel <= 1) return null;
@@ -36,7 +36,6 @@ export function ShopView() {
   const upgrades = useShop((s) => s.upgrades);
   const wallet = usePlayer((s) => s.wallet);
   const baitInventory = usePlayer((s) => s.baitInventory);
-  const baitData = useBaitData((s) => s.baitData);
 
   const upgradeById = new Map(upgrades.map((u) => [u.id, u]));
   const meetsRequirements = (u: (typeof upgrades)[number]) =>
@@ -70,63 +69,64 @@ export function ShopView() {
         }
 
         return (
-          <Flex key={label} direction="column" gap="2">
+          <Flex key={label} direction="column" gap="3">
             <Text size="2" weight="bold" color="gray">
               {label}
             </Text>
-            {[...bySubcategory.entries()].map(([subcategory, subGroup]) => (
-              <Flex key={subcategory || "_default"} direction="column" gap="1">
-                {subcategory && (
-                  <Text size="1" color="gray">
-                    {subcategory}
-                  </Text>
-                )}
-                <Grid columns="2" gapY="3" gapX="8">
-                  {subGroup.map((upgrade) => {
-                    const price = getUpgradePrice(upgrade);
-                    const isBait = upgrade.stat === StatName.BAIT;
-                    const baitCount = isBait
-                      ? (baitInventory[upgrade.id] ?? 0)
-                      : null;
-                    const baitFull =
-                      isBait && (baitCount ?? 0) >= BAIT_MAX_STACK;
-                    const maxed = isMaxed(upgrade);
-                    const disabled =
-                      maxed || baitFull || price === null || wallet < price;
+            <Flex direction="column" gap="5">
+              {[...bySubcategory.entries()].map(([subcategory, subGroup]) => (
+                <Flex
+                  key={subcategory || "_default"}
+                  direction="column"
+                  gap="2"
+                >
+                  {subcategory && (
+                    <Text size="1" color="gray">
+                      {subcategory}
+                    </Text>
+                  )}
+                  <Grid columns="2" gapY="3" gapX="8">
+                    {subGroup.map((upgrade) => {
+                      const price = getUpgradePrice(upgrade);
+                      const isBait = upgrade.stat === StatName.BAIT;
+                      const baitCount = isBait
+                        ? (baitInventory[upgrade.id] ?? 0)
+                        : null;
+                      const baitFull =
+                        isBait && (baitCount ?? 0) >= BAIT_MAX_STACK;
+                      const maxed = isMaxed(upgrade);
+                      const disabled =
+                        maxed || baitFull || price === null || wallet < price;
 
-                    return (
-                      <MyButton
-                        key={upgrade.id}
-                        disabled={disabled}
-                        description={upgrade.description}
-                        onClick={() => buyUpgrade(upgrade.id)}
-                        minWidth={100}
-                      >
-                        <Flex direction="column">
-                          <Text>{upgrade.name}</Text>
-                          <Text size="1">
-                            {baitFull
-                              ? "full"
-                              : maxed
-                                ? "max"
-                                : `${CURRENCY_SYMBOL} ${price}`}
-                          </Text>
-                          {isBait && baitCount !== null && (
-                            <Text size="1" color="gray">
-                              ×{baitCount}/{BAIT_MAX_STACK}
+                      return (
+                        <MyButton
+                          key={upgrade.id}
+                          disabled={disabled}
+                          description={upgrade.description}
+                          onClick={() => buyUpgrade(upgrade.id)}
+                          minWidth={100}
+                        >
+                          <Flex direction="column">
+                            <Text>{upgrade.name}</Text>
+                            <Text size="1">
+                              {baitFull
+                                ? "(full)"
+                                : maxed
+                                  ? "(max)"
+                                  : `${CURRENCY_SYMBOL} ${price}`}
                             </Text>
-                          )}
-                          <LevelPips
-                            level={upgrade.level}
-                            maxLevel={upgrade.prices.length}
-                          />
-                        </Flex>
-                      </MyButton>
-                    );
-                  })}
-                </Grid>
-              </Flex>
-            ))}
+                            <LevelPips
+                              level={upgrade.level}
+                              maxLevel={upgrade.prices.length}
+                            />
+                          </Flex>
+                        </MyButton>
+                      );
+                    })}
+                  </Grid>
+                </Flex>
+              ))}
+            </Flex>
           </Flex>
         );
       })}

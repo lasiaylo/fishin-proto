@@ -81,7 +81,7 @@ export function InventoryView() {
           const bait = baitData.find((b) => b.id === id);
           return (
             <Code key={id} size="1" color={count > 0 ? "gray" : "red"}>
-              {bait?.id ?? id} ×{count}
+              {bait?.name ?? id} ×{count}
             </Code>
           );
         })}

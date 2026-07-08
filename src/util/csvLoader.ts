@@ -27,6 +27,7 @@ export enum StatName {
 
 export interface BaitData {
   id: string;
+  name: string;
   waitMin: number;
   waitMax: number;
 }
@@ -36,10 +37,22 @@ const STAT_NAME_VALUES = new Set<string>(Object.values(StatName));
 export async function loadBaitData(
   baitFile = "BaitGameplay.csv",
 ): Promise<BaitData[]> {
-  const res = await fetch(`/data/Bait/${baitFile}`);
-  const rows = parseCSV(await res.text());
-  return rows.slice(1).map((row) => ({
+  const [gameplayRes, displayRes] = await Promise.all([
+    fetch(`/data/Bait/${baitFile}`),
+    fetch("/data/ShopDisplay.csv"),
+  ]);
+  const [gameplayRows, displayRows] = [
+    parseCSV(await gameplayRes.text()),
+    parseCSV(await displayRes.text()),
+  ];
+
+  const displayById = new Map(
+    displayRows.slice(1).map((row) => [row[0], row[1]]),
+  );
+
+  return gameplayRows.slice(1).map((row) => ({
     id: row[0],
+    name: displayById.get(row[0]) ?? row[0],
     waitMin: Number(row[1]),
     waitMax: Number(row[2]),
   }));
