@@ -26,7 +26,13 @@ interface FunctionConfig {
   growthRate: number;
 }
 
-const DEFAULT_STATS_FN: FunctionConfig = {
+const DEFAULT_ATTACK_FN: FunctionConfig = {
+  type: "LINEAR",
+  startValue: 2,
+  scaleFactor: 4,
+  growthRate: 0.8,
+};
+const DEFAULT_DEFENSE_FN: FunctionConfig = {
   type: "LINEAR",
   startValue: 2,
   scaleFactor: 4,
@@ -50,19 +56,20 @@ const DEFAULT_LURE_FN: FunctionConfig = {
   scaleFactor: 4,
   growthRate: 0.8,
 };
-const DEFAULT_CAST_FN: FunctionConfig = {
-  type: "LINEAR",
-  startValue: 20,
-  scaleFactor: 10,
-  growthRate: 0.8,
-};
+
 const DEFAULT_BAIT_FN: FunctionConfig = {
   type: "LINEAR",
   startValue: 5,
   scaleFactor: 5,
   growthRate: 0.8,
 };
-const DEFAULT_BAIT_STATS_FN: FunctionConfig = {
+const DEFAULT_BAIT_ATTACK_FN: FunctionConfig = {
+  type: "LINEAR",
+  startValue: 2,
+  scaleFactor: 4,
+  growthRate: 0.8,
+};
+const DEFAULT_BAIT_DEFENSE_FN: FunctionConfig = {
   type: "LINEAR",
   startValue: 2,
   scaleFactor: 4,
@@ -89,7 +96,8 @@ function evalFn(cfg: FunctionConfig, lvl: number): number {
 }
 
 function generateFishPool(
-  statsFn: FunctionConfig,
+  attackFn: FunctionConfig,
+  defenseFn: FunctionConfig,
   priceFn: FunctionConfig,
   variance: number,
   levelStart: number,
@@ -104,12 +112,13 @@ function generateFishPool(
   for (let l = levelStart; l <= levelEnd; l++) {
     const mults = singleFirst && l === levelStart ? [1] : [1, 1 + variance];
     for (const mult of mults) {
-      const s = Math.ceil(evalFn(statsFn, l * mult));
+      const atk = Math.ceil(evalFn(attackFn, l * mult));
+      const def = Math.ceil(evalFn(defenseFn, l * mult));
       const p = Math.ceil(evalFn(priceFn, l * mult));
       rows.push([
         fishId(idx++),
-        String(s),
-        String(s),
+        String(atk),
+        String(def),
         "1",
         String(p),
         tackleId(l),
@@ -122,9 +131,11 @@ function generateFishPool(
 }
 
 function generateFishRows(
-  statsFn: FunctionConfig,
+  attackFn: FunctionConfig,
+  defenseFn: FunctionConfig,
   priceFn: FunctionConfig,
-  baitStatsFn: FunctionConfig,
+  baitAttackFn: FunctionConfig,
+  baitDefenseFn: FunctionConfig,
   baitPriceFn: FunctionConfig,
   variance: number,
   levels: number,
@@ -132,8 +143,8 @@ function generateFishRows(
   const header = [
     [
       "ID",
-      "Attack",
-      "Defense",
+      "ATK",
+      "DEF",
       "Thrash",
       "BasePrice",
       "RequiredTackle",
@@ -142,7 +153,8 @@ function generateFishRows(
     ],
   ];
   const baitRows = generateFishPool(
-    baitStatsFn,
+    baitAttackFn,
+    baitDefenseFn,
     baitPriceFn,
     variance,
     0,
@@ -153,7 +165,8 @@ function generateFishRows(
     true,
   );
   const lureRows = generateFishPool(
-    statsFn,
+    attackFn,
+    defenseFn,
     priceFn,
     variance,
     1,
@@ -180,9 +193,6 @@ function generateShopRows(
   defenseCount: number,
   lureFn: FunctionConfig,
   lureCount: number,
-  castDistanceFn: FunctionConfig,
-  castDistanceVPL: number,
-  castDistanceCount: number,
   baitFn: FunctionConfig,
   baitCount: number,
   rodCount: number,
@@ -220,13 +230,6 @@ function generateShopRows(
     ]);
   }
 
-  rows.push([
-    "CAST_DISTANCE",
-    priceList(castDistanceFn, castDistanceCount),
-    "CAST_DISTANCE",
-    String(castDistanceVPL),
-    "",
-  ]);
   for (let i = 0; i < lureCount; i++) {
     rows.push([
       `LURE_${i + 1}`,
@@ -506,9 +509,11 @@ function PreviewTable({ rows }: { rows: string[][] }) {
 }
 
 const FISH_DEFAULTS = {
-  statsFn: DEFAULT_STATS_FN,
+  attackFn: DEFAULT_ATTACK_FN,
+  defenseFn: DEFAULT_DEFENSE_FN,
   priceFn: DEFAULT_PRICE_FN,
-  baitStatsFn: DEFAULT_BAIT_STATS_FN,
+  baitAttackFn: DEFAULT_BAIT_ATTACK_FN,
+  baitDefenseFn: DEFAULT_BAIT_DEFENSE_FN,
   baitPriceFn: DEFAULT_BAIT_PRICE_FN,
   variance: 0.1,
 };
@@ -523,20 +528,26 @@ function FishGenerator({
   levels: number;
 }) {
   const stored = loadStored(FISH_STORAGE_KEY, FISH_DEFAULTS);
-  const [statsFn, setStatsFn] = useState<FunctionConfig>(() => stored.statsFn);
+  const [attackFn, setAttackFn] = useState<FunctionConfig>(() => stored.attackFn);
+  const [defenseFn, setDefenseFn] = useState<FunctionConfig>(() => stored.defenseFn);
   const [priceFn, setPriceFn] = useState<FunctionConfig>(() => stored.priceFn);
   const [variance, setVariance] = useState(() => stored.variance);
-  const [baitStatsFn, setBaitStatsFn] = useState<FunctionConfig>(
-    () => stored.baitStatsFn ?? DEFAULT_BAIT_STATS_FN,
+  const [baitAttackFn, setBaitAttackFn] = useState<FunctionConfig>(
+    () => stored.baitAttackFn ?? DEFAULT_BAIT_ATTACK_FN,
+  );
+  const [baitDefenseFn, setBaitDefenseFn] = useState<FunctionConfig>(
+    () => stored.baitDefenseFn ?? DEFAULT_BAIT_DEFENSE_FN,
   );
   const [baitPriceFn, setBaitPriceFn] = useState<FunctionConfig>(
     () => stored.baitPriceFn ?? DEFAULT_BAIT_PRICE_FN,
   );
 
   const rows = generateFishRows(
-    statsFn,
+    attackFn,
+    defenseFn,
     priceFn,
-    baitStatsFn,
+    baitAttackFn,
+    baitDefenseFn,
     baitPriceFn,
     variance,
     levels,
@@ -545,18 +556,20 @@ function FishGenerator({
   useEffect(() => {
     localStorage.setItem(
       FISH_STORAGE_KEY,
-      JSON.stringify({ statsFn, priceFn, variance, baitStatsFn, baitPriceFn }),
+      JSON.stringify({ attackFn, defenseFn, priceFn, variance, baitAttackFn, baitDefenseFn, baitPriceFn }),
     );
     onChange?.(rows);
     // onChange is a stable useState setter — safe to omit from deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statsFn, priceFn, variance, levels, baitStatsFn, baitPriceFn]);
+  }, [attackFn, defenseFn, priceFn, variance, levels, baitAttackFn, baitDefenseFn, baitPriceFn]);
 
   function reset() {
-    setStatsFn(FISH_DEFAULTS.statsFn);
+    setAttackFn(FISH_DEFAULTS.attackFn);
+    setDefenseFn(FISH_DEFAULTS.defenseFn);
     setPriceFn(FISH_DEFAULTS.priceFn);
     setVariance(FISH_DEFAULTS.variance);
-    setBaitStatsFn(FISH_DEFAULTS.baitStatsFn);
+    setBaitAttackFn(FISH_DEFAULTS.baitAttackFn);
+    setBaitDefenseFn(FISH_DEFAULTS.baitDefenseFn);
     setBaitPriceFn(FISH_DEFAULTS.baitPriceFn);
   }
 
@@ -574,13 +587,15 @@ function FishGenerator({
       <Grid columns="2" gap="4">
         <Flex direction="column" gap="2">
           <Text size="1" weight="bold">BAIT FISH</Text>
-          <FunctionSelect label="Attack / Defense curve" value={baitStatsFn} onChange={setBaitStatsFn} />
+          <FunctionSelect label="ATK curve" value={baitAttackFn} onChange={setBaitAttackFn} />
+          <FunctionSelect label="DEF curve" value={baitDefenseFn} onChange={setBaitDefenseFn} />
           <FunctionSelect label="Base Price curve" value={baitPriceFn} onChange={setBaitPriceFn} />
         </Flex>
 
         <Flex direction="column" gap="2">
           <Text size="1" weight="bold">LURE FISH</Text>
-          <FunctionSelect label="Attack / Defense curve" value={statsFn} onChange={setStatsFn} />
+          <FunctionSelect label="ATK curve" value={attackFn} onChange={setAttackFn} />
+          <FunctionSelect label="DEF curve" value={defenseFn} onChange={setDefenseFn} />
           <FunctionSelect label="Base Price curve" value={priceFn} onChange={setPriceFn} />
         </Flex>
       </Grid>
@@ -597,34 +612,34 @@ function FishGenerator({
       </Flex>
 
       {showPreview && (
-        <>
-          <Text size="1" color="gray">
-            Bait fish
-          </Text>
-          <PreviewTable
-            rows={[
-              ["ID", "A/D", "BasePrice"],
-              ...rows
-                .slice(1)
-                .filter((r) => r[5]?.startsWith("BAIT_"))
-                .filter((_, i) => i % 2 === 0)
-                .map((r) => [r[0], r[1], r[4]]),
-            ]}
-          />
-          <Text size="1" color="gray">
-            Lure fish
-          </Text>
-          <PreviewTable
-            rows={[
-              ["ID", "A/D", "BasePrice"],
-              ...rows
-                .slice(1)
-                .filter((r) => r[5]?.startsWith("LURE_"))
-                .filter((_, i) => i % 2 === 0)
-                .map((r) => [r[0], r[1], r[4]]),
-            ]}
-          />
-        </>
+        <Grid columns="2" gap="4">
+          <Flex direction="column" gap="1">
+            <Text size="1" color="gray">Bait fish</Text>
+            <PreviewTable
+              rows={[
+                ["ID", "ATK", "DEF", "BasePrice"],
+                ...rows
+                  .slice(1)
+                  .filter((r) => r[5]?.startsWith("BAIT_"))
+                  .filter((_, i) => i % 2 === 0)
+                  .map((r) => [r[0], r[1], r[2], r[4]]),
+              ]}
+            />
+          </Flex>
+          <Flex direction="column" gap="1">
+            <Text size="1" color="gray">Lure fish</Text>
+            <PreviewTable
+              rows={[
+                ["ID", "ATK", "DEF", "BasePrice"],
+                ...rows
+                  .slice(1)
+                  .filter((r) => r[5]?.startsWith("LURE_"))
+                  .filter((_, i) => i % 2 === 0)
+                  .map((r) => [r[0], r[1], r[2], r[4]]),
+              ]}
+            />
+          </Flex>
+        </Grid>
       )}
       <Button
         size="1"
@@ -632,7 +647,8 @@ function FishGenerator({
         style={{ width: "fit-content" }}
         onClick={() => {
           const comment = [
-            `# Attack/Defense curve: ${fnConfigStr(statsFn)}`,
+            `# Attack curve: ${fnConfigStr(attackFn)}`,
+            `# Defense curve: ${fnConfigStr(defenseFn)}`,
             `# Base Price curve: ${fnConfigStr(priceFn)}`,
             `# Variance: ${variance} | Levels: ${levels}`,
           ].join("\n");
@@ -653,9 +669,6 @@ const SHOP_DEFAULTS = {
   defenseVPL: 1,
   defenseCount: 10,
   lureFn: DEFAULT_LURE_FN,
-  castDistanceFn: DEFAULT_CAST_FN,
-  castDistanceVPL: 10,
-  castDistanceCount: 3,
   baitFn: DEFAULT_BAIT_FN,
   baitCount: 1,
   rodCount: 1,
@@ -685,15 +698,6 @@ function ShopGenerator({
   const [defenseCount, setDefenseCount] = useState(() => stored.defenseCount);
 
   const [lureFn, setLureFn] = useState<FunctionConfig>(() => stored.lureFn);
-  const [castDistanceFn, setCastDistanceFn] = useState<FunctionConfig>(
-    () => stored.castDistanceFn,
-  );
-  const [castDistanceVPL, setCastDistanceVPL] = useState(
-    () => stored.castDistanceVPL,
-  );
-  const [castDistanceCount, setCastDistanceCount] = useState(
-    () => stored.castDistanceCount,
-  );
   const [baitFn, setBaitFn] = useState<FunctionConfig>(
     () => stored.baitFn ?? DEFAULT_BAIT_FN,
   );
@@ -712,9 +716,6 @@ function ShopGenerator({
     defenseCount,
     lureFn,
     lureCount,
-    castDistanceFn,
-    castDistanceVPL,
-    castDistanceCount,
     baitFn,
     baitCount,
     rodCount,
@@ -732,9 +733,6 @@ function ShopGenerator({
         defenseVPL,
         defenseCount,
         lureFn,
-        castDistanceFn,
-        castDistanceVPL,
-        castDistanceCount,
         baitFn,
         baitCount,
         rodCount,
@@ -752,9 +750,6 @@ function ShopGenerator({
     defenseCount,
     lureFn,
     lureCount,
-    castDistanceFn,
-    castDistanceVPL,
-    castDistanceCount,
     baitFn,
     baitCount,
     rodCount,
@@ -769,9 +764,6 @@ function ShopGenerator({
     setDefenseVPL(SHOP_DEFAULTS.defenseVPL);
     setDefenseCount(SHOP_DEFAULTS.defenseCount);
     setLureFn(SHOP_DEFAULTS.lureFn);
-    setCastDistanceFn(SHOP_DEFAULTS.castDistanceFn);
-    setCastDistanceVPL(SHOP_DEFAULTS.castDistanceVPL);
-    setCastDistanceCount(SHOP_DEFAULTS.castDistanceCount);
     setBaitFn(SHOP_DEFAULTS.baitFn);
     setBaitCount(SHOP_DEFAULTS.baitCount);
     setRodCount(SHOP_DEFAULTS.rodCount);
@@ -828,15 +820,6 @@ function ShopGenerator({
         </Flex>
 
         <Flex direction="column" gap="2">
-          <Text size="1" weight="bold">CAST DISTANCE</Text>
-          <FunctionSelect label="Price curve" value={castDistanceFn} onChange={setCastDistanceFn} />
-          <Flex gap="3" wrap="wrap" align="end">
-            <NumInput label="ValuePerLevel" value={castDistanceVPL} onChange={setCastDistanceVPL} min={1} />
-            <NumInput label="Upgrades" value={castDistanceCount} onChange={setCastDistanceCount} min={0} />
-          </Flex>
-        </Flex>
-
-        <Flex direction="column" gap="2">
           <Text size="1" weight="bold">BAIT</Text>
           <FunctionSelect label="Price curve" value={baitFn} onChange={setBaitFn} />
           <Flex gap="3" wrap="wrap" align="end">
@@ -859,7 +842,6 @@ function ShopGenerator({
             `# ROD_ATTACK price curve: ${fnConfigStr(attackFn)} | ValuePerLevel=${attackVPL} | Upgrades=${attackCount}`,
             `# ROD_DEFENSE price curve: ${fnConfigStr(defenseFn)} | ValuePerLevel=${defenseVPL} | Upgrades=${defenseCount}`,
             `# LURE price curve: ${fnConfigStr(lureFn)} | Lures=${lureCount}`,
-            `# CAST_DISTANCE price curve: ${fnConfigStr(castDistanceFn)} | ValuePerLevel=${castDistanceVPL} | Upgrades=${castDistanceCount}`,
             `# BAIT price curve: ${fnConfigStr(baitFn)} | Tiers=${baitCount}`,
           ].join("\n");
           downloadCsv(rows, "ShopGameplay.csv", comment);
@@ -876,14 +858,14 @@ export function getGeneratedFishRows(): string[][] {
     levels: 3,
     startingAD: 10,
   });
-  const { statsFn, priceFn, variance, baitStatsFn, baitPriceFn } = loadStored(
-    FISH_STORAGE_KEY,
-    FISH_DEFAULTS,
-  );
+  const { attackFn, defenseFn, priceFn, variance, baitAttackFn, baitDefenseFn, baitPriceFn } =
+    loadStored(FISH_STORAGE_KEY, FISH_DEFAULTS);
   return generateFishRows(
-    statsFn,
+    attackFn,
+    defenseFn,
     priceFn,
-    baitStatsFn ?? DEFAULT_BAIT_STATS_FN,
+    baitAttackFn ?? DEFAULT_BAIT_ATTACK_FN,
+    baitDefenseFn ?? DEFAULT_BAIT_DEFENSE_FN,
     baitPriceFn ?? DEFAULT_BAIT_PRICE_FN,
     variance,
     levels,
@@ -903,9 +885,6 @@ export function getGeneratedShopRows(): string[][] {
     defenseVPL,
     defenseCount,
     lureFn,
-    castDistanceFn,
-    castDistanceVPL,
-    castDistanceCount,
     baitFn,
     baitCount,
     rodCount,
@@ -920,9 +899,6 @@ export function getGeneratedShopRows(): string[][] {
     defenseCount,
     lureFn,
     levels,
-    castDistanceFn,
-    castDistanceVPL,
-    castDistanceCount,
     baitFn,
     baitCount,
     rodCount,
