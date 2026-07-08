@@ -596,8 +596,15 @@ export function simulateEconomy(
   const shopLureIds = new Set(
     shopData.filter((u) => u.stat === StatName.LURE).map((u) => u.id),
   );
+  const shopBaitIds = new Set(
+    shopData.filter((u) => u.stat === StatName.BAIT).map((u) => u.id),
+  );
   const ownedLures = new Set<string>(
-    [...fishByTackle.keys()].filter((id) => id && !shopLureIds.has(id)),
+    [...fishByTackle.keys()].filter((id) => {
+      if (!id || shopLureIds.has(id)) return false;
+      if (getTackleType(id) === TackleType.BAIT) return shopBaitIds.has(id);
+      return true;
+    }),
   );
   const baitStock: Record<string, number> = {};
   for (const lureId of ownedLures) {

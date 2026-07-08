@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Flex, Text, Table, Button, Separator } from "@radix-ui/themes";
+import { Flex, Grid, Text, Table, Button, Separator } from "@radix-ui/themes";
 import { NumInput } from "./shared";
 
 export const GENERATED_FISH_CSV = "__generated_fish__";
@@ -571,37 +571,20 @@ function FishGenerator({
         </Button>
       </Flex>
 
-      <Text size="1" weight="bold">
-        BAIT FISH
-      </Text>
-      <Flex direction="row" gap="4" align="start">
-        <FunctionSelect
-          label="Attack / Defense curve"
-          value={baitStatsFn}
-          onChange={setBaitStatsFn}
-        />
-        <FunctionSelect
-          label="Base Price curve"
-          value={baitPriceFn}
-          onChange={setBaitPriceFn}
-        />
-      </Flex>
+      <Grid columns="2" gap="4">
+        <Flex direction="column" gap="2">
+          <Text size="1" weight="bold">BAIT FISH</Text>
+          <FunctionSelect label="Attack / Defense curve" value={baitStatsFn} onChange={setBaitStatsFn} />
+          <FunctionSelect label="Base Price curve" value={baitPriceFn} onChange={setBaitPriceFn} />
+        </Flex>
 
-      <Text size="1" weight="bold">
-        LURE FISH
-      </Text>
-      <Flex direction="row" gap="4" align="start">
-        <FunctionSelect
-          label="Attack / Defense curve"
-          value={statsFn}
-          onChange={setStatsFn}
-        />
-        <FunctionSelect
-          label="Base Price curve"
-          value={priceFn}
-          onChange={setPriceFn}
-        />
-      </Flex>
+        <Flex direction="column" gap="2">
+          <Text size="1" weight="bold">LURE FISH</Text>
+          <FunctionSelect label="Attack / Defense curve" value={statsFn} onChange={setStatsFn} />
+          <FunctionSelect label="Base Price curve" value={priceFn} onChange={setPriceFn} />
+        </Flex>
+      </Grid>
+
       <Flex gap="3" wrap="wrap" align="end">
         <NumInput
           label="Variance"
@@ -673,7 +656,6 @@ const SHOP_DEFAULTS = {
   castDistanceFn: DEFAULT_CAST_FN,
   castDistanceVPL: 10,
   castDistanceCount: 3,
-  mergeStats: false,
   baitFn: DEFAULT_BAIT_FN,
   baitCount: 1,
   rodCount: 1,
@@ -712,9 +694,6 @@ function ShopGenerator({
   const [castDistanceCount, setCastDistanceCount] = useState(
     () => stored.castDistanceCount,
   );
-  const [mergeStats, setMergeStats] = useState(
-    () => stored.mergeStats ?? false,
-  );
   const [baitFn, setBaitFn] = useState<FunctionConfig>(
     () => stored.baitFn ?? DEFAULT_BAIT_FN,
   );
@@ -723,19 +702,6 @@ function ShopGenerator({
   const [rodPurchaseFn, setRodPurchaseFn] = useState<FunctionConfig>(
     () => stored.rodPurchaseFn ?? DEFAULT_ROD_PURCHASE_FN,
   );
-
-  function handleAttackFnChange(v: FunctionConfig) {
-    setAttackFn(v);
-    if (mergeStats) setDefenseFn(v);
-  }
-  function handleAttackVPLChange(v: number) {
-    setAttackVPL(v);
-    if (mergeStats) setDefenseVPL(v);
-  }
-  function handleAttackCountChange(v: number) {
-    setAttackCount(v);
-    if (mergeStats) setDefenseCount(v);
-  }
 
   const rows = generateShopRows(
     attackFn,
@@ -769,7 +735,6 @@ function ShopGenerator({
         castDistanceFn,
         castDistanceVPL,
         castDistanceCount,
-        mergeStats,
         baitFn,
         baitCount,
         rodCount,
@@ -790,7 +755,6 @@ function ShopGenerator({
     castDistanceFn,
     castDistanceVPL,
     castDistanceCount,
-    mergeStats,
     baitFn,
     baitCount,
     rodCount,
@@ -808,7 +772,6 @@ function ShopGenerator({
     setCastDistanceFn(SHOP_DEFAULTS.castDistanceFn);
     setCastDistanceVPL(SHOP_DEFAULTS.castDistanceVPL);
     setCastDistanceCount(SHOP_DEFAULTS.castDistanceCount);
-    setMergeStats(SHOP_DEFAULTS.mergeStats);
     setBaitFn(SHOP_DEFAULTS.baitFn);
     setBaitCount(SHOP_DEFAULTS.baitCount);
     setRodCount(SHOP_DEFAULTS.rodCount);
@@ -826,201 +789,61 @@ function ShopGenerator({
         </Button>
       </Flex>
 
-      <label
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          cursor: "pointer",
-        }}
-      >
-        <input
-          type="checkbox"
-          checked={mergeStats}
-          onChange={(e) => {
-            const checked = e.target.checked;
-            setMergeStats(checked);
-            if (checked) {
-              setDefenseFn(attackFn);
-              setDefenseVPL(attackVPL);
-              setDefenseCount(attackCount);
-            }
-          }}
-        />
-        <Text size="1" color="gray">
-          Merge Attack / Defense
-        </Text>
-      </label>
+      <Grid columns="2" gap="4">
+        <Flex direction="column" gap="2">
+          <Text size="1" weight="bold">ATTACK</Text>
+          <FunctionSelect label="Price curve" value={attackFn} onChange={setAttackFn} />
+          <Flex gap="3" wrap="wrap" align="end">
+            <NumInput label="ValuePerLevel" value={attackVPL} onChange={setAttackVPL} min={1} />
+            <NumInput label="Upgrades" value={attackCount} onChange={setAttackCount} min={1} />
+          </Flex>
+        </Flex>
 
-      {mergeStats ? (
-        <Flex direction="row" gap="4" align="start">
-          <Flex direction="column" gap="2">
-            <Text size="1" weight="bold">
-              ATTACK / DEFENSE
-            </Text>
+        <Flex direction="column" gap="2">
+          <Text size="1" weight="bold">DEFENSE</Text>
+          <FunctionSelect label="Price curve" value={defenseFn} onChange={setDefenseFn} />
+          <Flex gap="3" wrap="wrap" align="end">
+            <NumInput label="ValuePerLevel" value={defenseVPL} onChange={setDefenseVPL} min={1} />
+            <NumInput label="Upgrades" value={defenseCount} onChange={setDefenseCount} min={1} />
+          </Flex>
+        </Flex>
+
+        <Flex direction="column" gap="2">
+          <Text size="1" weight="bold">LURE</Text>
+          <FunctionSelect label="Price curve" value={lureFn} onChange={setLureFn} />
+        </Flex>
+
+        <Flex direction="column" gap="2">
+          <Text size="1" weight="bold">RODS</Text>
+          <Flex gap="3" wrap="wrap" align="end">
+            <NumInput label="Rod count" value={rodCount} onChange={setRodCount} min={1} />
+          </Flex>
+          {rodCount > 1 && (
             <FunctionSelect
-              label="Price curve"
-              value={attackFn}
-              onChange={handleAttackFnChange}
+              label="Rod purchase price curve (ROD_2+)"
+              value={rodPurchaseFn}
+              onChange={setRodPurchaseFn}
             />
-            <Flex gap="3" wrap="wrap" align="end">
-              <NumInput
-                label="ValuePerLevel"
-                value={attackVPL}
-                onChange={handleAttackVPLChange}
-                min={1}
-              />
-              <NumInput
-                label="Upgrades"
-                value={attackCount}
-                onChange={handleAttackCountChange}
-                min={1}
-              />
-            </Flex>
-          </Flex>
+          )}
+        </Flex>
 
-          <Flex direction="column" gap="2">
-            <Text size="1" weight="bold">
-              LURE
-            </Text>
-            <FunctionSelect
-              label="Price curve"
-              value={lureFn}
-              onChange={setLureFn}
-            />
+        <Flex direction="column" gap="2">
+          <Text size="1" weight="bold">CAST DISTANCE</Text>
+          <FunctionSelect label="Price curve" value={castDistanceFn} onChange={setCastDistanceFn} />
+          <Flex gap="3" wrap="wrap" align="end">
+            <NumInput label="ValuePerLevel" value={castDistanceVPL} onChange={setCastDistanceVPL} min={1} />
+            <NumInput label="Upgrades" value={castDistanceCount} onChange={setCastDistanceCount} min={0} />
           </Flex>
         </Flex>
-      ) : (
-        <>
-          <Flex direction="row" gap="4" align="start">
-            <Flex direction="column" gap="2">
-              <Text size="1" weight="bold">
-                ATTACK
-              </Text>
-              <FunctionSelect
-                label="Price curve"
-                value={attackFn}
-                onChange={setAttackFn}
-              />
-              <Flex gap="3" wrap="wrap" align="end">
-                <NumInput
-                  label="ValuePerLevel"
-                  value={attackVPL}
-                  onChange={setAttackVPL}
-                  min={1}
-                />
-                <NumInput
-                  label="Upgrades"
-                  value={attackCount}
-                  onChange={setAttackCount}
-                  min={1}
-                />
-              </Flex>
-            </Flex>
 
-            <Flex direction="column" gap="2">
-              <Text size="1" weight="bold">
-                DEFENSE
-              </Text>
-              <FunctionSelect
-                label="Price curve"
-                value={defenseFn}
-                onChange={setDefenseFn}
-              />
-              <Flex gap="3" wrap="wrap" align="end">
-                <NumInput
-                  label="ValuePerLevel"
-                  value={defenseVPL}
-                  onChange={setDefenseVPL}
-                  min={1}
-                />
-                <NumInput
-                  label="Upgrades"
-                  value={defenseCount}
-                  onChange={setDefenseCount}
-                  min={1}
-                />
-              </Flex>
-            </Flex>
+        <Flex direction="column" gap="2">
+          <Text size="1" weight="bold">BAIT</Text>
+          <FunctionSelect label="Price curve" value={baitFn} onChange={setBaitFn} />
+          <Flex gap="3" wrap="wrap" align="end">
+            <NumInput label="Bait tiers" value={baitCount} onChange={setBaitCount} min={1} />
           </Flex>
-
-          <Flex direction="column" gap="2">
-            <Text size="1" weight="bold">
-              LURE
-            </Text>
-            <FunctionSelect
-              label="Price curve"
-              value={lureFn}
-              onChange={setLureFn}
-            />
-          </Flex>
-        </>
-      )}
-
-      <Flex direction="column" gap="2">
-        <Text size="1" weight="bold">
-          RODS
-        </Text>
-        <Flex gap="3" wrap="wrap" align="end">
-          <NumInput
-            label="Rod count"
-            value={rodCount}
-            onChange={setRodCount}
-            min={1}
-          />
         </Flex>
-        {rodCount > 1 && (
-          <FunctionSelect
-            label="Rod purchase price curve (ROD_2+)"
-            value={rodPurchaseFn}
-            onChange={setRodPurchaseFn}
-          />
-        )}
-      </Flex>
-
-      <Flex direction="column" gap="2">
-        <Text size="1" weight="bold">
-          CAST DISTANCE
-        </Text>
-        <FunctionSelect
-          label="Price curve"
-          value={castDistanceFn}
-          onChange={setCastDistanceFn}
-        />
-        <Flex gap="3" wrap="wrap" align="end">
-          <NumInput
-            label="ValuePerLevel"
-            value={castDistanceVPL}
-            onChange={setCastDistanceVPL}
-            min={1}
-          />
-          <NumInput
-            label="Upgrades"
-            value={castDistanceCount}
-            onChange={setCastDistanceCount}
-            min={0}
-          />
-        </Flex>
-      </Flex>
-
-      <Flex direction="column" gap="2">
-        <Text size="1" weight="bold">
-          BAIT
-        </Text>
-        <FunctionSelect
-          label="Price curve"
-          value={baitFn}
-          onChange={setBaitFn}
-        />
-        <Flex gap="3" wrap="wrap" align="end">
-          <NumInput
-            label="Bait tiers"
-            value={baitCount}
-            onChange={setBaitCount}
-            min={1}
-          />
-        </Flex>
-      </Flex>
+      </Grid>
 
       {showPreview && (
         <PreviewTable
