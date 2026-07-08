@@ -114,7 +114,6 @@ export function buyUpgrade(id: string) {
   // BAIT: consume the purchase but don't increment level
   if (upgrade.stat === StatName.BAIT) {
     addBait(upgrade.id, upgrade.valuePerLevel);
-    pushEvent(EventMsg.BOUGHT(upgrade.name, 1));
     useSessionLog.getState().logUpgradeBought(upgrade.id, 1, false);
     return;
   }
@@ -153,7 +152,6 @@ export function buyUpgrade(id: string) {
   newUpgrades[idx] = { ...upgrade, level: newLevel };
   useShop.setState({ upgrades: newUpgrades });
 
-  pushEvent(EventMsg.BOUGHT(upgrade.name, newLevel));
   useSessionLog
     .getState()
     .logUpgradeBought(upgrade.id, newLevel, upgrade.stat === StatName.LURE);

@@ -30,7 +30,7 @@ export function ReelView({
   }, [onReelStart]);
 
   return (
-    <Flex direction="column" flexGrow={"1"} gap="4">
+    <Flex direction="column" flexGrow={"1"} gap="6">
       <Flex gap={"4"} align={"center"}>
         <div
           onPointerDown={() => {

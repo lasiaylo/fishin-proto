@@ -2,7 +2,9 @@ import { Code, Flex, Text } from "@radix-ui/themes";
 import React, { useEffect, useRef, useState } from "react";
 import { usePlayer } from "../stores/playerStore";
 import { useBaitData } from "../stores/baitStore";
+import { useShop } from "../stores/shopStore";
 import { CURRENCY_SYMBOL, RARITY_COLOR } from "../util/constants";
+import { StatName } from "../util/csvLoader";
 
 export function InventoryView() {
   const wallet = usePlayer((s) => s.wallet);
@@ -10,6 +12,11 @@ export function InventoryView() {
   const inventorySize = usePlayer((s) => s.inventorySize);
   const baitInventory = usePlayer((s) => s.baitInventory);
   const baitData = useBaitData((s) => s.baitData);
+  const ownedLures = usePlayer((s) => s.ownedLures);
+  const upgrades = useShop((s) => s.upgrades);
+  const lures = upgrades.filter(
+    (u) => u.stat === StatName.LURE && ownedLures.has(u.id),
+  );
 
   const [displayWallet, setDisplayWallet] = useState(wallet);
   const displayRef = useRef(wallet);
@@ -75,20 +82,6 @@ export function InventoryView() {
 
       <Flex direction="column" gap="1">
         <Text size="1" color="gray">
-          bait
-        </Text>
-        {Object.entries(baitInventory).map(([id, count]) => {
-          const bait = baitData.find((b) => b.id === id);
-          return (
-            <Code key={id} size="1" color={count > 0 ? "gray" : "red"}>
-              {bait?.name ?? id} ×{count}
-            </Code>
-          );
-        })}
-      </Flex>
-
-      <Flex direction="column" gap="1">
-        <Text size="1" color="gray">
           cooler
         </Text>
         {Array.from({ length: inventorySize }).map((_, i) => {
@@ -103,6 +96,43 @@ export function InventoryView() {
             </Code>
           );
         })}
+      </Flex>
+
+      <Flex direction="column" gap="3">
+        <Text size="1" color="gray">
+          tackle box
+        </Text>
+
+        <Flex direction="column" gap="1">
+          <Text size="1" color="gray">
+            bait
+          </Text>
+          <Flex direction="column" gap="1" pl="3">
+            {Object.entries(baitInventory).map(([id, count]) => {
+              const bait = baitData.find((b) => b.id === id);
+              return (
+                <Code key={id} size="1" color={count > 0 ? "gray" : "red"}>
+                  {bait?.name ?? id} ×{count}
+                </Code>
+              );
+            })}
+          </Flex>
+        </Flex>
+
+        {lures.length > 0 && (
+          <Flex direction="column" gap="1">
+            <Text size="1" color="gray">
+              lures
+            </Text>
+            <Flex direction="column" gap="1" pl="3">
+              {lures.map((lure) => (
+                <Code key={lure.id} size="1" color="gray">
+                  {lure.name}
+                </Code>
+              ))}
+            </Flex>
+          </Flex>
+        )}
       </Flex>
     </Flex>
   );

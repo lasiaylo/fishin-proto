@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
-import { Flex, Progress, Select, Text } from "@radix-ui/themes";
+import { Flex, Progress, Select, Separator, Text } from "@radix-ui/themes";
 import { useShallow } from "zustand/react/shallow";
 import { ChargeButton } from "./ChargeButton";
 import { FishData, StatName } from "../util/csvLoader";
@@ -101,6 +101,13 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
       u.stat === StatName.LURE &&
       ownedLures.has(u.id) &&
       !luresUsedElsewhere.has(u.id),
+  );
+
+  const rodsUsedElsewhere = new Set(
+    rodSlotAssignments.filter((id, i) => i !== slotIndex && id !== null),
+  );
+  const availableRods = ownedRods.filter(
+    (rod) => !rodsUsedElsewhere.has(rod.id),
   );
 
   const [gameState, setGameState] = useState<GameState>(GameState.Idle);
@@ -487,67 +494,79 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
       <Flex gap="4">
         <Flex flexGrow={"1"}>{controls}</Flex>
         <Flex direction="column" width={"120px"} gap="2">
-          <Select.Root
-            size="1"
-            value={assignment ?? "none"}
-            onValueChange={(v) =>
-              assignRodToSlot(slotIndex, v === "none" ? null : v)
-            }
-            disabled={gameState !== GameState.Idle}
-          >
-            <Select.Trigger variant="soft" />
-            <Select.Content>
-              <Select.Item value="none">None</Select.Item>
-              {ownedRods.map((rod) => (
-                <Select.Item key={rod.id} value={rod.id}>
-                  {shopUpgrades.find((u) => u.id === rod.id)?.name ??
-                    "lil guppy"}
-                </Select.Item>
-              ))}
-            </Select.Content>
-          </Select.Root>
+          <Flex direction="column" gap="1">
+            <Text size="1" color="gray">
+              rod
+            </Text>
+            <Select.Root
+              size="1"
+              color="gray"
+              value={assignment ?? "none"}
+              onValueChange={(v) =>
+                assignRodToSlot(slotIndex, v === "none" ? null : v)
+              }
+              disabled={gameState !== GameState.Idle}
+            >
+              <Select.Trigger variant="soft" />
+              <Select.Content>
+                <Select.Item value="none">None</Select.Item>
+                {availableRods.map((rod) => (
+                  <Select.Item key={rod.id} value={rod.id}>
+                    {shopUpgrades.find((u) => u.id === rod.id)?.name ??
+                      "lil guppy"}
+                  </Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
+          </Flex>
           {assignment !== null && (
             <>
-              <Select.Root
-                size="1"
-                value={selectedItem}
-                onValueChange={(v) => setSlotItem(slotIndex, v)}
-                disabled={gameState !== GameState.Idle}
-              >
-                <Select.Trigger variant="soft" />
-                <Select.Content>
-                  <Select.Group>
-                    <Select.Label>baits</Select.Label>
-                    {Object.entries(baitInventory).map(([id, count]) => {
-                      const bait = baitData.find((b) => b.id === id);
-                      return (
-                        <Select.Item
-                          key={id}
-                          value={id}
-                          style={{ paddingLeft: "var(--space-6)" }}
-                        >
-                          {bait?.name ?? id}
-                        </Select.Item>
-                      );
-                    })}
-                  </Select.Group>
-                  <Select.Group>
-                    <Select.Label>lures</Select.Label>
-                    {ownedLureList.map((u) => {
-                      const lvl = lureXpData[u.id]?.level ?? 0;
-                      return (
-                        <Select.Item
-                          key={u.id}
-                          value={u.id}
-                          style={{ paddingLeft: "var(--space-6)" }}
-                        >
-                          {u.name}
-                        </Select.Item>
-                      );
-                    })}
-                  </Select.Group>
-                </Select.Content>
-              </Select.Root>
+              <Flex direction="column" gap="1">
+                <Text size="1" color="gray">
+                  lure
+                </Text>
+                <Select.Root
+                  size="1"
+                  color="gray"
+                  value={selectedItem}
+                  onValueChange={(v) => setSlotItem(slotIndex, v)}
+                  disabled={gameState !== GameState.Idle}
+                >
+                  <Select.Trigger variant="soft" />
+                  <Select.Content>
+                    <Select.Group>
+                      <Select.Label>baits</Select.Label>
+                      {Object.entries(baitInventory).map(([id, count]) => {
+                        const bait = baitData.find((b) => b.id === id);
+                        return (
+                          <Select.Item
+                            key={id}
+                            value={id}
+                            style={{ paddingLeft: "var(--space-6)" }}
+                          >
+                            {bait?.name ?? id}
+                          </Select.Item>
+                        );
+                      })}
+                    </Select.Group>
+                    <Select.Group>
+                      <Select.Label>lures</Select.Label>
+                      {ownedLureList.map((u) => {
+                        const lvl = lureXpData[u.id]?.level ?? 0;
+                        return (
+                          <Select.Item
+                            key={u.id}
+                            value={u.id}
+                            style={{ paddingLeft: "var(--space-6)" }}
+                          >
+                            {u.name}
+                          </Select.Item>
+                        );
+                      })}
+                    </Select.Group>
+                  </Select.Content>
+                </Select.Root>
+              </Flex>
               {getTackleType(selectedItem) === TackleType.LURE && (
                 <Flex align="center" gap="2">
                   <Text size="1" color="gray">
@@ -574,7 +593,10 @@ export function PondView() {
   return (
     <Flex className="fade-in" width="100%" direction="column" gap="4" p="3">
       {Array.from({ length: rodCount }).map((_, i) => (
-        <RodRow key={i} slotIndex={i} />
+        <React.Fragment key={i}>
+          {i > 0 && <Separator size="4" />}
+          <RodRow slotIndex={i} />
+        </React.Fragment>
       ))}
     </Flex>
   );

@@ -85,7 +85,7 @@ export function ShopView() {
                       {subcategory}
                     </Text>
                   )}
-                  <Grid columns="2" gapY="3" gapX="8">
+                  <Grid columns="3" gapY="3" gapX="8">
                     {subGroup.map((upgrade) => {
                       const price = getUpgradePrice(upgrade);
                       const isBait = upgrade.stat === StatName.BAIT;

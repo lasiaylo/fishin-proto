@@ -53,9 +53,10 @@ export function ChargeButton({
         onPointerLeave={releaseCharge}
         style={{
           background: `linear-gradient(90deg, white ${chargePercent}%, transparent ${chargePercent}%)`,
+          height: "auto",
         }}
       >
-        <Box width={`${width ?? 0}px`}>
+        <Box width={`${width ?? 0}px`} py={"2"}>
           <Text size="1">{children}</Text>
         </Box>
       </Button>

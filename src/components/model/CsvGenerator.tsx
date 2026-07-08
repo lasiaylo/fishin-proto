@@ -4,6 +4,7 @@ import { NumInput } from "./shared";
 
 export const GENERATED_FISH_CSV = "__generated_fish__";
 export const GENERATED_SHOP_CSV = "__generated_shop__";
+const LURE_REQ_GAP = 3;
 
 const FISH_STORAGE_KEY = "csvgen_fish";
 const SHOP_STORAGE_KEY = "csvgen_shop";
@@ -227,7 +228,7 @@ function generateShopRows(
       String(Math.ceil(evalFn(lureFn, i))),
       "LURE",
       "1",
-      i === 0 ? "" : `LURE_${i}`,
+      i >= LURE_REQ_GAP ? `LURE_${i - (LURE_REQ_GAP - 1)}` : "",
     ]);
   }
 
@@ -1016,7 +1017,7 @@ export function CsvGeneratorPanel({
   onShopRowsChange?: (rows: string[][]) => void;
   onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [showPreview, setShowPreview] = useState(true);
   const [fishRows, setFishRows] = useState<string[][]>([]);
   const [shopRows, setShopRows] = useState<string[][]>([]);
