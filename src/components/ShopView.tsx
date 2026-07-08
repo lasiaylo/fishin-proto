@@ -1,5 +1,5 @@
 import React from "react";
-import { Flex, Grid, Text } from "@radix-ui/themes";
+import { Box, Flex, Grid, Text } from "@radix-ui/themes";
 import {
   useShop,
   buyUpgrade,
@@ -20,6 +20,26 @@ function rodGroupKey(id: string): string | null {
     return `${parts[parts.length - 2]}_${parts[parts.length - 1]}`;
   }
   return null;
+}
+
+function LevelPips({ level, maxLevel }: { level: number; maxLevel: number }) {
+  if (maxLevel <= 1) return null;
+  return (
+    <Flex gap="1" mt="1">
+      {Array.from({ length: maxLevel }, (_, i) => (
+        <Box
+          key={i}
+          width="6px"
+          height="6px"
+          style={{
+            borderRadius: "9999px",
+            backgroundColor:
+              i < level ? "var(--accent-9)" : "var(--gray-a5)",
+          }}
+        />
+      ))}
+    </Flex>
+  );
 }
 
 export function ShopView() {
@@ -85,6 +105,10 @@ export function ShopView() {
                             <Text size="1">
                               {maxed ? "max" : `${CURRENCY_SYMBOL} ${price}`}
                             </Text>
+                            <LevelPips
+                              level={upgrade.level}
+                              maxLevel={upgrade.prices.length}
+                            />
                           </Flex>
                         </MyButton>
                       );
@@ -135,6 +159,10 @@ export function ShopView() {
                           ×{baitCount}/{BAIT_MAX_STACK}
                         </Text>
                       )}
+                      <LevelPips
+                        level={upgrade.level}
+                        maxLevel={upgrade.prices.length}
+                      />
                     </Flex>
                   </MyButton>
                 );
