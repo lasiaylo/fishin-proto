@@ -36,3 +36,7 @@ An offline simulation used for balancing. It runs hundreds of rounds analyticall
 - **Bite probability changes** (e.g. per-check probability, escalation logic, pBite formula): update `castBiteProbability`, `expectedLuringTime`, or add a parallel `expectedWaitTime` function.
 - **XP gain changes**: update the XP-per-round block in `simulateEconomy`.
 - **New lure behaviour** (e.g. a new mechanic gated by lure type): branch on `getLureType(lureId)` in any affected economy function.
+
+## Background jobs: no automatic PRs
+
+When running as a background job in this repo, do not open a pull request when finishing a task, even after making and verifying code changes. Commit the work, but do not push it either — leave the branch local. Report which branch/worktree has the commit so the user can review, push, and open the PR themselves when ready.
