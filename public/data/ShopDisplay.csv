@@ -1,13 +1,13 @@
 ID, Name, Description, Category, Subcategory
-ROD_1_ATTACK, reel, reels in fish faster., rods, lil guppy
-ROD_1_DEFENSE, drag, prevents fish from taking the line out as quickly., rods, lil guppy
+ROD_1_ATTACK, reel, reel in fish faster, rods, lil guppy
+ROD_1_DEFENSE, drag, prevent fish from taking the line out as quickly, rods, lil guppy
 ROD_2, maple scout, an all-around reliable rod, rods, maple scout
-ROD_2_ATTACK, reel , reels in fish faster., rods, maple scout
-ROD_2_DEFENSE, drag , prevents fish from taking the line out as quickly., rods, maple scout
+ROD_2_ATTACK, reel , reel in fish faster, rods, maple scout
+ROD_2_DEFENSE, drag , prevent fish from taking the line out as quickly, rods, maple scout
 LURE_1, jighead, , lures,
 LURE_2, spinner, , lures,
 LURE_3, deep diver, , lures,
 BAIT_0, bread, , bait,
 BAIT_1, worm, ,  bait,
 BAIT_2, boilie ball, ,  bait,
-ROD_HOLDER, rod holder, allows for using multiple rods at the same time., misc,
+ROD_HOLDER, rod holder, allows for using multiple rods at the same time, misc,

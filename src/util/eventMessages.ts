@@ -1,6 +1,6 @@
 export const EventMsg = {
-  WELCOME: "it's dark and the water is calm.",
-  CAST: "the line whips through the air.",
+  WELCOME: "it's dark and the water is calm",
+  CAST: "the line whips through the air",
   LAND_BAD: "it lands like a rock",
   LAND_GOOD: "it lands like a feather",
   BITING: "something bites!",
