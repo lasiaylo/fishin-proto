@@ -11,6 +11,7 @@ import { initLocations } from "./stores/locationStore";
 import { initBaitData } from "./stores/baitStore";
 import { pushEvent } from "./stores/eventLogStore";
 import { EventMsg } from "./util/eventMessages";
+import "./game/StoryTriggerListener";
 import { useCsvConfig } from "./stores/csvConfigStore";
 import {
   GENERATED_FISH_CSV,

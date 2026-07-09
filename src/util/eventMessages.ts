@@ -9,4 +9,6 @@ export const EventMsg = {
   CRIT: "crit!",
   CAUGHT: (name: string) => ["caught a ", `${name}`],
   SOLD_FISH: (name: string, price: number) => ["sold ", `${name} +${price}`],
+
+  STORY_DUMMY: "you feel something stir in the water...",
 } as const;
