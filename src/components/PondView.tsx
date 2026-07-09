@@ -16,6 +16,7 @@ import {
 } from "../stores/playerStore";
 import { pushEvent } from "../stores/eventLogStore";
 import { EventMsg } from "../util/eventMessages";
+import { incrementTotalCasts } from "../stores/metricsStore";
 import { FightEngine, FightState, Outcome } from "../game/FightEngine";
 import { useSessionLog } from "../stores/sessionLogStore";
 import { addLureXp, lureXpProgress, useLureXp } from "../stores/lureXpStore";
@@ -392,6 +393,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
   }
 
   function handleCastRelease(chargePercent: number) {
+    incrementTotalCasts();
     const locationId = Object.keys(locations)[0];
     const t = chargePercent / 100;
     const castTarget = CAST_MIN + t * (castMax - CAST_MIN);
