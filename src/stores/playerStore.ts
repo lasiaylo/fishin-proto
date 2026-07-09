@@ -14,7 +14,6 @@ import {
 export interface PlayerStats {
   lineHP: number;
   inventorySize: number;
-  castMax: number;
 }
 
 export interface InventoryFish {
@@ -99,7 +98,7 @@ export function addRod(id: string) {
   usePlayer.setState((s) => {
     if (s.ownedRods.some((r) => r.id === id)) return s;
     return {
-      ownedRods: [...s.ownedRods, { id, attack: 25, defense: 25 }],
+      ownedRods: [...s.ownedRods, { id, attackLevel: 0, defenseLevel: 0 }],
     };
   });
 }
@@ -119,16 +118,16 @@ export function assignRodToSlot(slotIdx: number, rodId: string | null) {
   });
 }
 
-export function addToRodStat(
+export function setRodLevel(
   rodId: string,
-  stat: "attack" | "defense",
-  value: number,
+  stat: "attackLevel" | "defenseLevel",
+  level: number,
 ) {
   usePlayer.setState((s) => {
     const idx = s.ownedRods.findIndex((r) => r.id === rodId);
     if (idx === -1) return s;
     const newRods = [...s.ownedRods];
-    newRods[idx] = { ...newRods[idx], [stat]: newRods[idx][stat] + value };
+    newRods[idx] = { ...newRods[idx], [stat]: level };
     return { ownedRods: newRods };
   });
 }

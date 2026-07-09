@@ -12,7 +12,7 @@ import {
   addLure,
   addRod,
   addRodSlot,
-  addToRodStat,
+  setRodLevel,
   addToStat,
   deductMoney,
   getWallet,
@@ -131,9 +131,6 @@ export function buyUpgrade(id: string) {
     case StatName.INVENTORY:
       addToStat("inventorySize", upgrade.valuePerLevel);
       break;
-    case StatName.CAST_DISTANCE:
-      addToStat("castMax", upgrade.valuePerLevel);
-      break;
     case StatName.ROD:
       addRod(upgrade.id);
       break;
@@ -142,12 +139,12 @@ export function buyUpgrade(id: string) {
       break;
     case StatName.ROD_ATTACK: {
       const rodId = upgrade.id.replace("_ATTACK", "");
-      addToRodStat(rodId, "attack", upgrade.valuePerLevel);
+      setRodLevel(rodId, "attackLevel", newLevel);
       break;
     }
     case StatName.ROD_DEFENSE: {
       const rodId = upgrade.id.replace("_DEFENSE", "");
-      addToRodStat(rodId, "defense", upgrade.valuePerLevel);
+      setRodLevel(rodId, "defenseLevel", newLevel);
       break;
     }
   }
@@ -185,9 +182,6 @@ export function setUpgradeLevelDebug(id: string, newLevel: number) {
     case StatName.INVENTORY:
       addToStat("inventorySize", delta * upgrade.valuePerLevel);
       break;
-    case StatName.CAST_DISTANCE:
-      addToStat("castMax", delta * upgrade.valuePerLevel);
-      break;
     case StatName.ROD:
       if (delta > 0) addRod(upgrade.id);
       break;
@@ -196,12 +190,12 @@ export function setUpgradeLevelDebug(id: string, newLevel: number) {
       break;
     case StatName.ROD_ATTACK: {
       const rodId = upgrade.id.replace("_ATTACK", "");
-      addToRodStat(rodId, "attack", delta * upgrade.valuePerLevel);
+      setRodLevel(rodId, "attackLevel", clamped);
       break;
     }
     case StatName.ROD_DEFENSE: {
       const rodId = upgrade.id.replace("_DEFENSE", "");
-      addToRodStat(rodId, "defense", delta * upgrade.valuePerLevel);
+      setRodLevel(rodId, "defenseLevel", clamped);
       break;
     }
   }
@@ -228,17 +222,14 @@ export function resetAllUpgradesDebug() {
       case StatName.INVENTORY:
         addToStat("inventorySize", delta * u.valuePerLevel);
         break;
-      case StatName.CAST_DISTANCE:
-        addToStat("castMax", delta * u.valuePerLevel);
-        break;
       case StatName.ROD_ATTACK: {
         const rodId = u.id.replace("_ATTACK", "");
-        addToRodStat(rodId, "attack", delta * u.valuePerLevel);
+        setRodLevel(rodId, "attackLevel", 0);
         break;
       }
       case StatName.ROD_DEFENSE: {
         const rodId = u.id.replace("_DEFENSE", "");
-        addToRodStat(rodId, "defense", delta * u.valuePerLevel);
+        setRodLevel(rodId, "defenseLevel", 0);
         break;
       }
     }

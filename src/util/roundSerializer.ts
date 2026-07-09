@@ -1,5 +1,5 @@
 import { EconomyRound } from "../game/EconomyModel";
-import { INITIAL_PLAYER_STATE } from "../util/constants";
+import { CAST_MAX } from "../util/constants";
 
 const HEADERS = [
   "round",
@@ -128,9 +128,10 @@ export function csvToRounds(csv: string): EconomyRound[] {
       playerStats: {
         lineHP: Number(get("lineHP")),
         inventorySize: Number(get("inventorySize")),
-        castMax: INITIAL_PLAYER_STATE.castMax,
       },
-      rodStats: [{ id: "ROD_1", attack: rodAtk, defense: rodDef }],
+      rodStats: [
+        { id: "ROD_1", attack: rodAtk, defense: rodDef, castMax: CAST_MAX },
+      ],
       fishCatchTimes: obj("fishCatchTimes"),
       fishEarnings: obj("fishEarnings"),
       lureRates: obj("lureRates"),

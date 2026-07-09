@@ -17,7 +17,6 @@ export enum StatName {
   HP = "HP",
   LURE = "LURE",
   INVENTORY = "INVENTORY",
-  CAST_DISTANCE = "CAST_DISTANCE",
   WIN = "win",
   BAIT = "BAIT",
   ROD = "ROD",
@@ -31,6 +30,13 @@ export interface BaitData {
   name: string;
   waitMin: number;
   waitMax: number;
+}
+
+export interface RodData {
+  id: string;
+  attackLevels: number[];
+  defenseLevels: number[];
+  castMax: number;
 }
 
 const STAT_NAME_VALUES = new Set<string>(Object.values(StatName));
@@ -57,6 +63,28 @@ export async function loadBaitData(
     waitMin: Number(row[1]),
     waitMax: Number(row[2]),
   }));
+}
+
+export async function loadRodData(
+  rodFile = "RodGameplay.csv",
+): Promise<RodData[]> {
+  const res = await fetch(`/data/Rod/${rodFile}`);
+  const rows = parseCSV(await res.text());
+  return rows.slice(1).map((row) => ({
+    id: row[0],
+    attackLevels: row[1].split(" ").map(Number),
+    defenseLevels: row[2].split(" ").map(Number),
+    castMax: Number(row[3]),
+  }));
+}
+
+export function levelStat(
+  levels: number[],
+  level: number,
+  fallback: number,
+): number {
+  if (levels.length === 0) return fallback;
+  return levels[Math.min(Math.max(level, 0), levels.length - 1)];
 }
 
 function parseStatName(value: string): StatName {

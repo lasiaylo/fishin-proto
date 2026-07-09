@@ -4,10 +4,12 @@ import { Theme, Tabs, Flex, Text, Select } from "@radix-ui/themes";
 import {
   loadFishData,
   loadLocationGameplayData,
+  loadRodData,
   loadShopGameplayData,
   parseFishGameplayRows,
   type FishData,
   type LocationFishEntry,
+  type RodData,
   type ShopUpgradeData,
 } from "../util/csvLoader";
 import { FightTraceTab } from "./model/FightTraceTab";
@@ -23,6 +25,7 @@ export function ModelView() {
   const [fishData, setFishData] = useState<FishData[]>([]);
   const [shopData, setShopData] = useState<ShopUpgradeData[]>([]);
   const [locationData, setLocationData] = useState<LocationFishEntry[]>([]);
+  const [rodData, setRodData] = useState<RodData[]>([]);
   const [activeTab, setActiveTab] = useState(
     () => localStorage.getItem("debugTab") ?? "fight",
   );
@@ -43,10 +46,12 @@ export function ModelView() {
       loadFishData(),
       loadShopGameplayData(),
       loadLocationGameplayData(),
-    ]).then(([fish, shop, location]) => {
+      loadRodData(),
+    ]).then(([fish, shop, location, rod]) => {
       setFishData(fish);
       setShopData(shop);
       setLocationData(location);
+      setRodData(rod);
     });
   }, []);
 
@@ -126,6 +131,7 @@ export function ModelView() {
             <Tabs.Content value="economy">
               <EconomyTab
                 locationData={locationData}
+                rodData={rodData}
                 generatedFishRows={generatedFishRows}
                 generatedShopRows={generatedShopRows}
                 onFishRowsChange={setGeneratedFishRows}

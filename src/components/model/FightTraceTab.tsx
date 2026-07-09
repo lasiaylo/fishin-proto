@@ -26,7 +26,7 @@ import type { FishData } from "../../util/csvLoader";
 import { avgZoneDistance } from "../../util/zones";
 import { COLORS, NumInput, FishSelect, EngineConfigRow } from "./shared";
 import { randomizeFishStats } from "../../stores/fishStore";
-import { INITIAL_PLAYER_STATE } from "../../util/constants";
+import { INIT_AD, INITIAL_PLAYER_STATE } from "../../util/constants";
 
 const LINE_CHART_THRESHOLD = 20;
 
@@ -157,8 +157,8 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
   const [fightStartDistance, setFightStartDistance] = useState(
     avgZoneDistance(fishData[0]?.zones ?? []),
   );
-  const [reelStr, setReelStr] = useState(INITIAL_PLAYER_STATE.ownedRods[0].attack);
-  const [drag, setDrag] = useState(INITIAL_PLAYER_STATE.ownedRods[0].defense);
+  const [reelStr, setReelStr] = useState(INIT_AD);
+  const [drag, setDrag] = useState(INIT_AD);
   const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
   const [trialCount, setTrialCount] = useState(20);
   const [randomize, setRandomize] = useState(false);

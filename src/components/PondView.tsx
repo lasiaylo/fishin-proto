@@ -22,6 +22,7 @@ import { useSessionLog } from "../stores/sessionLogStore";
 import { addLureXp, lureXpProgress, useLureXp } from "../stores/lureXpStore";
 import { useShop } from "../stores/shopStore";
 import { useBaitData } from "../stores/baitStore";
+import { getRodStats } from "../stores/rodStore";
 import {
   BAIT_ID_PREFIX,
   BASE_BAIT_ID,
@@ -65,7 +66,6 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     ownedLures,
     invCount,
     inventorySize,
-    castMax,
   } = usePlayer(
     useShallow((s) => ({
       ownedRods: s.ownedRods,
@@ -75,7 +75,6 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
       ownedLures: s.ownedLures,
       invCount: s.inventory.length,
       inventorySize: s.inventorySize,
-      castMax: s.castMax,
     })),
   );
   const shopUpgrades = useShop((s) => s.upgrades);
@@ -306,8 +305,9 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     } = usePlayer.getState();
     const rodId = assignments[slotIndex];
     const rod = rods.find((r) => r.id === rodId);
-    const attack = rod?.attack ?? 0;
-    const defense = rod?.defense ?? 0;
+    const { attack, defense } = rod
+      ? getRodStats(rod)
+      : { attack: 0, defense: 0 };
     lineHpRef.current = lineHP;
 
     const fish = caughtFishRef.current!;
@@ -396,6 +396,8 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     incrementTotalCasts();
     const locationId = Object.keys(locations)[0];
     const t = chargePercent / 100;
+    const assignedRod = ownedRods.find((r) => r.id === assignment);
+    const castMax = assignedRod ? getRodStats(assignedRod).castMax : CAST_MIN;
     const castTarget = CAST_MIN + t * (castMax - CAST_MIN);
     castLocationRef.current = locationId;
 

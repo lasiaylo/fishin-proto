@@ -3,8 +3,10 @@ import {
   BaitData,
   FishData,
   LocationFishEntry,
+  RodData,
   ShopUpgradeData,
   StatName,
+  levelStat,
 } from "../util/csvLoader";
 import { avgZoneDistance } from "../util/zones";
 import { lerp } from "../util/easing";
@@ -14,9 +16,11 @@ import {
   CAST_CHARGE_DURATION,
   CAST_DURATION_MAX,
   CAST_DURATION_MIN,
+  CAST_MAX,
   CAST_MIN,
   computeLureLevel,
   getTackleType,
+  INIT_AD,
   INITIAL_PLAYER_STATE,
   LURE_BITE_CHANCE_PER_LEVEL,
   lureReelMaxSpeed,
@@ -72,7 +76,7 @@ export interface EconomyRound {
   upgradeLevels: Record<string, number>;
   boughtLure: boolean;
   playerStats: PlayerStats;
-  rodStats: { id: string; attack: number; defense: number }[]; // snapshot of rods
+  rodStats: { id: string; attack: number; defense: number; castMax: number }[]; // snapshot of rods
   lureLevels: Record<string, number>; // lureId → current level after this round
   lureXp: Record<string, number>; // lureId → cumulative XP after this round
 }
@@ -170,6 +174,7 @@ function buildFishWeights(
 function evalLure(
   groups: Map<string, FishData[]>,
   rods: EconRod[],
+  rodData: RodData[],
   player: PlayerStats,
   ownedLures: Set<string>,
   fishWeights: Map<string, number>,
@@ -189,8 +194,10 @@ function evalLure(
   lureWinRates: Record<string, number>;
   lureRemainingHP: Record<string, number>;
 } {
-  const lureRodAtk = rods[0].attack;
-  const lureRodDef = rods[0].defense;
+  const { attack: lureRodAtk, defense: lureRodDef } = econRodStats(
+    rods[0],
+    rodData,
+  );
   let bestRate;
   let best = null;
   let bestBaitRate: number | undefined;
@@ -362,8 +369,6 @@ function cheapestUpgrade(
         return player.inventorySize;
       case StatName.LURE:
         return 0;
-      case StatName.CAST_DISTANCE:
-        return player.castMax;
       case StatName.ROD:
       case StatName.ROD_SLOT:
       case StatName.ROD_ATTACK:
@@ -443,8 +448,20 @@ function prioritizeLureUpgrade(
 
 interface EconRod {
   id: string;
-  attack: number;
-  defense: number;
+  attackLevel: number;
+  defenseLevel: number;
+}
+
+function econRodStats(
+  rod: EconRod,
+  rodData: RodData[],
+): { attack: number; defense: number; castMax: number } {
+  const data = rodData.find((r) => r.id === rod.id);
+  return {
+    attack: levelStat(data?.attackLevels ?? [], rod.attackLevel, INIT_AD),
+    defense: levelStat(data?.defenseLevels ?? [], rod.defenseLevel, INIT_AD),
+    castMax: data?.castMax ?? CAST_MAX,
+  };
 }
 
 function applyUpgrade(
@@ -472,19 +489,12 @@ function applyUpgrade(
     case StatName.INVENTORY:
       player.inventorySize += upgrade.valuePerLevel;
       break;
-    case StatName.CAST_DISTANCE:
-      player.castMax += upgrade.valuePerLevel;
-      break;
     case StatName.BAIT:
       baitStock[upgrade.id] =
         (baitStock[upgrade.id] ?? 0) + upgrade.valuePerLevel;
       break;
     case StatName.ROD: {
-      const newRod = {
-        id: upgrade.id,
-        attack: rods[0].attack,
-        defense: rods[0].defense,
-      };
+      const newRod = { id: upgrade.id, attackLevel: 0, defenseLevel: 0 };
       if (openSlotsRef.value > 0) {
         openSlotsRef.value--;
         rodCountRef.value++;
@@ -509,7 +519,7 @@ function applyUpgrade(
       const rod =
         rods.find((r) => r.id === rodId) ??
         benchedRods.find((r) => r.id === rodId);
-      if (rod) rod.attack += upgrade.valuePerLevel;
+      if (rod) rod.attackLevel += 1;
       break;
     }
     case StatName.ROD_DEFENSE: {
@@ -517,7 +527,7 @@ function applyUpgrade(
       const rod =
         rods.find((r) => r.id === rodId) ??
         benchedRods.find((r) => r.id === rodId);
-      if (rod) rod.defense += upgrade.valuePerLevel;
+      if (rod) rod.defenseLevel += 1;
       break;
     }
   }
@@ -601,6 +611,7 @@ export function simulateEconomy(
   evalTrials = EVAL_TRIALS,
   strategy: UpgradeStrategy = DEFAULT_UPGRADE_STRATEGY,
   baitData: BaitData[] = [],
+  rodData: RodData[] = [],
 ): EconomyRound[] {
   const maxTime = maxMinutes * 60;
   const player = { ...start };
@@ -650,7 +661,11 @@ export function simulateEconomy(
   const baitDataMap = new Map(baitData.map((b) => [b.id, b]));
   const initialRod = INITIAL_PLAYER_STATE.ownedRods[0];
   const rods: EconRod[] = [
-    { id: "ROD_1", attack: initialRod.attack, defense: initialRod.defense },
+    {
+      id: initialRod.id,
+      attackLevel: initialRod.attackLevel,
+      defenseLevel: initialRod.defenseLevel,
+    },
   ];
   const rodCountRef = { value: 1 };
   const benchedRods: EconRod[] = [];
@@ -668,6 +683,7 @@ export function simulateEconomy(
     } = evalLure(
       fishByTackle,
       rods,
+      rodData,
       player,
       ownedLures,
       fishWeights,
@@ -679,8 +695,9 @@ export function simulateEconomy(
 
     const { lureId, avgFightTime, avgEarningsPerFight } = best;
     const lureLevel = computeLureLevel(lureXpMap[lureId] ?? 0);
+    const lureRodStats = econRodStats(rods[0], rodData);
     const overhead = perCastOverhead(
-      player.castMax,
+      lureRodStats.castMax,
       lureId,
       fishByTackle,
       lureLevel,
@@ -698,8 +715,8 @@ export function simulateEconomy(
     const maxZoneDist =
       validZones.length > 0
         ? Math.max(...validZones.map((z) => zoneRanges[z][1]))
-        : player.castMax;
-    const effectiveCast = Math.min(player.castMax, maxZoneDist);
+        : lureRodStats.castMax;
+    const effectiveCast = Math.min(lureRodStats.castMax, maxZoneDist);
     const pBite = isBait
       ? 1
       : Math.max(castBiteProbability(effectiveCast, lureLevel), 0.001);
@@ -721,15 +738,16 @@ export function simulateEconomy(
     const baitRods = rods.slice(1);
     if (baitRods.length > 0 && bestBaitId !== null) {
       const baitPool = fishByTackle.get(bestBaitId) ?? [];
-      const baitOverhead = perCastOverhead(
-        player.castMax,
-        bestBaitId,
-        fishByTackle,
-        0,
-        baitDataMap,
-      );
 
       for (const baitRod of baitRods) {
+        const baitRodStats = econRodStats(baitRod, rodData);
+        const baitOverhead = perCastOverhead(
+          baitRodStats.castMax,
+          bestBaitId,
+          fishByTackle,
+          0,
+          baitDataMap,
+        );
         let baitTotalEarnings = 0;
         let baitTotalFightTime = 0;
         let baitTotalWinRate = 0;
@@ -744,8 +762,8 @@ export function simulateEconomy(
             const { winCount, avgFightTime: baitFightTime } = runTrials(
               variant,
               player,
-              baitRod.attack,
-              baitRod.defense,
+              baitRodStats.attack,
+              baitRodStats.defense,
               evalTrials,
             );
             const avgEarnings = (variant.basePrice * winCount) / evalTrials;
@@ -862,11 +880,7 @@ export function simulateEconomy(
       upgradeLevels: { ...levels },
       boughtLure,
       playerStats: { ...player },
-      rodStats: rods.map((r) => ({
-        id: r.id,
-        attack: r.attack,
-        defense: r.defense,
-      })),
+      rodStats: rods.map((r) => ({ id: r.id, ...econRodStats(r, rodData) })),
       lureLevels,
       lureXp: { ...lureXpMap },
     });

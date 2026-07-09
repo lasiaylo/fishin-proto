@@ -9,6 +9,7 @@ import { initShop, initShopFromRows } from "./stores/shopStore";
 import { initFish, initFishFromData } from "./stores/fishStore";
 import { initLocations } from "./stores/locationStore";
 import { initBaitData } from "./stores/baitStore";
+import { initRodData } from "./stores/rodStore";
 import { pushEvent } from "./stores/eventLogStore";
 import { EventMsg } from "./util/eventMessages";
 import "./game/StoryTriggerListener";
@@ -45,6 +46,7 @@ function App() {
     }
     initLocations();
     initBaitData();
+    initRodData();
     pushEvent(EventMsg.WELCOME);
   }, []);
 

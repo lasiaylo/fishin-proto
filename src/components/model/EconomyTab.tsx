@@ -14,6 +14,7 @@ import {
 import type {
   FishData,
   LocationFishEntry,
+  RodData,
   ShopUpgradeData,
 } from "../../util/csvLoader";
 import { ChartGrid, COLORS, NumInput } from "./shared";
@@ -103,12 +104,14 @@ function loadStoredPairs(): CsvPair[] | null {
 
 export function EconomyTab({
   locationData,
+  rodData,
   generatedFishRows,
   generatedShopRows,
   onFishRowsChange,
   onShopRowsChange,
 }: {
   locationData: LocationFishEntry[];
+  rodData: RodData[];
   generatedFishRows: string[][] | null;
   generatedShopRows: string[][] | null;
   onFishRowsChange: (rows: string[][]) => void;
@@ -118,7 +121,6 @@ export function EconomyTab({
   const [inventorySize, setInventorySize] = useState(
     INITIAL_PLAYER_STATE.inventorySize,
   );
-  const [castMax, setCastMax] = useState(INITIAL_PLAYER_STATE.castMax);
   const [simMinutes, setSimMinutes] = useState(10);
   const [evalTrials, setEvalTrials] = useState(100);
   const [running, setRunning] = useState(false);
@@ -305,10 +307,12 @@ export function EconomyTab({
           data.fish,
           data.shop,
           locationData,
-          { lineHP, inventorySize, castMax },
+          { lineHP, inventorySize },
           simMinutes,
           evalTrials,
           pair.upgradeStrategy,
+          undefined,
+          rodData,
         );
       }
       setPairRounds(results);
@@ -679,12 +683,6 @@ export function EconomyTab({
           value={inventorySize}
           onChange={setInventorySize}
           min={1}
-        />
-        <NumInput
-          label="Cast Max"
-          value={castMax}
-          onChange={setCastMax}
-          min={INITIAL_PLAYER_STATE.castMax}
         />
         <NumInput
           label="Sim minutes"

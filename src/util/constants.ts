@@ -12,24 +12,23 @@ export const BAIT_MAX_STACK = 10;
 // ==========================================================================
 // PLAYER
 // ==========================================================================
-const INIT_AD = 25;
-const CAST_MAX = 40;
+export const INIT_AD = 25;
+export const CAST_MAX = 40;
 export const REEL_MIN = 5;
 
 export interface Rod {
   id: string;
-  attack: number;
-  defense: number;
+  attackLevel: number;
+  defenseLevel: number;
 }
 
 export const INITIAL_PLAYER_STATE: PlayerState = {
   wallet: 0,
   lineHP: 20,
   inventorySize: 3,
-  castMax: CAST_MAX,
   ownedLures: new Set<string>(),
   baitInventory: { [BASE_BAIT_ID]: BAIT_MAX_STACK },
-  ownedRods: [{ id: "ROD_1", attack: INIT_AD, defense: INIT_AD }],
+  ownedRods: [{ id: "ROD_1", attackLevel: 0, defenseLevel: 0 }],
   rodSlotAssignments: ["ROD_1"],
   rodSlotItems: [BASE_BAIT_ID],
   inventory: [],
