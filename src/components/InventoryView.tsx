@@ -106,7 +106,7 @@ export function InventoryView() {
           <Text size="1" color="gray">
             bait
           </Text>
-          <Flex direction="column" gap="1" pl="3">
+          <Flex direction="column" gap="1">
             {Object.entries(baitInventory).map(([id, count]) => {
               const bait = baitData.find((b) => b.id === id);
               return (
@@ -123,7 +123,7 @@ export function InventoryView() {
             <Text size="1" color="gray">
               lures
             </Text>
-            <Flex direction="column" gap="1" pl="3">
+            <Flex direction="column" gap="1">
               {lures.map((lure) => (
                 <Code key={lure.id} size="1" color="gray">
                   {lure.name}

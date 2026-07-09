@@ -523,7 +523,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
             <>
               <Flex direction="column" gap="1">
                 <Text size="1" color="gray">
-                  lure
+                  tackle
                 </Text>
                 <Select.Root
                   size="1"

@@ -55,7 +55,7 @@ export const CAST_MIN = 5;
 export const CAST_DURATION_MIN = 0.5;
 export const CAST_DURATION_MAX = 1.5;
 
-export const CAST_CHARGE_DURATION = 1250;
+export const CAST_CHARGE_DURATION = 1500;
 export const LURING_REEL_MAX_SPEED = 8;
 export const LURE_REEL_SPEED_PER_LEVEL = 1;
 export const LURING_REEL_ACCEL = 20;
@@ -81,7 +81,7 @@ export const BITE_CHANCE_INCREMENT = 0.1;
 export const LURE_BITE_CHANCE_PER_LEVEL = 0.1;
 
 // ==========================================================================
-// LURE TYPES
+// TACKLE
 // ==========================================================================
 export enum TackleType {
   BAIT = "BAIT",
@@ -100,10 +100,10 @@ export const WAIT_ZONE_RANGES: Record<Zone, [number, number]> = {
   [Zone.FAR]: [50, 80],
 };
 
-export const WAIT_PRIME_MIN = 2;
-export const WAIT_PRIME_MAX = 5;
-export const WAIT_DEFAULT_MIN = 6;
-export const WAIT_DEFAULT_MAX = 14;
+export const WAIT_PRIME_MIN = 5;
+export const WAIT_PRIME_MAX = 10;
+export const WAIT_DEFAULT_MIN = 5;
+export const WAIT_DEFAULT_MAX = 10;
 export const WAIT_PRIME_REDUCTION = 0.5;
 
 // ==========================================================================
