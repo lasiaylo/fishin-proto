@@ -7,6 +7,7 @@ import { phaseForElapsed, tickDay, useDayStore } from "../stores/dayStore";
 import { CURRENCY_SYMBOL, DAY_DURATION_MS, RARITY_COLOR } from "../util/constants";
 import { StatName } from "../util/csvLoader";
 import { AnimatedNumber } from "./AnimatedNumber";
+import { TipView } from "./TipView";
 
 const DAY_PHASE_LABEL: Record<string, string> = {
   NIGHT: "night",
@@ -150,6 +151,8 @@ export function InventoryView() {
           </Flex>
         )}
       </Flex>
+
+      <TipView />
     </Flex>
   );
 }

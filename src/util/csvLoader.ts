@@ -91,6 +91,22 @@ function parseStatName(value: string): StatName {
   throw new Error(`Invalid stat name in CSV: "${value}"`);
 }
 
+export interface TipData {
+  id: string;
+  title: string;
+  text: string;
+}
+
+export async function loadTipData(tipFile = "Tips.csv"): Promise<TipData[]> {
+  const res = await fetch(`/data/${tipFile}`);
+  const rows = parseCSV(await res.text());
+  return rows.slice(1).map((row) => ({
+    id: row[0],
+    title: row[1],
+    text: row[2],
+  }));
+}
+
 export interface LocationDisplayData {
   id: string;
   name: string;

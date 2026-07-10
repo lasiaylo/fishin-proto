@@ -3,6 +3,7 @@ import "../global.css";
 import { Flex, Theme } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
 import { EventView } from "./components/EventView.tsx";
+import { ChatroomView } from "./components/ChatroomView.tsx";
 import { ActionsSection } from "./components/ActionsSection";
 import { Debug } from "./components/debug";
 import { initShop, initShopFromRows } from "./stores/shopStore";
@@ -13,6 +14,9 @@ import { initFish, initFishFromData } from "./stores/fishStore";
 import { initLocations } from "./stores/locationStore";
 import { initBaitData } from "./stores/baitStore";
 import { initRodData } from "./stores/rodStore";
+import { initTipData } from "./stores/tipStore";
+import { npcLogin, openGiftRequest } from "./stores/friendStore";
+import { FRIEND_NPC_NAME } from "./util/constants";
 import { pushEvent } from "./stores/eventLogStore";
 import { EventMsg } from "./util/eventMessages";
 import "./game/StoryTriggerListener";
@@ -52,6 +56,7 @@ function App() {
     initLocations();
     initBaitData();
     initRodData();
+    initTipData();
     pushEvent(EventMsg.WELCOME);
   }, []);
 
@@ -68,6 +73,8 @@ function App() {
         e.preventDefault();
         advanceTime(5 * 60 * 1000);
       }
+      if (e.key === "n") npcLogin(FRIEND_NPC_NAME);
+      if (e.key === "m") openGiftRequest();
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
@@ -83,7 +90,10 @@ function App() {
         gap="5"
         style={{ justifyContent: "center" }}
       >
-        <EventView />
+        <Flex direction="column" gap="4">
+          <EventView />
+          <ChatroomView />
+        </Flex>
         <ActionsSection />
         <InventoryView />
       </Flex>

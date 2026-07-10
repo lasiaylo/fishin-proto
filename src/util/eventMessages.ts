@@ -11,4 +11,7 @@ export const EventMsg = {
   SOLD_FISH: (name: string, price: number) => ["sold ", `${name} +${price}`],
 
   STORY_DUMMY: "you feel something stir in the water...",
+
+  NPC_LOGIN: (name: string) => `${name} logs in`,
+  GIFT_ACCEPTED: (title: string) => ["received a tip: ", title],
 } as const;
