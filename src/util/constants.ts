@@ -31,7 +31,7 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
   ownedLures: new Set<string>(),
   baitInventory: { [BASE_BAIT_ID]: BAIT_MAX_STACK },
   ownedRods: [{ id: "ROD_1", attackLevel: 0, defenseLevel: 0 }],
-  rodSlotAssignments: ["ROD_1"],
+  rodSlotAssignments: [null],
   rodSlotItems: [BASE_BAIT_ID],
   inventory: [],
 };
