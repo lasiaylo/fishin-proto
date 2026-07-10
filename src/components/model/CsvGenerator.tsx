@@ -95,6 +95,37 @@ const DEFAULT_ROD_HOLDER_FN: FunctionConfig = {
   growthRate: 0.8,
 };
 
+const DEFAULT_DREAM_HP_FN: FunctionConfig = {
+  type: "LINEAR",
+  startValue: 2,
+  scaleFactor: 1,
+  growthRate: 0.8,
+};
+const DEFAULT_DREAM_INVENTORY_FN: FunctionConfig = {
+  type: "LINEAR",
+  startValue: 3,
+  scaleFactor: 2,
+  growthRate: 0.8,
+};
+const DEFAULT_DREAM_ROD_ATTACK_FN: FunctionConfig = {
+  type: "LINEAR",
+  startValue: 2,
+  scaleFactor: 1,
+  growthRate: 0.8,
+};
+const DEFAULT_DREAM_ROD_DEFENSE_FN: FunctionConfig = {
+  type: "LINEAR",
+  startValue: 2,
+  scaleFactor: 1,
+  growthRate: 0.8,
+};
+const DEFAULT_DREAM_ROD_SLOT_FN: FunctionConfig = {
+  type: "LINEAR",
+  startValue: 4,
+  scaleFactor: 2,
+  growthRate: 0.8,
+};
+
 function evalFn(cfg: FunctionConfig, lvl: number): number {
   if (cfg.type === "LINEAR") return cfg.startValue + cfg.scaleFactor * lvl;
   if (cfg.type === "POLYNOMIAL")
@@ -251,6 +282,69 @@ function generateShopRows(
       "ROD_SLOT",
       "1",
       rodCount > 1 ? "ROD_2" : "",
+    ]);
+  }
+
+  return rows;
+}
+
+function generateDreamShopRows(
+  hpFn: FunctionConfig,
+  hpVPL: number,
+  hpCount: number,
+  invFn: FunctionConfig,
+  invVPL: number,
+  invCount: number,
+  rodAttackFn: FunctionConfig,
+  rodAttackVPL: number,
+  rodAttackCount: number,
+  rodDefenseFn: FunctionConfig,
+  rodDefenseVPL: number,
+  rodDefenseCount: number,
+  rodSlotFn: FunctionConfig,
+  rodSlotCount: number,
+): string[][] {
+  const rows: string[][] = [
+    ["ID", "Price", "Stat", "ValuePerLevel", "Requirement"],
+  ];
+
+  if (hpCount > 0) {
+    rows.push(["DREAM_HP", priceList(hpFn, hpCount), "HP", String(hpVPL), ""]);
+  }
+  if (invCount > 0) {
+    rows.push([
+      "DREAM_INVENTORY",
+      priceList(invFn, invCount),
+      "INVENTORY",
+      String(invVPL),
+      "",
+    ]);
+  }
+  if (rodAttackCount > 0) {
+    rows.push([
+      "ROD_1_ATTACK",
+      priceList(rodAttackFn, rodAttackCount),
+      "ROD_ATTACK",
+      String(rodAttackVPL),
+      "",
+    ]);
+  }
+  if (rodDefenseCount > 0) {
+    rows.push([
+      "ROD_1_DEFENSE",
+      priceList(rodDefenseFn, rodDefenseCount),
+      "ROD_DEFENSE",
+      String(rodDefenseVPL),
+      "",
+    ]);
+  }
+  if (rodSlotCount > 0) {
+    rows.push([
+      "DREAM_ROD_SLOT",
+      priceList(rodSlotFn, rodSlotCount),
+      "ROD_SLOT",
+      "1",
+      "",
     ]);
   }
 
@@ -1004,6 +1098,291 @@ function ShopGenerator({
   );
 }
 
+const DREAM_SHOP_STORAGE_KEY = "csvgen_dream_shop";
+
+const DREAM_SHOP_DEFAULTS = {
+  hpFn: DEFAULT_DREAM_HP_FN,
+  hpVPL: 10,
+  hpCount: 3,
+  invFn: DEFAULT_DREAM_INVENTORY_FN,
+  invVPL: 1,
+  invCount: 2,
+  rodAttackFn: DEFAULT_DREAM_ROD_ATTACK_FN,
+  rodAttackVPL: 3,
+  rodAttackCount: 3,
+  rodDefenseFn: DEFAULT_DREAM_ROD_DEFENSE_FN,
+  rodDefenseVPL: 3,
+  rodDefenseCount: 3,
+  rodSlotFn: DEFAULT_DREAM_ROD_SLOT_FN,
+  rodSlotCount: 2,
+};
+
+function DreamShopGenerator({
+  onChange,
+  showPreview,
+}: {
+  onChange?: (rows: string[][]) => void;
+  showPreview: boolean;
+}) {
+  const stored = loadStored(DREAM_SHOP_STORAGE_KEY, DREAM_SHOP_DEFAULTS);
+  const [hpFn, setHpFn] = useState<FunctionConfig>(() => stored.hpFn);
+  const [hpVPL, setHpVPL] = useState(() => stored.hpVPL);
+  const [hpCount, setHpCount] = useState(() => stored.hpCount);
+
+  const [invFn, setInvFn] = useState<FunctionConfig>(() => stored.invFn);
+  const [invVPL, setInvVPL] = useState(() => stored.invVPL);
+  const [invCount, setInvCount] = useState(() => stored.invCount);
+
+  const [rodAttackFn, setRodAttackFn] = useState<FunctionConfig>(
+    () => stored.rodAttackFn,
+  );
+  const [rodAttackVPL, setRodAttackVPL] = useState(() => stored.rodAttackVPL);
+  const [rodAttackCount, setRodAttackCount] = useState(
+    () => stored.rodAttackCount,
+  );
+
+  const [rodDefenseFn, setRodDefenseFn] = useState<FunctionConfig>(
+    () => stored.rodDefenseFn,
+  );
+  const [rodDefenseVPL, setRodDefenseVPL] = useState(
+    () => stored.rodDefenseVPL,
+  );
+  const [rodDefenseCount, setRodDefenseCount] = useState(
+    () => stored.rodDefenseCount,
+  );
+
+  const [rodSlotFn, setRodSlotFn] = useState<FunctionConfig>(
+    () => stored.rodSlotFn,
+  );
+  const [rodSlotCount, setRodSlotCount] = useState(() => stored.rodSlotCount);
+
+  const rows = generateDreamShopRows(
+    hpFn,
+    hpVPL,
+    hpCount,
+    invFn,
+    invVPL,
+    invCount,
+    rodAttackFn,
+    rodAttackVPL,
+    rodAttackCount,
+    rodDefenseFn,
+    rodDefenseVPL,
+    rodDefenseCount,
+    rodSlotFn,
+    rodSlotCount,
+  );
+
+  useEffect(() => {
+    localStorage.setItem(
+      DREAM_SHOP_STORAGE_KEY,
+      JSON.stringify({
+        hpFn,
+        hpVPL,
+        hpCount,
+        invFn,
+        invVPL,
+        invCount,
+        rodAttackFn,
+        rodAttackVPL,
+        rodAttackCount,
+        rodDefenseFn,
+        rodDefenseVPL,
+        rodDefenseCount,
+        rodSlotFn,
+        rodSlotCount,
+      }),
+    );
+    onChange?.(rows);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    hpFn,
+    hpVPL,
+    hpCount,
+    invFn,
+    invVPL,
+    invCount,
+    rodAttackFn,
+    rodAttackVPL,
+    rodAttackCount,
+    rodDefenseFn,
+    rodDefenseVPL,
+    rodDefenseCount,
+    rodSlotFn,
+    rodSlotCount,
+  ]);
+
+  function reset() {
+    setHpFn(DREAM_SHOP_DEFAULTS.hpFn);
+    setHpVPL(DREAM_SHOP_DEFAULTS.hpVPL);
+    setHpCount(DREAM_SHOP_DEFAULTS.hpCount);
+    setInvFn(DREAM_SHOP_DEFAULTS.invFn);
+    setInvVPL(DREAM_SHOP_DEFAULTS.invVPL);
+    setInvCount(DREAM_SHOP_DEFAULTS.invCount);
+    setRodAttackFn(DREAM_SHOP_DEFAULTS.rodAttackFn);
+    setRodAttackVPL(DREAM_SHOP_DEFAULTS.rodAttackVPL);
+    setRodAttackCount(DREAM_SHOP_DEFAULTS.rodAttackCount);
+    setRodDefenseFn(DREAM_SHOP_DEFAULTS.rodDefenseFn);
+    setRodDefenseVPL(DREAM_SHOP_DEFAULTS.rodDefenseVPL);
+    setRodDefenseCount(DREAM_SHOP_DEFAULTS.rodDefenseCount);
+    setRodSlotFn(DREAM_SHOP_DEFAULTS.rodSlotFn);
+    setRodSlotCount(DREAM_SHOP_DEFAULTS.rodSlotCount);
+  }
+
+  return (
+    <Flex direction="column" gap="3">
+      <Flex align="center" gap="3">
+        <Text size="2" weight="bold">
+          Dream Shop
+        </Text>
+        <Button size="1" variant="ghost" color="gray" onClick={reset}>
+          Reset to defaults
+        </Button>
+      </Flex>
+
+      <Grid columns="2" gap="4">
+        <Flex direction="column" gap="2">
+          <Text size="1" weight="bold">
+            DREAM_HP
+          </Text>
+          <FunctionSelect label="Price curve" value={hpFn} onChange={setHpFn} />
+          <Flex gap="3" wrap="wrap" align="end">
+            <NumInput
+              label="ValuePerLevel"
+              value={hpVPL}
+              onChange={setHpVPL}
+              min={1}
+            />
+            <NumInput
+              label="Tiers"
+              value={hpCount}
+              onChange={setHpCount}
+              min={0}
+            />
+          </Flex>
+        </Flex>
+
+        <Flex direction="column" gap="2">
+          <Text size="1" weight="bold">
+            DREAM_INVENTORY
+          </Text>
+          <FunctionSelect
+            label="Price curve"
+            value={invFn}
+            onChange={setInvFn}
+          />
+          <Flex gap="3" wrap="wrap" align="end">
+            <NumInput
+              label="ValuePerLevel"
+              value={invVPL}
+              onChange={setInvVPL}
+              min={1}
+            />
+            <NumInput
+              label="Tiers"
+              value={invCount}
+              onChange={setInvCount}
+              min={0}
+            />
+          </Flex>
+        </Flex>
+
+        <Flex direction="column" gap="2">
+          <Text size="1" weight="bold">
+            ROD_1_ATTACK (dream)
+          </Text>
+          <FunctionSelect
+            label="Price curve"
+            value={rodAttackFn}
+            onChange={setRodAttackFn}
+          />
+          <Flex gap="3" wrap="wrap" align="end">
+            <NumInput
+              label="ValuePerLevel"
+              value={rodAttackVPL}
+              onChange={setRodAttackVPL}
+              min={1}
+            />
+            <NumInput
+              label="Tiers"
+              value={rodAttackCount}
+              onChange={setRodAttackCount}
+              min={0}
+            />
+          </Flex>
+        </Flex>
+
+        <Flex direction="column" gap="2">
+          <Text size="1" weight="bold">
+            ROD_1_DEFENSE (dream)
+          </Text>
+          <FunctionSelect
+            label="Price curve"
+            value={rodDefenseFn}
+            onChange={setRodDefenseFn}
+          />
+          <Flex gap="3" wrap="wrap" align="end">
+            <NumInput
+              label="ValuePerLevel"
+              value={rodDefenseVPL}
+              onChange={setRodDefenseVPL}
+              min={1}
+            />
+            <NumInput
+              label="Tiers"
+              value={rodDefenseCount}
+              onChange={setRodDefenseCount}
+              min={0}
+            />
+          </Flex>
+        </Flex>
+
+        <Flex direction="column" gap="2">
+          <Text size="1" weight="bold">
+            DREAM_ROD_SLOT
+          </Text>
+          <FunctionSelect
+            label="Price curve"
+            value={rodSlotFn}
+            onChange={setRodSlotFn}
+          />
+          <Flex gap="3" wrap="wrap" align="end">
+            <NumInput
+              label="Tiers"
+              value={rodSlotCount}
+              onChange={setRodSlotCount}
+              min={0}
+            />
+          </Flex>
+        </Flex>
+      </Grid>
+
+      {showPreview && (
+        <PreviewTable
+          rows={[["ID", "Price"], ...rows.slice(1).map((r) => [r[0], r[1]])]}
+        />
+      )}
+      <Button
+        size="1"
+        variant="soft"
+        style={{ width: "fit-content" }}
+        onClick={() => {
+          const comment = [
+            `# DREAM_HP price curve: ${fnConfigStr(hpFn)} | ValuePerLevel=${hpVPL} | Tiers=${hpCount}`,
+            `# DREAM_INVENTORY price curve: ${fnConfigStr(invFn)} | ValuePerLevel=${invVPL} | Tiers=${invCount}`,
+            `# ROD_1_ATTACK price curve: ${fnConfigStr(rodAttackFn)} | ValuePerLevel=${rodAttackVPL} | Tiers=${rodAttackCount}`,
+            `# ROD_1_DEFENSE price curve: ${fnConfigStr(rodDefenseFn)} | ValuePerLevel=${rodDefenseVPL} | Tiers=${rodDefenseCount}`,
+            `# DREAM_ROD_SLOT price curve: ${fnConfigStr(rodSlotFn)} | Tiers=${rodSlotCount}`,
+          ].join("\n");
+          downloadCsv(rows, "DreamShopGameplay.csv", comment);
+        }}
+      >
+        Download DreamShopGameplay.csv
+      </Button>
+    </Flex>
+  );
+}
+
 export function getGeneratedFishRows(): string[][] {
   const { levels } = loadStored(SHARED_STORAGE_KEY, {
     levels: 3,
@@ -1187,6 +1566,10 @@ export function CsvGeneratorPanel({
                 showPreview={showPreview}
                 lureCount={levels}
               />
+            </Flex>
+            <Separator orientation="vertical" size="4" />
+            <Flex direction="column" gap="3" style={{ flex: 1 }}>
+              <DreamShopGenerator showPreview={showPreview} />
             </Flex>
           </Flex>
           {showPreview && (

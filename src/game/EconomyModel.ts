@@ -18,7 +18,9 @@ import {
   CAST_DURATION_MIN,
   CAST_MAX,
   CAST_MIN,
+  computeDreamPoints,
   computeLureLevel,
+  DAY_DURATION_MS,
   getTackleType,
   INITIAL_PLAYER_STATE,
   LURE_BITE_CHANCE_PER_LEVEL,
@@ -78,6 +80,11 @@ export interface EconomyRound {
   rodStats: { id: string; attack: number; defense: number; castMax: number }[]; // snapshot of rods
   lureLevels: Record<string, number>; // lureId → current level after this round
   lureXp: Record<string, number>; // lureId → cumulative XP after this round
+  dayNumber: number;
+  cumulativeMoneyEarned: number; // lifetime gross income, never reset — drives dream points
+  moneyEarnedToday: number; // gross income since the last simulated day boundary
+  dreamPoints: number; // spendable dream point balance
+  dreamUpgradesBought: string[];
 }
 
 // ── Helpers ──
@@ -355,7 +362,7 @@ function castBiteProbability(effectiveCast: number, lureLevel = 0): number {
 function cheapestUpgrade(
   shopData: ShopUpgradeData[],
   levels: Record<string, number>,
-  wallet: number,
+  currency: number,
   player: PlayerStats,
   rods: EconRod[],
   baitStock: Record<string, number>,
@@ -385,7 +392,7 @@ function cheapestUpgrade(
     const level = levels[upgrade.id] ?? 0;
     if (level >= upgrade.prices.length) continue;
     const price = upgrade.prices[level];
-    if (price > wallet) continue;
+    if (price > currency) continue;
     if (upgrade.stat === StatName.BAIT) {
       if ((baitStock[upgrade.id] ?? 0) < BAIT_MAX_STACK)
         return { upgrade, price };
@@ -611,14 +618,24 @@ export function simulateEconomy(
   strategy: UpgradeStrategy = DEFAULT_UPGRADE_STRATEGY,
   baitData: BaitData[] = [],
   rodData: RodData[] = [],
+  dreamShopData: ShopUpgradeData[] = [],
 ): EconomyRound[] {
   const maxTime = maxMinutes * 60;
   const player = { ...start };
   const levels: Record<string, number> = Object.fromEntries(
     shopData.map((u) => [u.id, 0]),
   );
+  const dreamLevels: Record<string, number> = Object.fromEntries(
+    dreamShopData.map((u) => [u.id, 0]),
+  );
   let wallet = 0;
   let cumulativeTime = 0;
+  const DAY_DURATION_S = DAY_DURATION_MS / 1000;
+  let dayNumber = 1;
+  let dayElapsed = 0;
+  let cumulativeMoneyEarned = 0;
+  let moneyEarnedToday = 0;
+  let dreamPoints = 0;
   const rounds: EconomyRound[] = [];
   const lureXpMap: Record<string, number> = {};
   const fishByTackle = new Map<string, FishData[]>();
@@ -796,6 +813,58 @@ export function simulateEconomy(
     wallet += income;
     cumulativeTime += roundTime;
 
+    const prevCumulativeMoneyEarned = cumulativeMoneyEarned;
+    cumulativeMoneyEarned += income;
+    moneyEarnedToday += income;
+    dreamPoints +=
+      computeDreamPoints(cumulativeMoneyEarned) -
+      computeDreamPoints(prevCumulativeMoneyEarned);
+
+    // Simulated day boundary: reset the daily counter and let dream upgrades
+    // be "purchased" the same way the End of Day popup does, mirroring dayStore.
+    dayElapsed += roundTime;
+    const dreamUpgradesBought: string[] = [];
+    while (dayElapsed >= DAY_DURATION_S) {
+      dayElapsed -= DAY_DURATION_S;
+      dayNumber += 1;
+      moneyEarnedToday = 0;
+
+      let nextDreamUpgrade = cheapestUpgrade(
+        dreamShopData,
+        dreamLevels,
+        dreamPoints,
+        player,
+        rods,
+        baitStock,
+      );
+      while (nextDreamUpgrade !== null) {
+        const { upgrade, price } = nextDreamUpgrade;
+        dreamPoints -= price;
+        applyUpgrade(
+          upgrade,
+          player,
+          ownedLures,
+          dreamLevels,
+          rods,
+          rodCountRef,
+          baitStock,
+          benchedRods,
+          openSlotsRef,
+        );
+        dreamUpgradesBought.push(
+          `${upgrade.id} L${dreamLevels[upgrade.id] ?? 1}`,
+        );
+        nextDreamUpgrade = cheapestUpgrade(
+          dreamShopData,
+          dreamLevels,
+          dreamPoints,
+          player,
+          rods,
+          baitStock,
+        );
+      }
+    }
+
     if (lureId) {
       const castsPerRound = player.inventorySize / (pBite * winRate);
       let xpPerRound: number;
@@ -882,6 +951,11 @@ export function simulateEconomy(
       rodStats: rods.map((r) => ({ id: r.id, ...econRodStats(r, rodData) })),
       lureLevels,
       lureXp: { ...lureXpMap },
+      dayNumber,
+      cumulativeMoneyEarned,
+      moneyEarnedToday,
+      dreamPoints,
+      dreamUpgradesBought,
     });
 
     if (cumulativeTime >= maxTime) break;
