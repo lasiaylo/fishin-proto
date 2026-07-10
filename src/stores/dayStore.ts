@@ -10,7 +10,6 @@ import {
 interface DayState {
   dayNumber: number;
   dayStartTime: number;
-  phase: DayPhase;
   moneyEarnedToday: number;
   cumulativeMoneyEarned: number;
   fishCaughtToday: number;
@@ -18,7 +17,9 @@ interface DayState {
   isEndOfDay: boolean;
 }
 
-function phaseForElapsed(elapsed: number): DayPhase {
+// Derived from dayStartTime, not stored — only InventoryView needs it, and
+// it's cheap to recompute from elapsed time on every render.
+export function phaseForElapsed(elapsed: number): DayPhase {
   if (elapsed < DAY_PHASE_BOUNDARIES_MS[0]) return DayPhase.NIGHT;
   if (elapsed < DAY_PHASE_BOUNDARIES_MS[1]) return DayPhase.DAWN;
   return DayPhase.SUNRISE;
@@ -27,7 +28,6 @@ function phaseForElapsed(elapsed: number): DayPhase {
 export const useDayStore = create<DayState>(() => ({
   dayNumber: 1,
   dayStartTime: Date.now(),
-  phase: DayPhase.NIGHT,
   moneyEarnedToday: 0,
   cumulativeMoneyEarned: 0,
   fishCaughtToday: 0,
@@ -35,14 +35,12 @@ export const useDayStore = create<DayState>(() => ({
   isEndOfDay: false,
 }));
 
-export function tickPhase(now: number) {
+export function tickDay(now: number) {
   const { dayStartTime, isEndOfDay } = useDayStore.getState();
   if (isEndOfDay) return;
-  const elapsed = now - dayStartTime;
-  useDayStore.setState({
-    phase: phaseForElapsed(elapsed),
-    isEndOfDay: elapsed >= DAY_DURATION_MS,
-  });
+  if (now - dayStartTime >= DAY_DURATION_MS) {
+    useDayStore.setState({ isEndOfDay: true });
+  }
 }
 
 export function recordEarnings(amount: number) {
@@ -78,7 +76,6 @@ export function startNewDay() {
   useDayStore.setState((s) => ({
     dayNumber: s.dayNumber + 1,
     dayStartTime: Date.now(),
-    phase: DayPhase.NIGHT,
     moneyEarnedToday: 0,
     fishCaughtToday: 0,
     isEndOfDay: false,

@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { usePlayer } from "../stores/playerStore";
 import { useBaitData } from "../stores/baitStore";
 import { useShop } from "../stores/shopStore";
-import { tickPhase, useDayStore } from "../stores/dayStore";
+import { phaseForElapsed, tickDay, useDayStore } from "../stores/dayStore";
 import { CURRENCY_SYMBOL, DAY_DURATION_MS, RARITY_COLOR } from "../util/constants";
 import { StatName } from "../util/csvLoader";
 
@@ -16,14 +16,13 @@ const DAY_PHASE_LABEL: Record<string, string> = {
 export function InventoryView() {
   const wallet = usePlayer((s) => s.wallet);
   const dayStartTime = useDayStore((s) => s.dayStartTime);
-  const dayPhase = useDayStore((s) => s.phase);
 
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => {
       const t = Date.now();
       setNow(t);
-      tickPhase(t);
+      tickDay(t);
     }, 250);
     return () => clearInterval(id);
   }, []);
@@ -31,6 +30,7 @@ export function InventoryView() {
   const elapsed = Math.max(0, now - dayStartTime);
   const remainingPct =
     (Math.max(0, DAY_DURATION_MS - elapsed) / DAY_DURATION_MS) * 100;
+  const dayPhase = phaseForElapsed(elapsed);
 
   const inventory = usePlayer((s) => s.inventory);
   const inventorySize = usePlayer((s) => s.inventorySize);
