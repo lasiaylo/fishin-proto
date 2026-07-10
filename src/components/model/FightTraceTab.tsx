@@ -22,11 +22,11 @@ import {
   type FightConfig,
   type FightState,
 } from "../../game/FightEngine";
-import type { FishData } from "../../util/csvLoader";
+import { levelStat, type FishData, type RodData } from "../../util/csvLoader";
 import { avgZoneDistance } from "../../util/zones";
 import { COLORS, NumInput, FishSelect, EngineConfigRow } from "./shared";
 import { randomizeFishStats } from "../../stores/fishStore";
-import { INIT_AD, INITIAL_PLAYER_STATE } from "../../util/constants";
+import { INITIAL_PLAYER_STATE } from "../../util/constants";
 
 const LINE_CHART_THRESHOLD = 20;
 
@@ -141,7 +141,14 @@ function buildLineHPHistogram(results: FightResult[], lineHP: number) {
   );
 }
 
-export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
+export function FightTraceTab({
+  fishData,
+  rodData,
+}: {
+  fishData: FishData[];
+  rodData: RodData[];
+}) {
+  const rod0 = rodData.find((r) => r.id === "ROD_0");
   const [fishId, setFishId] = useState(() => {
     const stored = localStorage.getItem("debug_selectedFishId");
     if (stored && fishData.some((f) => f.id === stored)) return stored;
@@ -157,8 +164,10 @@ export function FightTraceTab({ fishData }: { fishData: FishData[] }) {
   const [fightStartDistance, setFightStartDistance] = useState(
     avgZoneDistance(fishData[0]?.zones ?? []),
   );
-  const [reelStr, setReelStr] = useState(INIT_AD);
-  const [drag, setDrag] = useState(INIT_AD);
+  const [reelStr, setReelStr] = useState(
+    levelStat(rod0?.attackLevels ?? [], 0),
+  );
+  const [drag, setDrag] = useState(levelStat(rod0?.defenseLevels ?? [], 0));
   const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
   const [trialCount, setTrialCount] = useState(20);
   const [randomize, setRandomize] = useState(false);

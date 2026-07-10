@@ -20,7 +20,6 @@ import {
   CAST_MIN,
   computeLureLevel,
   getTackleType,
-  INIT_AD,
   INITIAL_PLAYER_STATE,
   LURE_BITE_CHANCE_PER_LEVEL,
   lureReelMaxSpeed,
@@ -458,8 +457,8 @@ function econRodStats(
 ): { attack: number; defense: number; castMax: number } {
   const data = rodData.find((r) => r.id === rod.id);
   return {
-    attack: levelStat(data?.attackLevels ?? [], rod.attackLevel, INIT_AD),
-    defense: levelStat(data?.defenseLevels ?? [], rod.defenseLevel, INIT_AD),
+    attack: levelStat(data?.attackLevels ?? [], rod.attackLevel),
+    defense: levelStat(data?.defenseLevels ?? [], rod.defenseLevel),
     castMax: data?.castMax ?? CAST_MAX,
   };
 }

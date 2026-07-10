@@ -123,7 +123,7 @@ export function ModelView() {
               <Tabs.Trigger value="graphs">Graphs</Tabs.Trigger>
             </Tabs.List>
             <Tabs.Content value="fight">
-              <FightTraceTab fishData={activeFishData} />
+              <FightTraceTab fishData={activeFishData} rodData={rodData} />
             </Tabs.Content>
             <Tabs.Content value="sweep">
               <ParamSweepTab fishData={activeFishData} />
@@ -142,6 +142,7 @@ export function ModelView() {
               <GraphsTab
                 fishData={fishData}
                 locationData={locationData}
+                rodData={rodData}
                 generatedFishRows={generatedFishRows}
                 generatedShopRows={generatedShopRows}
                 onFishRowsChange={setGeneratedFishRows}

@@ -78,12 +78,10 @@ export async function loadRodData(
   }));
 }
 
-export function levelStat(
-  levels: number[],
-  level: number,
-  fallback: number,
-): number {
-  if (levels.length === 0) return fallback;
+export function levelStat(levels: number[], level: number): number {
+  if (levels.length === 0) {
+    throw new Error("levelStat: no levels defined");
+  }
   return levels[Math.min(Math.max(level, 0), levels.length - 1)];
 }
 

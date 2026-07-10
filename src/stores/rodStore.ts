@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { RodData, loadRodData, levelStat } from "../util/csvLoader";
-import { Rod, INIT_AD, CAST_MAX } from "../util/constants";
+import { Rod, CAST_MAX } from "../util/constants";
 
 interface RodDataState {
   rodData: RodData[];
@@ -24,8 +24,8 @@ export function getRodStats(rod: Rod): {
 } {
   const data = getRodDataById(rod.id);
   return {
-    attack: levelStat(data?.attackLevels ?? [], rod.attackLevel, INIT_AD),
-    defense: levelStat(data?.defenseLevels ?? [], rod.defenseLevel, INIT_AD),
+    attack: levelStat(data?.attackLevels ?? [], rod.attackLevel),
+    defense: levelStat(data?.defenseLevels ?? [], rod.defenseLevel),
     castMax: data?.castMax ?? CAST_MAX,
   };
 }

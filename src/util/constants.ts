@@ -12,7 +12,6 @@ export const BAIT_MAX_STACK = 10;
 // ==========================================================================
 // PLAYER
 // ==========================================================================
-export const INIT_AD = 25;
 export const CAST_MAX = 40;
 export const REEL_MIN = 5;
 

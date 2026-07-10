@@ -5,9 +5,11 @@ import { computeLureStats } from "../../game/EconomyModel";
 import type {
   FishData,
   LocationFishEntry,
+  RodData,
   ShopUpgradeData,
 } from "../../util/csvLoader";
 import {
+  levelStat,
   loadFishData,
   loadFishDisplayMap,
   loadShopGameplayData,
@@ -28,11 +30,12 @@ import {
   GENERATED_SHOP_CSV,
 } from "./CsvGenerator";
 import { EconomyChart, lineProps } from "./EconomyChart";
-import { INIT_AD, INITIAL_PLAYER_STATE } from "../../util/constants";
+import { INITIAL_PLAYER_STATE } from "../../util/constants";
 
 export function GraphsTab({
   fishData: defaultFishData,
   locationData,
+  rodData,
   generatedFishRows,
   generatedShopRows,
   onFishRowsChange,
@@ -40,14 +43,19 @@ export function GraphsTab({
 }: {
   fishData: FishData[];
   locationData: LocationFishEntry[];
+  rodData: RodData[];
   generatedFishRows: string[][] | null;
   generatedShopRows: string[][] | null;
   onFishRowsChange: (rows: string[][]) => void;
   onShopRowsChange: (rows: string[][]) => void;
 }) {
+  const baseAttack = levelStat(
+    rodData.find((r) => r.id === "ROD_0")?.attackLevels ?? [],
+    0,
+  );
   const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
-  const [minStat, setMinStat] = useState(INIT_AD);
-  const [maxStat, setMaxStat] = useState(INIT_AD + 10);
+  const [minStat, setMinStat] = useState(baseAttack);
+  const [maxStat, setMaxStat] = useState(baseAttack + 10);
   const [trialsPerFish, setTrialsPerFish] = useState(100);
   const [inventorySize, setInventorySize] = useState(3);
   const [sweepData, setSweepData] = useState<object[]>([]);
