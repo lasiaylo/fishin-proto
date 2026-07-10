@@ -1,15 +1,21 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Flex, Tabs } from "@radix-ui/themes";
 import { ShopView } from "./ShopView";
 import { PondView } from "./PondView";
 import { sellAllFish, usePlayer } from "../stores/playerStore";
 import { pushEvent } from "../stores/eventLogStore";
 import { useSessionLog } from "../stores/sessionLogStore";
+import { useDayStore } from "../stores/dayStore";
 import { RARITY_COLOR } from "../util/constants";
 import { EventMsg } from "../util/eventMessages";
 
 export function ActionsSection() {
   const [tab, setTab] = useState("pond");
+  const dayNumber = useDayStore((s) => s.dayNumber);
+
+  useEffect(() => {
+    setTab("pond");
+  }, [dayNumber]);
 
   function handleTabChange(value: string) {
     if (value === "shop") {

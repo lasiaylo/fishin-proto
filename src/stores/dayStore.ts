@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { usePlayer } from "./playerStore";
+import { clearEvents } from "./eventLogStore";
 import {
   computeDreamPoints,
   DAY_DURATION_MS,
@@ -90,6 +91,7 @@ export function startNewDay() {
     fishCaughtToday: 0,
     isEndOfDay: false,
   }));
+  clearEvents();
 }
 
 usePlayer.subscribe(

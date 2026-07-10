@@ -28,3 +28,7 @@ export function pushEvent(msg: string, colored?: string, color?: string) {
     nextId: state.nextId + 1,
   }));
 }
+
+export function clearEvents() {
+  useEventLog.setState({ events: [] });
+}
