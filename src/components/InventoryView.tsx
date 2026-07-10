@@ -4,7 +4,11 @@ import { usePlayer } from "../stores/playerStore";
 import { useBaitData } from "../stores/baitStore";
 import { useShop } from "../stores/shopStore";
 import { phaseForElapsed, tickDay, useDayStore } from "../stores/dayStore";
-import { CURRENCY_SYMBOL, DAY_DURATION_MS, RARITY_COLOR } from "../util/constants";
+import {
+  CURRENCY_SYMBOL,
+  DAY_DURATION_MS,
+  RARITY_COLOR,
+} from "../util/constants";
 import { StatName } from "../util/csvLoader";
 import { AnimatedNumber } from "./AnimatedNumber";
 import { TipView } from "./TipView";
@@ -25,12 +29,13 @@ export function InventoryView() {
       const t = Date.now();
       setNow(t);
       tickDay(t);
-    }, 250);
+    }, 60000);
     return () => clearInterval(id);
   }, []);
 
   const elapsed = Math.max(0, now - dayStartTime);
-  const elapsedPct = (Math.min(elapsed, DAY_DURATION_MS) / DAY_DURATION_MS) * 100;
+  const elapsedPct =
+    (Math.min(elapsed, DAY_DURATION_MS) / DAY_DURATION_MS) * 100;
   const dayPhase = phaseForElapsed(elapsed);
 
   const inventory = usePlayer((s) => s.inventory);
