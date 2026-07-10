@@ -10,6 +10,7 @@ import {
 import { UpgradeCatalogGrid } from "./UpgradeCatalogGrid";
 import { CURRENCY_SYMBOL, DREAM_POINT_SYMBOL } from "../util/constants";
 import { MyButton } from "./MyButton";
+import { AnimatedNumber } from "./AnimatedNumber";
 
 export function EndOfDayPopup() {
   const dayNumber = useDayStore((s) => s.dayNumber);
@@ -54,12 +55,15 @@ export function EndOfDayPopup() {
               <Flex direction="column" gap="2" p="4">
                 <Flex justify="between">
                   <Text color="gray">fish caught</Text>
-                  <Text>{fishCaughtToday}</Text>
+                  <Text>
+                    <AnimatedNumber value={fishCaughtToday} initial={0} />
+                  </Text>
                 </Flex>
                 <Flex justify="between">
                   <Text color="gray">money earned</Text>
                   <Text>
-                    {CURRENCY_SYMBOL} {moneyEarnedToday}
+                    {CURRENCY_SYMBOL}{" "}
+                    <AnimatedNumber value={moneyEarnedToday} initial={0} />
                   </Text>
                 </Flex>
                 <Flex justify="between">

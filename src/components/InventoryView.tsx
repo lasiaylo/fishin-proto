@@ -6,6 +6,7 @@ import { useShop } from "../stores/shopStore";
 import { phaseForElapsed, tickDay, useDayStore } from "../stores/dayStore";
 import { CURRENCY_SYMBOL, DAY_DURATION_MS, RARITY_COLOR } from "../util/constants";
 import { StatName } from "../util/csvLoader";
+import { AnimatedNumber } from "./AnimatedNumber";
 
 const DAY_PHASE_LABEL: Record<string, string> = {
   NIGHT: "night",
@@ -42,40 +43,17 @@ export function InventoryView() {
     (u) => u.stat === StatName.LURE && ownedLures.has(u.id),
   );
 
-  const [displayWallet, setDisplayWallet] = useState(wallet);
-  const displayRef = useRef(wallet);
   const prevWalletRef = useRef(wallet);
   const [popup, setPopup] = useState<{ amount: number; key: number } | null>(
     null,
   );
 
   useEffect(() => {
-    const end = wallet;
-    const diff = end - prevWalletRef.current;
-    prevWalletRef.current = end;
-
+    const diff = wallet - prevWalletRef.current;
+    prevWalletRef.current = wallet;
     if (diff > 0) {
       setPopup({ amount: diff, key: Date.now() });
     }
-
-    const start = displayRef.current;
-    const delta = end - start;
-    if (delta === 0) return;
-
-    const duration = Math.min(600, Math.abs(delta) * 60);
-    const startTime = performance.now();
-
-    let rafId: number;
-    const tick = (now: number) => {
-      const progress = Math.min((now - startTime) / duration, 1);
-      const current = Math.round(start + delta * progress);
-      displayRef.current = current;
-      setDisplayWallet(current);
-      if (progress < 1) rafId = requestAnimationFrame(tick);
-    };
-
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
   }, [wallet]);
 
   return (
@@ -96,7 +74,7 @@ export function InventoryView() {
 
       <Flex width={"100%"} direction={"column"}>
         <Code size="2">
-          {CURRENCY_SYMBOL} {displayWallet}
+          {CURRENCY_SYMBOL} <AnimatedNumber value={wallet} />
         </Code>
         {popup && (
           <Code
