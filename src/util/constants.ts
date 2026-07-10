@@ -46,6 +46,25 @@ export const LURE_LEVEL_XP = Array(5)
   .map((n, i) => Math.ceil(n * XP_GROWTH ** i));
 
 // ==========================================================================
+// DAY CYCLE
+// ==========================================================================
+export const DAY_DURATION_MS = 15 * 60 * 1000;
+
+export enum DayPhase {
+  NIGHT = "NIGHT",
+  DAWN = "DAWN",
+  SUNRISE = "SUNRISE",
+}
+
+export const DAY_PHASE_BOUNDARIES_MS = [5, 12, 15].map((m) => m * 60 * 1000);
+
+const START_DREAM_MONEY = 1000;
+const DREAM_MONEY_GROWTH = 1.5;
+export const DREAM_POINT_MONEY_THRESHOLDS = Array(10)
+  .fill(START_DREAM_MONEY)
+  .map((n, i) => Math.ceil(n * DREAM_MONEY_GROWTH ** i));
+
+// ==========================================================================
 // CAST TIMINGS
 // ==========================================================================
 export const RESULT_DURATION = 500;
@@ -140,15 +159,37 @@ export const RARITY_COLOR: Record<Rarity, "gray" | "blue" | "amber"> = {
 // ==========================================================================
 // FUNCTIONS
 // ==========================================================================
-export function computeLureLevel(xp: number): number {
+export function computeLevelFromThresholds(
+  thresholds: number[],
+  value: number,
+): number {
   let level = 0;
   let accumulated = 0;
-  for (const req of LURE_LEVEL_XP) {
+  for (const req of thresholds) {
     accumulated += req;
-    if (xp >= accumulated) level++;
+    if (value >= accumulated) level++;
     else break;
   }
   return level;
+}
+
+export function applyThresholdGain(
+  thresholds: number[],
+  current: number,
+  gain: number,
+): { value: number; level: number; leveledUp: boolean } {
+  const rawValue = current + gain;
+  const prevLevel = computeLevelFromThresholds(thresholds, current);
+  const newLevel = computeLevelFromThresholds(thresholds, rawValue);
+  const leveledUp = newLevel > prevLevel;
+  const value = leveledUp
+    ? thresholds.slice(0, newLevel).reduce((a, b) => a + b, 0)
+    : rawValue;
+  return { value, level: newLevel, leveledUp };
+}
+
+export function computeLureLevel(xp: number): number {
+  return computeLevelFromThresholds(LURE_LEVEL_XP, xp);
 }
 
 export function lureReelMaxSpeed(level: number): number {
@@ -159,14 +200,19 @@ export function applyLureXp(
   currentXp: number,
   gain: number,
 ): { xp: number; level: number; leveledUp: boolean } {
-  const rawXp = currentXp + gain;
-  const prevLevel = computeLureLevel(currentXp);
-  const newLevel = computeLureLevel(rawXp);
-  const leveledUp = newLevel > prevLevel;
-  const xp = leveledUp
-    ? LURE_LEVEL_XP.slice(0, newLevel).reduce((a, b) => a + b, 0)
-    : rawXp;
-  return { xp, level: newLevel, leveledUp };
+  const { value, level, leveledUp } = applyThresholdGain(
+    LURE_LEVEL_XP,
+    currentXp,
+    gain,
+  );
+  return { xp: value, level, leveledUp };
+}
+
+export function computeDreamPoints(cumulativeMoneyEarned: number): number {
+  return computeLevelFromThresholds(
+    DREAM_POINT_MONEY_THRESHOLDS,
+    cumulativeMoneyEarned,
+  );
 }
 
 export function rollRarity(): Rarity {
