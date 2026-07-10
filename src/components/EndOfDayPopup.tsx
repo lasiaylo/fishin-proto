@@ -15,7 +15,11 @@ import {
   DREAM_POINT_SYMBOL,
 } from "../util/constants";
 import { MyButton } from "./MyButton";
-import { AnimatedNumber, useAnimatedNumber } from "./AnimatedNumber";
+import {
+  animationDuration,
+  AnimatedNumber,
+  useAnimatedNumber,
+} from "./AnimatedNumber";
 
 export function EndOfDayPopup() {
   const dayNumber = useDayStore((s) => s.dayNumber);
@@ -28,9 +32,22 @@ export function EndOfDayPopup() {
 
   const lvl = computeDreamPoints(cumulativeMoneyEarned);
   const lvlProgress = computeDreamPointsProgress(cumulativeMoneyEarned);
-  const lvlProgressPct = useAnimatedNumber(
-    Math.round(lvlProgress.fraction * 100),
+  const lvlProgressPct = Math.round(lvlProgress.fraction * 100);
+
+  // Chain each stat's count-up so it starts only once the previous one
+  // finishes, instead of all four animating at once.
+  const fishDelay = 0;
+  const fishDuration = animationDuration(fishCaughtToday - 0);
+  const moneyDelay = fishDelay + fishDuration;
+  const moneyDuration = animationDuration(moneyEarnedToday - 0);
+  const lvlDelay = moneyDelay + moneyDuration;
+  const lvlDuration = animationDuration(lvl - 0);
+  const lvlBarDelay = lvlDelay + lvlDuration;
+
+  const animatedLvlProgressPct = useAnimatedNumber(
+    lvlProgressPct,
     0,
+    lvlBarDelay,
   );
 
   return (
@@ -69,24 +86,36 @@ export function EndOfDayPopup() {
                 <Flex justify="between">
                   <Text color="gray">fish caught</Text>
                   <Text>
-                    <AnimatedNumber value={fishCaughtToday} initial={0} />
+                    <AnimatedNumber
+                      value={fishCaughtToday}
+                      initial={0}
+                      delay={fishDelay}
+                    />
                   </Text>
                 </Flex>
                 <Flex justify="between">
                   <Text color="gray">money earned</Text>
                   <Text>
                     {CURRENCY_SYMBOL}{" "}
-                    <AnimatedNumber value={moneyEarnedToday} initial={0} />
+                    <AnimatedNumber
+                      value={moneyEarnedToday}
+                      initial={0}
+                      delay={moneyDelay}
+                    />
                   </Text>
                 </Flex>
                 <Flex direction="column" gap="1">
                   <Flex justify="between">
                     <Text color="gray">LVL</Text>
                     <Text>
-                      <AnimatedNumber value={lvl} initial={0} />
+                      <AnimatedNumber value={lvl} initial={0} delay={lvlDelay} />
                     </Text>
                   </Flex>
-                  <Progress radius="none" size="2" value={lvlProgressPct} />
+                  <Progress
+                    radius="none"
+                    size="2"
+                    value={animatedLvlProgressPct}
+                  />
                   <Text size="1" color="gray" align="right">
                     {lvlProgress.current} / {lvlProgress.next}
                   </Text>

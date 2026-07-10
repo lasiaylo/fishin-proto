@@ -1,6 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 
-export function useAnimatedNumber(value: number, initial?: number): number {
+export function animationDuration(delta: number): number {
+  return Math.min(600, Math.abs(delta) * 60);
+}
+
+export function useAnimatedNumber(
+  value: number,
+  initial?: number,
+  delayMs = 0,
+): number {
   const [display, setDisplay] = useState(initial ?? value);
   const displayRef = useRef(initial ?? value);
 
@@ -9,21 +17,33 @@ export function useAnimatedNumber(value: number, initial?: number): number {
     const delta = value - start;
     if (delta === 0) return;
 
-    const duration = Math.min(600, Math.abs(delta) * 60);
-    const startTime = performance.now();
-
     let rafId: number;
-    const tick = (now: number) => {
-      const progress = Math.min((now - startTime) / duration, 1);
-      const current = Math.round(start + delta * progress);
-      displayRef.current = current;
-      setDisplay(current);
-      if (progress < 1) rafId = requestAnimationFrame(tick);
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const animate = () => {
+      const duration = animationDuration(delta);
+      const startTime = performance.now();
+      const tick = (now: number) => {
+        const progress = Math.min((now - startTime) / duration, 1);
+        const current = Math.round(start + delta * progress);
+        displayRef.current = current;
+        setDisplay(current);
+        if (progress < 1) rafId = requestAnimationFrame(tick);
+      };
+      rafId = requestAnimationFrame(tick);
     };
 
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
-  }, [value]);
+    if (delayMs > 0) {
+      timeoutId = setTimeout(animate, delayMs);
+    } else {
+      animate();
+    }
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timeoutId);
+    };
+  }, [value, delayMs]);
 
   return display;
 }
@@ -31,9 +51,11 @@ export function useAnimatedNumber(value: number, initial?: number): number {
 export function AnimatedNumber({
   value,
   initial,
+  delay,
 }: {
   value: number;
   initial?: number;
+  delay?: number;
 }) {
-  return <>{useAnimatedNumber(value, initial)}</>;
+  return <>{useAnimatedNumber(value, initial, delay)}</>;
 }
