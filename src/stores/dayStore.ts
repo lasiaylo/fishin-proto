@@ -72,6 +72,16 @@ export function forceEndDay() {
   useDayStore.setState((s) => (s.isEndOfDay ? s : { isEndOfDay: true }));
 }
 
+// Debug-only: pulls dayStartTime backward so the day appears to have
+// elapsed by `ms` more, then re-runs the same end-of-day check tickDay
+// does on its normal interval — a no-op once the day has already ended.
+export function advanceTime(ms: number) {
+  const { isEndOfDay } = useDayStore.getState();
+  if (isEndOfDay) return;
+  useDayStore.setState((s) => ({ dayStartTime: s.dayStartTime - ms }));
+  tickDay(Date.now());
+}
+
 export function startNewDay() {
   useDayStore.setState((s) => ({
     dayNumber: s.dayNumber + 1,

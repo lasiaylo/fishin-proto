@@ -7,7 +7,7 @@ import { ActionsSection } from "./components/ActionsSection";
 import { Debug } from "./components/debug";
 import { initShop, initShopFromRows } from "./stores/shopStore";
 import { initDreamShop } from "./stores/dreamShopStore";
-import { forceEndDay, useDayStore } from "./stores/dayStore";
+import { advanceTime, forceEndDay, useDayStore } from "./stores/dayStore";
 import { EndOfDayPopup } from "./components/EndOfDayPopup";
 import { initFish, initFishFromData } from "./stores/fishStore";
 import { initLocations } from "./stores/locationStore";
@@ -64,6 +64,10 @@ function App() {
           return next;
         });
       if (e.key === "Escape") forceEndDay();
+      if (e.key === "Tab") {
+        e.preventDefault();
+        advanceTime(5 * 60 * 1000);
+      }
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
