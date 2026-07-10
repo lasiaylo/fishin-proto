@@ -217,16 +217,24 @@ export function computeDreamPoints(cumulativeMoneyEarned: number): number {
   );
 }
 
+export interface ThresholdProgress {
+  current: number; // progress into the current bracket
+  next: number; // size of the next bracket (0 once maxed)
+  fraction: number; // current / next, capped at 1 once maxed
+}
+
 export function computeDreamPointsProgress(
   cumulativeMoneyEarned: number,
-): number {
+): ThresholdProgress {
   const level = computeDreamPoints(cumulativeMoneyEarned);
   const floor = DREAM_POINT_MONEY_THRESHOLDS.slice(0, level).reduce(
     (a, b) => a + b,
     0,
   );
-  const nextReq = DREAM_POINT_MONEY_THRESHOLDS[level] ?? null;
-  return nextReq !== null ? (cumulativeMoneyEarned - floor) / nextReq : 1;
+  const next = DREAM_POINT_MONEY_THRESHOLDS[level] ?? null;
+  if (next === null) return { current: 0, next: 0, fraction: 1 };
+  const current = cumulativeMoneyEarned - floor;
+  return { current, next, fraction: current / next };
 }
 
 export function rollRarity(): Rarity {

@@ -1,12 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 
-export function AnimatedNumber({
-  value,
-  initial,
-}: {
-  value: number;
-  initial?: number;
-}) {
+export function useAnimatedNumber(value: number, initial?: number): number {
   const [display, setDisplay] = useState(initial ?? value);
   const displayRef = useRef(initial ?? value);
 
@@ -31,5 +25,15 @@ export function AnimatedNumber({
     return () => cancelAnimationFrame(rafId);
   }, [value]);
 
-  return <>{display}</>;
+  return display;
+}
+
+export function AnimatedNumber({
+  value,
+  initial,
+}: {
+  value: number;
+  initial?: number;
+}) {
+  return <>{useAnimatedNumber(value, initial)}</>;
 }

@@ -15,7 +15,7 @@ import {
   DREAM_POINT_SYMBOL,
 } from "../util/constants";
 import { MyButton } from "./MyButton";
-import { AnimatedNumber } from "./AnimatedNumber";
+import { AnimatedNumber, useAnimatedNumber } from "./AnimatedNumber";
 
 export function EndOfDayPopup() {
   const dayNumber = useDayStore((s) => s.dayNumber);
@@ -28,6 +28,10 @@ export function EndOfDayPopup() {
 
   const lvl = computeDreamPoints(cumulativeMoneyEarned);
   const lvlProgress = computeDreamPointsProgress(cumulativeMoneyEarned);
+  const lvlProgressPct = useAnimatedNumber(
+    Math.round(lvlProgress.fraction * 100),
+    0,
+  );
 
   return (
     <Flex
@@ -82,11 +86,10 @@ export function EndOfDayPopup() {
                       <AnimatedNumber value={lvl} initial={0} />
                     </Text>
                   </Flex>
-                  <Progress
-                    radius="none"
-                    size="2"
-                    value={Math.round(lvlProgress * 100)}
-                  />
+                  <Progress radius="none" size="2" value={lvlProgressPct} />
+                  <Text size="1" color="gray" align="right">
+                    {lvlProgress.current} / {lvlProgress.next}
+                  </Text>
                 </Flex>
               </Flex>
             </Tabs.Content>
