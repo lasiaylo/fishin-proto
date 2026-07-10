@@ -340,6 +340,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
 
     lastTimeRef.current = null;
     prevCritRef.current = false;
+    reelRef.current = false;
     setFightState({ ...fightRef.current.tick(0, false) });
 
     function loop(timestamp: number) {
@@ -369,9 +370,13 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
 
   function finishFight(result: Outcome, finalState: FightState) {
     cancelAnimationFrame(rafRef.current);
+    reelRef.current = false;
     const fish = caughtFishRef.current!;
-    const { lineHP, rodSlotItems: items, incomeBoostPercent } =
-      usePlayer.getState();
+    const {
+      lineHP,
+      rodSlotItems: items,
+      incomeBoostPercent,
+    } = usePlayer.getState();
     const item = items[slotIndex] ?? BASE_BAIT_ID;
     const effectivePrice = Math.round(
       fish.basePrice * (1 + incomeBoostPercent / 100),
@@ -521,10 +526,9 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
 
   return (
     <Flex direction="column" gap="2" minHeight={"150px"}>
-      <Flex gap="4">
-        <Flex flexGrow={"1"}>{controls}</Flex>
-        <Flex direction="column" width={"120px"} gap="2">
-          <Flex direction="column" gap="1">
+      <Flex direction="column" gap="4">
+        <Flex gap="2">
+          <Flex minWidth="120px" direction="column" gap="1">
             <Text size="1" color="gray">
               rod
             </Text>
@@ -551,7 +555,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
           </Flex>
           {assignment !== null && (
             <>
-              <Flex direction="column" gap="1">
+              <Flex minWidth="120px" direction="column" gap="1">
                 <Text size="1" color="gray">
                   tackle
                 </Text>
@@ -612,6 +616,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
             </>
           )}
         </Flex>
+        <Flex flexGrow={"1"}>{controls}</Flex>
       </Flex>
     </Flex>
   );

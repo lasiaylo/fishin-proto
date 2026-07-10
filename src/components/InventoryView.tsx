@@ -1,4 +1,4 @@
-import { Code, Flex, Progress, Text } from "@radix-ui/themes";
+import { Code, Flex, Progress, Separator, Text } from "@radix-ui/themes";
 import React, { useEffect, useRef, useState } from "react";
 import { usePlayer } from "../stores/playerStore";
 import { useBaitData } from "../stores/baitStore";
@@ -72,6 +72,10 @@ export function InventoryView() {
       pt="40px"
     >
       <Flex direction="column" gap="1">
+        <Text size="1" color="gray">
+          day {dayNumber} · {DAY_PHASE_LABEL[dayPhase] ?? dayPhase}
+        </Text>
+
         <Progress
           radius="none"
           size="2"
@@ -82,9 +86,6 @@ export function InventoryView() {
             } as React.CSSProperties
           }
         />
-        <Text size="1" color="gray">
-          day {dayNumber} · {DAY_PHASE_LABEL[dayPhase] ?? dayPhase}
-        </Text>
       </Flex>
 
       <Flex width={"100%"} direction={"column"}>
@@ -105,9 +106,6 @@ export function InventoryView() {
       </Flex>
 
       <Flex direction="column" gap="1">
-        <Text size="1" color="gray">
-          cooler
-        </Text>
         {Array.from({ length: inventorySize }).map((_, i) => {
           const item = inventory[i];
           return (
@@ -123,6 +121,7 @@ export function InventoryView() {
       </Flex>
 
       <Flex direction="column" gap="2">
+        <Separator size={"4"} />
         <Text size="1" color="gray" weight={"medium"}>
           tackle box
         </Text>
