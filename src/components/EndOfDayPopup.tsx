@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Flex, Tabs, Text } from "@radix-ui/themes";
+import { Box, Flex, Progress, Tabs, Text } from "@radix-ui/themes";
 import { startNewDay, useDayStore } from "../stores/dayStore";
 import {
   buyDreamUpgrade,
@@ -8,7 +8,12 @@ import {
   useDreamShop,
 } from "../stores/dreamShopStore";
 import { UpgradeCatalogGrid } from "./UpgradeCatalogGrid";
-import { CURRENCY_SYMBOL, DREAM_POINT_SYMBOL } from "../util/constants";
+import {
+  CURRENCY_SYMBOL,
+  computeDreamPoints,
+  computeDreamPointsProgress,
+  DREAM_POINT_SYMBOL,
+} from "../util/constants";
 import { MyButton } from "./MyButton";
 import { AnimatedNumber } from "./AnimatedNumber";
 
@@ -17,8 +22,12 @@ export function EndOfDayPopup() {
   const moneyEarnedToday = useDayStore((s) => s.moneyEarnedToday);
   const fishCaughtToday = useDayStore((s) => s.fishCaughtToday);
   const dreamPoints = useDayStore((s) => s.dreamPoints);
+  const cumulativeMoneyEarned = useDayStore((s) => s.cumulativeMoneyEarned);
   const dreamUpgrades = useDreamShop((s) => s.upgrades);
   const [tab, setTab] = useState("report");
+
+  const lvl = computeDreamPoints(cumulativeMoneyEarned);
+  const lvlProgress = computeDreamPointsProgress(cumulativeMoneyEarned);
 
   return (
     <Flex
@@ -66,11 +75,18 @@ export function EndOfDayPopup() {
                     <AnimatedNumber value={moneyEarnedToday} initial={0} />
                   </Text>
                 </Flex>
-                <Flex justify="between">
-                  <Text color="gray">dream points</Text>
-                  <Text>
-                    {DREAM_POINT_SYMBOL} {dreamPoints}
-                  </Text>
+                <Flex direction="column" gap="1">
+                  <Flex justify="between">
+                    <Text color="gray">LVL</Text>
+                    <Text>
+                      <AnimatedNumber value={lvl} initial={0} />
+                    </Text>
+                  </Flex>
+                  <Progress
+                    radius="none"
+                    size="2"
+                    value={Math.round(lvlProgress * 100)}
+                  />
                 </Flex>
               </Flex>
             </Tabs.Content>

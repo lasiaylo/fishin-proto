@@ -217,6 +217,18 @@ export function computeDreamPoints(cumulativeMoneyEarned: number): number {
   );
 }
 
+export function computeDreamPointsProgress(
+  cumulativeMoneyEarned: number,
+): number {
+  const level = computeDreamPoints(cumulativeMoneyEarned);
+  const floor = DREAM_POINT_MONEY_THRESHOLDS.slice(0, level).reduce(
+    (a, b) => a + b,
+    0,
+  );
+  const nextReq = DREAM_POINT_MONEY_THRESHOLDS[level] ?? null;
+  return nextReq !== null ? (cumulativeMoneyEarned - floor) / nextReq : 1;
+}
+
 export function rollRarity(): Rarity {
   const r = Math.random();
   if (r < RARITY_WEIGHTS[Rarity.RARE]) return Rarity.RARE;
