@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Box, Flex, Tabs, Text } from "@radix-ui/themes";
 import { startNewDay, useDayStore } from "../stores/dayStore";
 import {
@@ -17,6 +17,7 @@ export function EndOfDayPopup() {
   const fishCaughtToday = useDayStore((s) => s.fishCaughtToday);
   const dreamPoints = useDayStore((s) => s.dreamPoints);
   const dreamUpgrades = useDreamShop((s) => s.upgrades);
+  const [tab, setTab] = useState("report");
 
   return (
     <Flex
@@ -44,7 +45,7 @@ export function EndOfDayPopup() {
             day {dayNumber} complete
           </Text>
 
-          <Tabs.Root defaultValue="report">
+          <Tabs.Root value={tab} onValueChange={setTab}>
             <Tabs.List>
               <Tabs.Trigger value="report">report</Tabs.Trigger>
               <Tabs.Trigger value="dream">dream upgrades</Tabs.Trigger>
@@ -82,7 +83,11 @@ export function EndOfDayPopup() {
           </Tabs.Root>
 
           <Flex justify="end">
-            <MyButton onClick={startNewDay}>start next day</MyButton>
+            {tab === "report" ? (
+              <MyButton onClick={() => setTab("dream")}>dream</MyButton>
+            ) : (
+              <MyButton onClick={startNewDay}>start next day</MyButton>
+            )}
           </Flex>
         </Flex>
       </Box>
