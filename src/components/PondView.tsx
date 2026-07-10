@@ -21,7 +21,7 @@ import { FightEngine, FightState, Outcome } from "../game/FightEngine";
 import { useSessionLog } from "../stores/sessionLogStore";
 import { addLureXp, lureXpProgress, useLureXp } from "../stores/lureXpStore";
 import { useShop } from "../stores/shopStore";
-import { recordCatch, useDayStore } from "../stores/dayStore";
+import { recordCatch, setFighting, useDayStore } from "../stores/dayStore";
 import { useBaitData } from "../stores/baitStore";
 import { getRodStats } from "../stores/rodStore";
 import {
@@ -144,8 +144,9 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
       cancelAnimationFrame(rafRef.current);
       cancelAnimationFrame(luringRafRef.current);
       castTweenRef.current?.kill();
+      setFighting(slotIndex, false);
     };
-  }, []);
+  }, [slotIndex]);
 
   useEffect(() => {
     if (isEndOfDay) castTweenRef.current?.pause();
@@ -310,6 +311,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     hookXpRef.current =
       (castDistanceRef.current - luringDistanceRef.current) * XP_PER_DISTANCE;
     setGameState(GameState.Fighting);
+    setFighting(slotIndex, true);
 
     const {
       rodSlotAssignments: assignments,
@@ -408,6 +410,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
       pushEvent(EventMsg.ESCAPED);
     }
 
+    setFighting(slotIndex, false);
     setFading(true);
     setTimeout(() => {
       setGameState(GameState.Idle);

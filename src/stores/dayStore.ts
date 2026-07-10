@@ -36,12 +36,31 @@ export const useDayStore = create<DayState>(() => ({
   isEndOfDay: false,
 }));
 
+// Slot indices of rods currently mid-fight. The day is never allowed to end
+// while this is non-empty — set/cleared by PondView via setFighting().
+const fightingSlots = new Set<number>();
+// Sticky: sequences the timer or a forced end-of-day past an in-progress
+// fight, so it takes effect the instant the last fight ends.
+let endOfDayRequested = false;
+
+function applyEndOfDayIfReady() {
+  if (!endOfDayRequested || fightingSlots.size > 0) return;
+  useDayStore.setState((s) => (s.isEndOfDay ? s : { isEndOfDay: true }));
+}
+
+export function setFighting(slotIndex: number, fighting: boolean) {
+  if (fighting) fightingSlots.add(slotIndex);
+  else fightingSlots.delete(slotIndex);
+  applyEndOfDayIfReady();
+}
+
 export function tickDay(now: number) {
   const { dayStartTime, isEndOfDay } = useDayStore.getState();
   if (isEndOfDay) return;
   if (now - dayStartTime >= DAY_DURATION_MS) {
-    useDayStore.setState({ isEndOfDay: true });
+    endOfDayRequested = true;
   }
+  applyEndOfDayIfReady();
 }
 
 export function recordEarnings(amount: number) {
@@ -70,7 +89,9 @@ export function deductDreamPoints(amount: number) {
 }
 
 export function forceEndDay() {
-  useDayStore.setState((s) => (s.isEndOfDay ? s : { isEndOfDay: true }));
+  if (useDayStore.getState().isEndOfDay) return;
+  endOfDayRequested = true;
+  applyEndOfDayIfReady();
 }
 
 // Debug-only: pulls dayStartTime backward so the day appears to have
@@ -91,6 +112,7 @@ export function startNewDay() {
     fishCaughtToday: 0,
     isEndOfDay: false,
   }));
+  endOfDayRequested = false;
   clearEvents();
 }
 
