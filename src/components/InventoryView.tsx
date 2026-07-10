@@ -29,8 +29,7 @@ export function InventoryView() {
   }, []);
 
   const elapsed = Math.max(0, now - dayStartTime);
-  const remainingPct =
-    (Math.max(0, DAY_DURATION_MS - elapsed) / DAY_DURATION_MS) * 100;
+  const elapsedPct = (Math.min(elapsed, DAY_DURATION_MS) / DAY_DURATION_MS) * 100;
   const dayPhase = phaseForElapsed(elapsed);
 
   const inventory = usePlayer((s) => s.inventory);
@@ -66,7 +65,16 @@ export function InventoryView() {
       pt="40px"
     >
       <Flex direction="column" gap="1">
-        <Progress radius="none" size="2" value={remainingPct} />
+        <Progress
+          radius="none"
+          size="2"
+          value={elapsedPct}
+          style={
+            {
+              "--accent-track": `color-mix(in srgb, var(--gray-11) ${elapsedPct}%, var(--gray-6))`,
+            } as React.CSSProperties
+          }
+        />
         <Text size="1" color="gray">
           {DAY_PHASE_LABEL[dayPhase] ?? dayPhase}
         </Text>
