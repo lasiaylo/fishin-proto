@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(npx playwright:*)",
+      "Bash(playwright:*)",
+      "Bash(npx @playwright/test:*)"
+    ]
+  }
+}
