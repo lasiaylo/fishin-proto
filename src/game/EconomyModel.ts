@@ -204,6 +204,7 @@ function evalLure(
     rods[0],
     rodData,
   );
+  const incomeMultiplier = 1 + player.incomeBoostPercent / 100;
   let bestRate;
   let best = null;
   let bestBaitRate: number | undefined;
@@ -237,7 +238,8 @@ function evalLure(
           lureRodDef,
           evalTrials,
         );
-        const avgEarnings = (variant.basePrice * winCount) / evalTrials;
+        const avgEarnings =
+          (variant.basePrice * incomeMultiplier * winCount) / evalTrials;
         fishTotalTime += avgFightTime * rarityWeight;
         fishTotalEarnings += avgEarnings * rarityWeight;
         totalEarnings += avgEarnings * combinedWeight;
@@ -373,6 +375,8 @@ function cheapestUpgrade(
         return player.lineHP;
       case StatName.INVENTORY:
         return player.inventorySize;
+      case StatName.INCOME:
+        return player.incomeBoostPercent;
       case StatName.LURE:
         return 0;
       case StatName.ROD:
@@ -495,6 +499,9 @@ function applyUpgrade(
     case StatName.INVENTORY:
       player.inventorySize += upgrade.valuePerLevel;
       break;
+    case StatName.INCOME:
+      player.incomeBoostPercent += upgrade.valuePerLevel;
+      break;
     case StatName.BAIT:
       baitStock[upgrade.id] =
         (baitStock[upgrade.id] ?? 0) + upgrade.valuePerLevel;
@@ -559,6 +566,7 @@ export function computeLureStats(
     fishByLure.get(fish.requiredTackle)!.push(fish);
   }
   const fishWeights = buildFishWeights(fishByLure, locationData);
+  const incomeMultiplier = 1 + player.incomeBoostPercent / 100;
   const rates: Record<string, number> = {};
   const earnings: Record<string, number> = {};
   const winRates: Record<string, number> = {};
@@ -583,7 +591,8 @@ export function computeLureStats(
           def,
           trialsPerFish,
         );
-        const avgEarnings = (variant.basePrice * winCount) / trialsPerFish;
+        const avgEarnings =
+          (variant.basePrice * incomeMultiplier * winCount) / trialsPerFish;
         totalEarnings += avgEarnings * combinedWeight;
         totalFightTime += avgFightTime * combinedWeight;
         totalWinRate += (winCount / trialsPerFish) * combinedWeight;
@@ -752,6 +761,7 @@ export function simulateEconomy(
     let baitRodIncome = 0;
     let baitRodBaitCost = 0;
     const baitRods = rods.slice(1);
+    const incomeMultiplier = 1 + player.incomeBoostPercent / 100;
     if (baitRods.length > 0 && bestBaitId !== null) {
       const baitPool = fishByTackle.get(bestBaitId) ?? [];
 
@@ -782,7 +792,8 @@ export function simulateEconomy(
               baitRodStats.defense,
               evalTrials,
             );
-            const avgEarnings = (variant.basePrice * winCount) / evalTrials;
+            const avgEarnings =
+              (variant.basePrice * incomeMultiplier * winCount) / evalTrials;
             baitTotalEarnings += avgEarnings * combinedWeight;
             baitTotalFightTime += baitFightTime * combinedWeight;
             baitTotalWinRate += (winCount / evalTrials) * combinedWeight;

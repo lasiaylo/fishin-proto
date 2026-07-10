@@ -307,7 +307,7 @@ export function EconomyTab({
           data.fish,
           data.shop,
           locationData,
-          { lineHP, inventorySize },
+          { lineHP, inventorySize, incomeBoostPercent: 0 },
           simMinutes,
           evalTrials,
           pair.upgradeStrategy,

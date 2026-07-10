@@ -185,7 +185,7 @@ export function GraphsTab({
         const { rates, earnings, winRates, remainingHPs } = computeLureStats(
           activeFishData,
           locationData,
-          { lineHP, inventorySize },
+          { lineHP, inventorySize, incomeBoostPercent: 0 },
           s,
           s,
           trialsPerFish,

@@ -38,6 +38,9 @@ function applyStatEffect(upgrade: UpgradeEntry, level: number, delta: number) {
     case StatName.INVENTORY:
       addToStat("inventorySize", delta * upgrade.valuePerLevel);
       break;
+    case StatName.INCOME:
+      addToStat("incomeBoostPercent", delta * upgrade.valuePerLevel);
+      break;
     case StatName.ROD:
       if (delta > 0) addRod(upgrade.id);
       break;

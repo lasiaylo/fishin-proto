@@ -14,6 +14,7 @@ import {
 export interface PlayerStats {
   lineHP: number;
   inventorySize: number;
+  incomeBoostPercent: number;
 }
 
 export interface InventoryFish {

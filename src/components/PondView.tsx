@@ -368,9 +368,12 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
   function finishFight(result: Outcome, finalState: FightState) {
     cancelAnimationFrame(rafRef.current);
     const fish = caughtFishRef.current!;
-    const { lineHP, rodSlotItems: items } = usePlayer.getState();
+    const { lineHP, rodSlotItems: items, incomeBoostPercent } =
+      usePlayer.getState();
     const item = items[slotIndex] ?? BASE_BAIT_ID;
-    const effectivePrice = Math.round(fish.basePrice);
+    const effectivePrice = Math.round(
+      fish.basePrice * (1 + incomeBoostPercent / 100),
+    );
 
     useSessionLog
       .getState()
