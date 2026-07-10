@@ -6,6 +6,9 @@ import { EventView } from "./components/EventView.tsx";
 import { ActionsSection } from "./components/ActionsSection";
 import { Debug } from "./components/debug";
 import { initShop, initShopFromRows } from "./stores/shopStore";
+import { initDreamShop } from "./stores/dreamShopStore";
+import { forceEndDay, useDayStore } from "./stores/dayStore";
+import { EndOfDayPopup } from "./components/EndOfDayPopup";
 import { initFish, initFishFromData } from "./stores/fishStore";
 import { initLocations } from "./stores/locationStore";
 import { initBaitData } from "./stores/baitStore";
@@ -27,6 +30,7 @@ function App() {
   const [showDebug, setShowDebug] = useState(
     () => localStorage.getItem("debug_panel_open") === "true",
   );
+  const isEndOfDay = useDayStore((s) => s.isEndOfDay);
 
   useEffect(() => {
     const { fishCSV, shopCSV } = useCsvConfig.getState();
@@ -44,6 +48,7 @@ function App() {
     } else {
       initShop(shopCSV);
     }
+    initDreamShop();
     initLocations();
     initBaitData();
     initRodData();
@@ -58,6 +63,7 @@ function App() {
           localStorage.setItem("debug_panel_open", next);
           return next;
         });
+      if (e.key === "Escape") forceEndDay();
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
@@ -77,6 +83,7 @@ function App() {
         <ActionsSection />
         <InventoryView />
       </Flex>
+      {isEndOfDay && <EndOfDayPopup />}
       {showDebug && (
         <div
           style={{

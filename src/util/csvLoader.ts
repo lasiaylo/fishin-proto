@@ -166,10 +166,22 @@ export async function loadLocationGameplayData(): Promise<LocationFishEntry[]> {
   }));
 }
 
+export interface ShopCsvLocation {
+  folder?: string;
+  displayFile?: string;
+}
+
+const DEFAULT_SHOP_LOCATION: Required<ShopCsvLocation> = {
+  folder: "Shop",
+  displayFile: "ShopDisplay.csv",
+};
+
 export async function loadShopGameplayData(
   shopFile = "ShopGameplay.csv",
+  location: ShopCsvLocation = {},
 ): Promise<ShopUpgradeData[]> {
-  const res = await fetch(`/data/Shop/${shopFile}`);
+  const { folder } = { ...DEFAULT_SHOP_LOCATION, ...location };
+  const res = await fetch(`/data/${folder}/${shopFile}`);
   const rows = parseCSV(await res.text());
   return rows.slice(1).map((row) => ({
     id: row[0],
@@ -276,10 +288,12 @@ export function parseShopGameplayRows(
 
 export async function loadShopData(
   shopFile = "ShopGameplay.csv",
+  location: ShopCsvLocation = {},
 ): Promise<ShopUpgradeData[]> {
+  const { folder, displayFile } = { ...DEFAULT_SHOP_LOCATION, ...location };
   const [gameplayRes, displayRes] = await Promise.all([
-    fetch(`/data/Shop/${shopFile}`),
-    fetch("/data/ShopDisplay.csv"),
+    fetch(`/data/${folder}/${shopFile}`),
+    fetch(`/data/${displayFile}`),
   ]);
   const [gameplayRows, displayRows] = [
     parseCSV(await gameplayRes.text()),

@@ -1,0 +1,6 @@
+ID, Name, Description, Category, Subcategory
+DREAM_HP, dream vigor, permanently increase max line HP, misc, dream
+DREAM_INVENTORY, dream satchel, permanently increase inventory size, misc, dream
+ROD_1_ATTACK, dream reel, reel in fish even faster, rods, dream
+ROD_1_DEFENSE, dream drag, hold the line even better, rods, dream
+DREAM_ROD_SLOT, dream rod holder, use another rod at once, misc, dream

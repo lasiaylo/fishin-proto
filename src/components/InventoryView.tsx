@@ -1,13 +1,37 @@
-import { Code, Flex, Text } from "@radix-ui/themes";
+import { Code, Flex, Progress, Text } from "@radix-ui/themes";
 import React, { useEffect, useRef, useState } from "react";
 import { usePlayer } from "../stores/playerStore";
 import { useBaitData } from "../stores/baitStore";
 import { useShop } from "../stores/shopStore";
-import { CURRENCY_SYMBOL, RARITY_COLOR } from "../util/constants";
+import { tickPhase, useDayStore } from "../stores/dayStore";
+import { CURRENCY_SYMBOL, DAY_DURATION_MS, RARITY_COLOR } from "../util/constants";
 import { StatName } from "../util/csvLoader";
+
+const DAY_PHASE_LABEL: Record<string, string> = {
+  NIGHT: "night",
+  DAWN: "dawn",
+  SUNRISE: "sunrise",
+};
 
 export function InventoryView() {
   const wallet = usePlayer((s) => s.wallet);
+  const dayStartTime = useDayStore((s) => s.dayStartTime);
+  const dayPhase = useDayStore((s) => s.phase);
+
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => {
+      const t = Date.now();
+      setNow(t);
+      tickPhase(t);
+    }, 250);
+    return () => clearInterval(id);
+  }, []);
+
+  const elapsed = Math.max(0, now - dayStartTime);
+  const remainingPct =
+    (Math.max(0, DAY_DURATION_MS - elapsed) / DAY_DURATION_MS) * 100;
+
   const inventory = usePlayer((s) => s.inventory);
   const inventorySize = usePlayer((s) => s.inventorySize);
   const baitInventory = usePlayer((s) => s.baitInventory);
@@ -63,6 +87,13 @@ export function InventoryView() {
       gap={"6"}
       pt="40px"
     >
+      <Flex direction="column" gap="1">
+        <Progress radius="none" size="2" value={remainingPct} />
+        <Text size="1" color="gray">
+          {DAY_PHASE_LABEL[dayPhase] ?? dayPhase}
+        </Text>
+      </Flex>
+
       <Flex width={"100%"} direction={"column"}>
         <Code size="2">
           {CURRENCY_SYMBOL} {displayWallet}
