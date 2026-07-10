@@ -21,6 +21,7 @@ const DAY_PHASE_LABEL: Record<string, string> = {
 
 export function InventoryView() {
   const wallet = usePlayer((s) => s.wallet);
+  const dayNumber = useDayStore((s) => s.dayNumber);
   const dayStartTime = useDayStore((s) => s.dayStartTime);
 
   const [now, setNow] = useState(() => Date.now());
@@ -82,7 +83,7 @@ export function InventoryView() {
           }
         />
         <Text size="1" color="gray">
-          {DAY_PHASE_LABEL[dayPhase] ?? dayPhase}
+          day {dayNumber} · {DAY_PHASE_LABEL[dayPhase] ?? dayPhase}
         </Text>
       </Flex>
 
