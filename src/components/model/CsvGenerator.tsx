@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Flex, Grid, Text, Table, Button, Separator } from "@radix-ui/themes";
 import { NumInput } from "./shared";
 
@@ -26,81 +26,6 @@ interface FunctionConfig {
   scaleFactor: number;
   growthRate: number;
 }
-
-const DEFAULT_ATTACK_FN: FunctionConfig = {
-  type: "LINEAR",
-  startValue: 2,
-  scaleFactor: 4,
-  growthRate: 0.8,
-};
-const DEFAULT_DEFENSE_FN: FunctionConfig = {
-  type: "LINEAR",
-  startValue: 2,
-  scaleFactor: 4,
-  growthRate: 0.8,
-};
-const DEFAULT_PRICE_FN: FunctionConfig = {
-  type: "LINEAR",
-  startValue: 4,
-  scaleFactor: 4,
-  growthRate: 0.8,
-};
-const DEFAULT_STAT_FN: FunctionConfig = {
-  type: "LINEAR",
-  startValue: 20,
-  scaleFactor: 4,
-  growthRate: 0.8,
-};
-const DEFAULT_LURE_FN: FunctionConfig = {
-  type: "LINEAR",
-  startValue: 10,
-  scaleFactor: 4,
-  growthRate: 0.8,
-};
-
-const DEFAULT_BAIT_FN: FunctionConfig = {
-  type: "LINEAR",
-  startValue: 5,
-  scaleFactor: 5,
-  growthRate: 0.8,
-};
-const DEFAULT_BAIT_ATTACK_FN: FunctionConfig = {
-  type: "LINEAR",
-  startValue: 2,
-  scaleFactor: 4,
-  growthRate: 0.8,
-};
-const DEFAULT_BAIT_DEFENSE_FN: FunctionConfig = {
-  type: "LINEAR",
-  startValue: 2,
-  scaleFactor: 4,
-  growthRate: 0.8,
-};
-const DEFAULT_BAIT_PRICE_FN: FunctionConfig = {
-  type: "LINEAR",
-  startValue: 4,
-  scaleFactor: 4,
-  growthRate: 0.8,
-};
-const DEFAULT_ROD_PURCHASE_FN: FunctionConfig = {
-  type: "LINEAR",
-  startValue: 50,
-  scaleFactor: 50,
-  growthRate: 0.8,
-};
-const DEFAULT_ROD_HOLDER_FN: FunctionConfig = {
-  type: "LINEAR",
-  startValue: 40,
-  scaleFactor: 40,
-  growthRate: 0.8,
-};
-
-const DEFAULT_DREAM_INCOME_FN: FunctionConfig = {
-  type: "LINEAR",
-  startValue: 2,
-  scaleFactor: 1,
-  growthRate: 0.8,
-};
 
 function evalFn(cfg: FunctionConfig, lvl: number): number {
   if (cfg.type === "LINEAR") return cfg.startValue + cfg.scaleFactor * lvl;
@@ -541,13 +466,36 @@ function PreviewTable({ rows }: { rows: string[][] }) {
   );
 }
 
-const FISH_DEFAULTS = {
-  attackFn: DEFAULT_ATTACK_FN,
-  defenseFn: DEFAULT_DEFENSE_FN,
-  priceFn: DEFAULT_PRICE_FN,
-  baitAttackFn: DEFAULT_BAIT_ATTACK_FN,
-  baitDefenseFn: DEFAULT_BAIT_DEFENSE_FN,
-  baitPriceFn: DEFAULT_BAIT_PRICE_FN,
+const FISH_DEFAULTS: {
+  attackFn: FunctionConfig;
+  defenseFn: FunctionConfig;
+  priceFn: FunctionConfig;
+  baitAttackFn: FunctionConfig;
+  baitDefenseFn: FunctionConfig;
+  baitPriceFn: FunctionConfig;
+  variance: number;
+} = {
+  attackFn: { type: "LINEAR", startValue: 2, scaleFactor: 4, growthRate: 0.8 },
+  defenseFn: { type: "LINEAR", startValue: 2, scaleFactor: 4, growthRate: 0.8 },
+  priceFn: { type: "LINEAR", startValue: 4, scaleFactor: 4, growthRate: 0.8 },
+  baitAttackFn: {
+    type: "LINEAR",
+    startValue: 2,
+    scaleFactor: 4,
+    growthRate: 0.8,
+  },
+  baitDefenseFn: {
+    type: "LINEAR",
+    startValue: 2,
+    scaleFactor: 4,
+    growthRate: 0.8,
+  },
+  baitPriceFn: {
+    type: "LINEAR",
+    startValue: 4,
+    scaleFactor: 4,
+    growthRate: 0.8,
+  },
   variance: 0.1,
 };
 
@@ -561,6 +509,7 @@ function FishGenerator({
   levels: number;
 }) {
   const stored = loadStored(FISH_STORAGE_KEY, FISH_DEFAULTS);
+  const initialRef = useRef(stored);
   const [attackFn, setAttackFn] = useState<FunctionConfig>(
     () => stored.attackFn,
   );
@@ -570,13 +519,13 @@ function FishGenerator({
   const [priceFn, setPriceFn] = useState<FunctionConfig>(() => stored.priceFn);
   const [variance, setVariance] = useState(() => stored.variance);
   const [baitAttackFn, setBaitAttackFn] = useState<FunctionConfig>(
-    () => stored.baitAttackFn ?? DEFAULT_BAIT_ATTACK_FN,
+    () => stored.baitAttackFn,
   );
   const [baitDefenseFn, setBaitDefenseFn] = useState<FunctionConfig>(
-    () => stored.baitDefenseFn ?? DEFAULT_BAIT_DEFENSE_FN,
+    () => stored.baitDefenseFn,
   );
   const [baitPriceFn, setBaitPriceFn] = useState<FunctionConfig>(
-    () => stored.baitPriceFn ?? DEFAULT_BAIT_PRICE_FN,
+    () => stored.baitPriceFn,
   );
 
   const rows = generateFishRows(
@@ -617,14 +566,14 @@ function FishGenerator({
     baitPriceFn,
   ]);
 
-  function reset() {
-    setAttackFn(FISH_DEFAULTS.attackFn);
-    setDefenseFn(FISH_DEFAULTS.defenseFn);
-    setPriceFn(FISH_DEFAULTS.priceFn);
-    setVariance(FISH_DEFAULTS.variance);
-    setBaitAttackFn(FISH_DEFAULTS.baitAttackFn);
-    setBaitDefenseFn(FISH_DEFAULTS.baitDefenseFn);
-    setBaitPriceFn(FISH_DEFAULTS.baitPriceFn);
+  function undo() {
+    setAttackFn(initialRef.current.attackFn);
+    setDefenseFn(initialRef.current.defenseFn);
+    setPriceFn(initialRef.current.priceFn);
+    setVariance(initialRef.current.variance);
+    setBaitAttackFn(initialRef.current.baitAttackFn);
+    setBaitDefenseFn(initialRef.current.baitDefenseFn);
+    setBaitPriceFn(initialRef.current.baitPriceFn);
   }
 
   return (
@@ -633,8 +582,8 @@ function FishGenerator({
         <Text size="2" weight="bold">
           Fish
         </Text>
-        <Button size="1" variant="ghost" color="gray" onClick={reset}>
-          Reset to defaults
+        <Button size="1" variant="ghost" color="gray" onClick={undo}>
+          Undo
         </Button>
       </Flex>
 
@@ -747,20 +696,54 @@ function FishGenerator({
   );
 }
 
-const SHOP_DEFAULTS = {
-  attackFn: DEFAULT_STAT_FN,
+const SHOP_DEFAULTS: {
+  attackFn: FunctionConfig;
+  attackVPL: number;
+  attackCount: number;
+  defenseFn: FunctionConfig;
+  defenseVPL: number;
+  defenseCount: number;
+  lureFn: FunctionConfig;
+  baitFn: FunctionConfig;
+  baitCount: number;
+  rodCount: number;
+  rodPurchaseFn: FunctionConfig;
+  rodHolderLevels: number;
+  rodHolderFn: FunctionConfig;
+} = {
+  attackFn: {
+    type: "LINEAR",
+    startValue: 20,
+    scaleFactor: 4,
+    growthRate: 0.8,
+  },
   attackVPL: 1,
   attackCount: 10,
-  defenseFn: DEFAULT_STAT_FN,
+  defenseFn: {
+    type: "LINEAR",
+    startValue: 20,
+    scaleFactor: 4,
+    growthRate: 0.8,
+  },
   defenseVPL: 1,
   defenseCount: 10,
-  lureFn: DEFAULT_LURE_FN,
-  baitFn: DEFAULT_BAIT_FN,
+  lureFn: { type: "LINEAR", startValue: 10, scaleFactor: 4, growthRate: 0.8 },
+  baitFn: { type: "LINEAR", startValue: 5, scaleFactor: 5, growthRate: 0.8 },
   baitCount: 1,
   rodCount: 1,
-  rodPurchaseFn: DEFAULT_ROD_PURCHASE_FN,
+  rodPurchaseFn: {
+    type: "LINEAR",
+    startValue: 50,
+    scaleFactor: 50,
+    growthRate: 0.8,
+  },
   rodHolderLevels: 3,
-  rodHolderFn: DEFAULT_ROD_HOLDER_FN,
+  rodHolderFn: {
+    type: "LINEAR",
+    startValue: 40,
+    scaleFactor: 40,
+    growthRate: 0.8,
+  },
 };
 
 function ShopGenerator({
@@ -773,6 +756,7 @@ function ShopGenerator({
   lureCount: number;
 }) {
   const stored = loadStored(SHOP_STORAGE_KEY, SHOP_DEFAULTS);
+  const initialRef = useRef(stored);
   const [attackFn, setAttackFn] = useState<FunctionConfig>(
     () => stored.attackFn,
   );
@@ -786,19 +770,17 @@ function ShopGenerator({
   const [defenseCount, setDefenseCount] = useState(() => stored.defenseCount);
 
   const [lureFn, setLureFn] = useState<FunctionConfig>(() => stored.lureFn);
-  const [baitFn, setBaitFn] = useState<FunctionConfig>(
-    () => stored.baitFn ?? DEFAULT_BAIT_FN,
-  );
-  const [baitCount, setBaitCount] = useState(() => stored.baitCount ?? 1);
-  const [rodCount, setRodCount] = useState(() => stored.rodCount ?? 1);
+  const [baitFn, setBaitFn] = useState<FunctionConfig>(() => stored.baitFn);
+  const [baitCount, setBaitCount] = useState(() => stored.baitCount);
+  const [rodCount, setRodCount] = useState(() => stored.rodCount);
   const [rodPurchaseFn, setRodPurchaseFn] = useState<FunctionConfig>(
-    () => stored.rodPurchaseFn ?? DEFAULT_ROD_PURCHASE_FN,
+    () => stored.rodPurchaseFn,
   );
   const [rodHolderLevels, setRodHolderLevels] = useState(
-    () => stored.rodHolderLevels ?? 3,
+    () => stored.rodHolderLevels,
   );
   const [rodHolderFn, setRodHolderFn] = useState<FunctionConfig>(
-    () => stored.rodHolderFn ?? DEFAULT_ROD_HOLDER_FN,
+    () => stored.rodHolderFn,
   );
 
   const rows = generateShopRows(
@@ -856,20 +838,20 @@ function ShopGenerator({
     rodHolderFn,
   ]);
 
-  function reset() {
-    setAttackFn(SHOP_DEFAULTS.attackFn);
-    setAttackVPL(SHOP_DEFAULTS.attackVPL);
-    setAttackCount(SHOP_DEFAULTS.attackCount);
-    setDefenseFn(SHOP_DEFAULTS.defenseFn);
-    setDefenseVPL(SHOP_DEFAULTS.defenseVPL);
-    setDefenseCount(SHOP_DEFAULTS.defenseCount);
-    setLureFn(SHOP_DEFAULTS.lureFn);
-    setBaitFn(SHOP_DEFAULTS.baitFn);
-    setBaitCount(SHOP_DEFAULTS.baitCount);
-    setRodCount(SHOP_DEFAULTS.rodCount);
-    setRodPurchaseFn(SHOP_DEFAULTS.rodPurchaseFn);
-    setRodHolderLevels(SHOP_DEFAULTS.rodHolderLevels);
-    setRodHolderFn(SHOP_DEFAULTS.rodHolderFn);
+  function undo() {
+    setAttackFn(initialRef.current.attackFn);
+    setAttackVPL(initialRef.current.attackVPL);
+    setAttackCount(initialRef.current.attackCount);
+    setDefenseFn(initialRef.current.defenseFn);
+    setDefenseVPL(initialRef.current.defenseVPL);
+    setDefenseCount(initialRef.current.defenseCount);
+    setLureFn(initialRef.current.lureFn);
+    setBaitFn(initialRef.current.baitFn);
+    setBaitCount(initialRef.current.baitCount);
+    setRodCount(initialRef.current.rodCount);
+    setRodPurchaseFn(initialRef.current.rodPurchaseFn);
+    setRodHolderLevels(initialRef.current.rodHolderLevels);
+    setRodHolderFn(initialRef.current.rodHolderFn);
   }
 
   return (
@@ -878,8 +860,8 @@ function ShopGenerator({
         <Text size="2" weight="bold">
           Shop
         </Text>
-        <Button size="1" variant="ghost" color="gray" onClick={reset}>
-          Reset to defaults
+        <Button size="1" variant="ghost" color="gray" onClick={undo}>
+          Undo
         </Button>
       </Flex>
 
@@ -1035,8 +1017,12 @@ function ShopGenerator({
 
 const DREAM_SHOP_STORAGE_KEY = "csvgen_dream_shop";
 
-const DREAM_SHOP_DEFAULTS = {
-  incomeFn: DEFAULT_DREAM_INCOME_FN,
+const DREAM_SHOP_DEFAULTS: {
+  incomeFn: FunctionConfig;
+  incomeVPL: number;
+  incomeCount: number;
+} = {
+  incomeFn: { type: "LINEAR", startValue: 2, scaleFactor: 1, growthRate: 0.8 },
   incomeVPL: 10,
   incomeCount: 5,
 };
@@ -1049,6 +1035,7 @@ function DreamShopGenerator({
   showPreview: boolean;
 }) {
   const stored = loadStored(DREAM_SHOP_STORAGE_KEY, DREAM_SHOP_DEFAULTS);
+  const initialRef = useRef(stored);
   const [incomeFn, setIncomeFn] = useState<FunctionConfig>(
     () => stored.incomeFn,
   );
@@ -1066,10 +1053,10 @@ function DreamShopGenerator({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [incomeFn, incomeVPL, incomeCount]);
 
-  function reset() {
-    setIncomeFn(DREAM_SHOP_DEFAULTS.incomeFn);
-    setIncomeVPL(DREAM_SHOP_DEFAULTS.incomeVPL);
-    setIncomeCount(DREAM_SHOP_DEFAULTS.incomeCount);
+  function undo() {
+    setIncomeFn(initialRef.current.incomeFn);
+    setIncomeVPL(initialRef.current.incomeVPL);
+    setIncomeCount(initialRef.current.incomeCount);
   }
 
   return (
@@ -1078,8 +1065,8 @@ function DreamShopGenerator({
         <Text size="2" weight="bold">
           Dream Shop
         </Text>
-        <Button size="1" variant="ghost" color="gray" onClick={reset}>
-          Reset to defaults
+        <Button size="1" variant="ghost" color="gray" onClick={undo}>
+          Undo
         </Button>
       </Flex>
 
@@ -1146,9 +1133,9 @@ export function getGeneratedFishRows(): string[][] {
     attackFn,
     defenseFn,
     priceFn,
-    baitAttackFn ?? DEFAULT_BAIT_ATTACK_FN,
-    baitDefenseFn ?? DEFAULT_BAIT_DEFENSE_FN,
-    baitPriceFn ?? DEFAULT_BAIT_PRICE_FN,
+    baitAttackFn,
+    baitDefenseFn,
+    baitPriceFn,
     variance,
     levels,
   );
@@ -1187,8 +1174,8 @@ export function getGeneratedShopRows(): string[][] {
     baitCount,
     rodCount,
     rodPurchaseFn,
-    rodHolderFn ?? DEFAULT_ROD_HOLDER_FN,
-    rodHolderLevels ?? 3,
+    rodHolderFn,
+    rodHolderLevels,
   );
 }
 
