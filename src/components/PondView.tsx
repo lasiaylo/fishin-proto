@@ -391,6 +391,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     if (result === Outcome.WIN) {
       incrementTotalFishCaught();
       addFishToInventory(fish, effectivePrice);
+      incrementTotalFishCaught();
       const msg = EventMsg.CAUGHT(fish.name);
       pushEvent(
         msg[0],
