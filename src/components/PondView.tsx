@@ -571,21 +571,23 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
                         );
                       })}
                     </Select.Group>
-                    <Select.Group>
-                      <Select.Label>lures</Select.Label>
-                      {ownedLureList.map((u) => {
-                        const lvl = lureXpData[u.id]?.level ?? 0;
-                        return (
-                          <Select.Item
-                            key={u.id}
-                            value={u.id}
-                            style={{ paddingLeft: "var(--space-6)" }}
-                          >
-                            {u.name}
-                          </Select.Item>
-                        );
-                      })}
-                    </Select.Group>
+                    {ownedLureList.length > 0 && (
+                      <Select.Group>
+                        <Select.Label>lures</Select.Label>
+                        {ownedLureList.map((u) => {
+                          const lvl = lureXpData[u.id]?.level ?? 0;
+                          return (
+                            <Select.Item
+                              key={u.id}
+                              value={u.id}
+                              style={{ paddingLeft: "var(--space-6)" }}
+                            >
+                              {u.name}
+                            </Select.Item>
+                          );
+                        })}
+                      </Select.Group>
+                    )}
                   </Select.Content>
                 </Select.Root>
               </Flex>
