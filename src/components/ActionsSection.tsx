@@ -19,14 +19,15 @@ export function ActionsSection() {
     if (value === "shop") {
       const { inventory, wallet, lineHP, inventorySize, incomeBoostPercent } =
         usePlayer.getState();
-      if (inventory.length > 0) {
+      const sold = inventory.filter((fish) => !fish.locked);
+      if (sold.length > 0) {
         useSessionLog.getState().finalizeRound(wallet, {
           lineHP,
           inventorySize,
           incomeBoostPercent,
         });
         sellAllFish();
-        inventory.forEach((fish, i) =>
+        sold.forEach((fish, i) =>
           setTimeout(() => {
             const msg = EventMsg.SOLD_FISH(fish.fish.name, fish.effectivePrice);
             pushEvent(msg[0], msg[1], RARITY_COLOR[fish.rarity]);

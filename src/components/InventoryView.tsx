@@ -1,6 +1,6 @@
 import { Code, Flex, Progress, Separator, Text } from "@radix-ui/themes";
 import React, { useEffect, useRef, useState } from "react";
-import { usePlayer } from "../stores/playerStore";
+import { toggleFishLock, usePlayer } from "../stores/playerStore";
 import { useBaitData } from "../stores/baitStore";
 import { useShop } from "../stores/shopStore";
 import { useDreamStore } from "../stores/dreamStore";
@@ -9,6 +9,7 @@ import {
   computeDreamPointsProgress,
   CURRENCY_SYMBOL,
   DREAM_POINT_SYMBOL,
+  LOCK_SYMBOL,
   RARITY_COLOR,
 } from "../util/constants";
 import { StatName } from "../util/csvLoader";
@@ -36,6 +37,7 @@ export function InventoryView() {
   const [popup, setPopup] = useState<{ amount: number; key: number } | null>(
     null,
   );
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const diff = wallet - prevWalletRef.current;
@@ -80,13 +82,18 @@ export function InventoryView() {
       <Flex direction="column" gap="1">
         {Array.from({ length: inventorySize }).map((_, i) => {
           const item = inventory[i];
+          const showLock = item && (item.locked || hoveredIndex === i);
           return (
             <Code
               key={i}
               size="1"
               color={item ? RARITY_COLOR[item.rarity] : "gray"}
+              onClick={item ? () => toggleFishLock(i) : undefined}
+              onMouseEnter={item ? () => setHoveredIndex(i) : undefined}
+              onMouseLeave={item ? () => setHoveredIndex(null) : undefined}
+              style={item ? { cursor: "pointer" } : undefined}
             >
-              {item ? `${item.fish.name}` : "—"}
+              {item ? `${showLock ? `${LOCK_SYMBOL} ` : ""}${item.fish.name}` : "—"}
             </Code>
           );
         })}
