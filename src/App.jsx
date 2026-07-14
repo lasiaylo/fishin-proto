@@ -60,6 +60,7 @@ function App() {
 
   useEffect(() => {
     function handleKey(e) {
+      if (e.repeat) return;
       if (e.key === "`")
         setShowDebug((prev) => {
           const next = !prev;

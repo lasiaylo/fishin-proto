@@ -26,9 +26,8 @@ export const useFriend = create<FriendState>(() => ({
 }));
 
 export function npcLogin(name: string) {
-  useFriend.setState((s) =>
-    s.chatroom.includes(name) ? s : { chatroom: [...s.chatroom, name] },
-  );
+  if (useFriend.getState().chatroom.includes(name)) return;
+  useFriend.setState((s) => ({ chatroom: [...s.chatroom, name] }));
   pushEvent(EventMsg.NPC_LOGIN(name));
 }
 

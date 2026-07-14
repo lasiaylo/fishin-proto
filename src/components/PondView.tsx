@@ -389,15 +389,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     }
 
     if (result === Outcome.WIN) {
-      incrementTotalFishCaught();
       addFishToInventory(fish, effectivePrice);
-      incrementTotalFishCaught();
-      const msg = EventMsg.CAUGHT(fish.name);
-      pushEvent(
-        msg[0],
-        msg[1],
-        fish.rarity ? RARITY_COLOR[fish.rarity] : undefined,
-      );
     } else {
       pushEvent(EventMsg.ESCAPED);
     }
@@ -410,7 +402,9 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
   }
 
   function handleCastRelease(chargePercent: number) {
-    incrementTotalCasts();
+    const { rodSlotItems: castItems } = usePlayer.getState();
+    const castItem = castItems[slotIndex] ?? BASE_BAIT_ID;
+    incrementTotalCasts(castItem);
     const locationId = Object.keys(locations)[0];
     const t = chargePercent / 100;
     const assignedRod = ownedRods.find((r) => r.id === assignment);
@@ -630,9 +624,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
 
 export function PondView() {
   const rodCount = usePlayer((s) => s.rodSlotAssignments.length);
-  const isCoolerFull = usePlayer(
-    (s) => s.inventory.length >= s.inventorySize,
-  );
+  const isCoolerFull = usePlayer((s) => s.inventory.length >= s.inventorySize);
 
   return (
     <Flex className="fade-in" width="100%" direction="column" gap="4" p="3">

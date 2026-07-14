@@ -6,9 +6,13 @@ import {
   getTackleType,
   INITIAL_PLAYER_STATE,
   Rarity,
+  RARITY_COLOR,
   Rod,
   TackleType,
 } from "../util/constants";
+import { incrementTotalFishCaught } from "./metricsStore";
+import { EventMsg } from "../util/eventMessages";
+import { pushEvent } from "./eventLogStore";
 
 export interface PlayerStats {
   lineHP: number;
@@ -163,6 +167,13 @@ export function addFishToInventory(fish: FishData, effectivePrice: number) {
       ],
     };
   });
+  const msg = EventMsg.CAUGHT(fish.name);
+  pushEvent(
+    msg[0],
+    msg[1],
+    fish.rarity ? RARITY_COLOR[fish.rarity] : undefined,
+  );
+  incrementTotalFishCaught();
 }
 
 export function toggleFishLock(index: number) {

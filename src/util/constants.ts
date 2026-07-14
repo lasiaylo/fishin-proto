@@ -30,7 +30,7 @@ export interface Rod {
 export const INITIAL_PLAYER_STATE: PlayerState = {
   wallet: 0,
   lineHP: 20,
-  inventorySize: 3,
+  inventorySize: 4,
   incomeBoostPercent: 0,
   ownedLures: new Set<string>(),
   baitInventory: { [BASE_BAIT_ID]: BAIT_START_COUNT },
