@@ -585,6 +585,13 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
                   </Select.Content>
                 </Select.Root>
               </Flex>
+              {selectedItem !== null && (
+                <Flex align="center" gap="2">
+                  <Text size="1" color="gray">
+                    {getTackleType(selectedItem)}
+                  </Text>
+                </Flex>
+              )}
               {selectedItem !== null &&
                 getTackleType(selectedItem) === TackleType.LURE && (
                 <Flex align="center" gap="2">
