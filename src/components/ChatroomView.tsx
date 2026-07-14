@@ -63,14 +63,17 @@ export function ChatroomView() {
   return (
     <Flex direction="column" gap="3" width="200px">
       <Separator size={"4"} />
-      <Text size={"1"} style={{ textDecoration: "underline" }}>
-        the pond
-      </Text>
+      <Text size={"1"}>the pond</Text>
       <Flex direction="column" gap="1">
         {chatroom.map((name) => (
           <HoverCard.Root key={name}>
             <HoverCard.Trigger>
-              <Text className="fade-in" size="1" color="gray">
+              <Text
+                className="fade-in"
+                size="1"
+                color="gray"
+                style={{ textDecoration: "underline" }}
+              >
                 {name}
               </Text>
             </HoverCard.Trigger>
