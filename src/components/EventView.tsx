@@ -11,6 +11,7 @@ export function EventView() {
       mt="6"
       direction="column"
       flexShrink="0"
+      height="300px"
       maxHeight="300px"
       width="200px"
       gap={"5"}
