@@ -3,41 +3,23 @@ import React, { useEffect, useRef, useState } from "react";
 import { usePlayer } from "../stores/playerStore";
 import { useBaitData } from "../stores/baitStore";
 import { useShop } from "../stores/shopStore";
-import { phaseForElapsed, tickDay, useDayStore } from "../stores/dayStore";
+import { useDreamStore } from "../stores/dreamStore";
 import {
+  computeDreamPoints,
+  computeDreamPointsProgress,
   CURRENCY_SYMBOL,
-  DAY_DURATION_MS,
   RARITY_COLOR,
 } from "../util/constants";
 import { StatName } from "../util/csvLoader";
 import { AnimatedNumber } from "./AnimatedNumber";
 import { TipView } from "./TipView";
 
-const DAY_PHASE_LABEL: Record<string, string> = {
-  NIGHT: "night",
-  DAWN: "dawn",
-  SUNRISE: "sunrise",
-};
-
 export function InventoryView() {
   const wallet = usePlayer((s) => s.wallet);
-  const dayNumber = useDayStore((s) => s.dayNumber);
-  const dayStartTime = useDayStore((s) => s.dayStartTime);
-
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => {
-      const t = Date.now();
-      setNow(t);
-      tickDay(t);
-    }, 60000);
-    return () => clearInterval(id);
-  }, []);
-
-  const elapsed = Math.max(0, now - dayStartTime);
-  const elapsedPct =
-    (Math.min(elapsed, DAY_DURATION_MS) / DAY_DURATION_MS) * 100;
-  const dayPhase = phaseForElapsed(elapsed);
+  const cumulativeMoneyEarned = useDreamStore((s) => s.cumulativeMoneyEarned);
+  const lvl = computeDreamPoints(cumulativeMoneyEarned);
+  const lvlProgress = computeDreamPointsProgress(cumulativeMoneyEarned);
+  const lvlProgressPct = Math.round(lvlProgress.fraction * 100);
 
   const inventory = usePlayer((s) => s.inventory);
   const inventorySize = usePlayer((s) => s.inventorySize);
@@ -73,19 +55,10 @@ export function InventoryView() {
     >
       <Flex direction="column" gap="1">
         <Text size="1" color="gray">
-          day {dayNumber} · {DAY_PHASE_LABEL[dayPhase] ?? dayPhase}
+          LVL {lvl}
         </Text>
 
-        <Progress
-          radius="none"
-          size="2"
-          value={elapsedPct}
-          style={
-            {
-              "--accent-track": `color-mix(in srgb, var(--gray-11) ${elapsedPct}%, var(--gray-6))`,
-            } as React.CSSProperties
-          }
-        />
+        <Progress radius="none" size="2" value={lvlProgressPct} />
       </Flex>
 
       <Flex width={"100%"} direction={"column"}>

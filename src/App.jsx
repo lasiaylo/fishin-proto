@@ -8,8 +8,6 @@ import { ActionsSection } from "./components/ActionsSection";
 import { Debug } from "./components/debug";
 import { initShop, initShopFromRows } from "./stores/shopStore";
 import { initDreamShop } from "./stores/dreamShopStore";
-import { advanceTime, forceEndDay, useDayStore } from "./stores/dayStore";
-import { EndOfDayPopup } from "./components/EndOfDayPopup";
 import { initFish, initFishFromData } from "./stores/fishStore";
 import { initLocations } from "./stores/locationStore";
 import { initBaitData } from "./stores/baitStore";
@@ -34,7 +32,6 @@ function App() {
   const [showDebug, setShowDebug] = useState(
     () => localStorage.getItem("debug_panel_open") === "true",
   );
-  const isEndOfDay = useDayStore((s) => s.isEndOfDay);
 
   useEffect(() => {
     const { fishCSV, shopCSV } = useCsvConfig.getState();
@@ -68,11 +65,6 @@ function App() {
           localStorage.setItem("debug_panel_open", next);
           return next;
         });
-      if (e.key === "Escape") forceEndDay();
-      if (e.key === "Tab") {
-        e.preventDefault();
-        advanceTime(5 * 60 * 1000);
-      }
       if (e.key === "n") npcLogin(FRIEND_NPC_NAME);
       if (e.key === "m") openGiftRequest();
     }
@@ -97,7 +89,6 @@ function App() {
         <ActionsSection />
         <InventoryView />
       </Flex>
-      {isEndOfDay && <EndOfDayPopup />}
       {showDebug && (
         <div
           style={{

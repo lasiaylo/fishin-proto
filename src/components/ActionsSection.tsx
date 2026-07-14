@@ -1,21 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Flex, Tabs } from "@radix-ui/themes";
 import { ShopView } from "./ShopView";
 import { PondView } from "./PondView";
+import { DreamShopView } from "./DreamShopView";
 import { sellAllFish, usePlayer } from "../stores/playerStore";
 import { pushEvent } from "../stores/eventLogStore";
 import { useSessionLog } from "../stores/sessionLogStore";
-import { useDayStore } from "../stores/dayStore";
 import { RARITY_COLOR } from "../util/constants";
 import { EventMsg } from "../util/eventMessages";
 
 export function ActionsSection() {
   const [tab, setTab] = useState("pond");
-  const dayNumber = useDayStore((s) => s.dayNumber);
-
-  useEffect(() => {
-    setTab("pond");
-  }, [dayNumber]);
 
   function handleTabChange(value: string) {
     if (value === "shop") {
@@ -45,6 +40,7 @@ export function ActionsSection() {
         <Tabs.List>
           <Tabs.Trigger value="pond">pond</Tabs.Trigger>
           <Tabs.Trigger value="shop">shop</Tabs.Trigger>
+          <Tabs.Trigger value="dream">dream</Tabs.Trigger>
         </Tabs.List>
         <Tabs.Content value="pond">
           <Flex className={"fade-in"}>
@@ -54,6 +50,11 @@ export function ActionsSection() {
         <Tabs.Content value="shop">
           <Flex className={"fade-in"}>
             <ShopView />
+          </Flex>
+        </Tabs.Content>
+        <Tabs.Content value="dream">
+          <Flex className={"fade-in"}>
+            <DreamShopView />
           </Flex>
         </Tabs.Content>
       </Tabs.Root>

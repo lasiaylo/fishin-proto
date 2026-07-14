@@ -1,6 +1,6 @@
 import { loadShopData, ShopCsvLocation } from "../util/csvLoader";
 import { createUpgradeStore } from "./upgradeStoreFactory";
-import { deductDreamPoints, useDayStore } from "./dayStore";
+import { deductDreamPoints, useDreamStore } from "./dreamStore";
 
 const DREAM_SHOP_LOCATION: ShopCsvLocation = {
   folder: "Dream",
@@ -18,7 +18,7 @@ const {
   resetAllUpgradesDebug: resetAllDreamUpgradesDebug,
 } = createUpgradeStore({
   storageKey: "debug_dream_upgrade_levels",
-  getCurrency: () => useDayStore.getState().dreamPoints,
+  getCurrency: () => useDreamStore.getState().dreamPoints,
   deductCurrency: deductDreamPoints,
 });
 

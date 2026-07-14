@@ -21,7 +21,6 @@ import { FightEngine, FightState, Outcome } from "../game/FightEngine";
 import { useSessionLog } from "../stores/sessionLogStore";
 import { addLureXp, lureXpProgress, useLureXp } from "../stores/lureXpStore";
 import { useShop } from "../stores/shopStore";
-import { recordCatch, setFighting, useDayStore } from "../stores/dayStore";
 import { useBaitData } from "../stores/baitStore";
 import { getRodStats } from "../stores/rodStore";
 import {
@@ -82,7 +81,6 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
   const lureXpData = useLureXp((s) => s.lures);
   const locations = useLocation();
   const baitData = useBaitData((s) => s.baitData);
-  const isEndOfDay = useDayStore((s) => s.isEndOfDay);
 
   const assignment = rodSlotAssignments[slotIndex] ?? null;
   const selectedItem = rodSlotItems[slotIndex] ?? BASE_BAIT_ID;
@@ -144,14 +142,8 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
       cancelAnimationFrame(rafRef.current);
       cancelAnimationFrame(luringRafRef.current);
       castTweenRef.current?.kill();
-      setFighting(slotIndex, false);
     };
   }, [slotIndex]);
-
-  useEffect(() => {
-    if (isEndOfDay) castTweenRef.current?.pause();
-    else castTweenRef.current?.play();
-  }, [isEndOfDay]);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -226,12 +218,6 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     setLuringDistance(initialDistance);
 
     function loop(timestamp: number) {
-      if (useDayStore.getState().isEndOfDay) {
-        luringLastTimeRef.current = timestamp;
-        luringRafRef.current = requestAnimationFrame(loop);
-        return;
-      }
-
       if (luringLastTimeRef.current === null)
         luringLastTimeRef.current = timestamp;
       const dt = Math.min((timestamp - luringLastTimeRef.current) / 1000, 0.1);
@@ -311,7 +297,6 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     hookXpRef.current =
       (castDistanceRef.current - luringDistanceRef.current) * XP_PER_DISTANCE;
     setGameState(GameState.Fighting);
-    setFighting(slotIndex, true);
 
     const {
       rodSlotAssignments: assignments,
@@ -344,12 +329,6 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     setFightState({ ...fightRef.current.tick(0, false) });
 
     function loop(timestamp: number) {
-      if (useDayStore.getState().isEndOfDay) {
-        lastTimeRef.current = timestamp;
-        rafRef.current = requestAnimationFrame(loop);
-        return;
-      }
-
       if (lastTimeRef.current === null) lastTimeRef.current = timestamp;
       const dt = Math.min((timestamp - lastTimeRef.current) / 1000, 0.1);
       lastTimeRef.current = timestamp;
@@ -404,7 +383,6 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
 
     if (result === Outcome.WIN) {
       addFishToInventory(fish, effectivePrice);
-      recordCatch();
       const msg = EventMsg.CAUGHT(fish.name);
       pushEvent(
         msg[0],
@@ -415,7 +393,6 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
       pushEvent(EventMsg.ESCAPED);
     }
 
-    setFighting(slotIndex, false);
     setFading(true);
     setTimeout(() => {
       setGameState(GameState.Idle);
@@ -460,11 +437,11 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
 
   const baitCount = baitInventory[selectedItem] ?? 0;
   const castDisabled =
-    invCount >= inventorySize || (isWaitType && baitCount === 0) || isEndOfDay;
+    invCount >= inventorySize || (isWaitType && baitCount === 0);
 
   let controls: React.ReactNode;
   if (gameState === GameState.Idle) {
-    if (assignment === null || isEndOfDay) {
+    if (assignment === null) {
       controls = null;
     } else if (invCount >= inventorySize) {
       controls = <Text size="1">the cooler is full</Text>;

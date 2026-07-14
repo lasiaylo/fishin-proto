@@ -49,18 +49,8 @@ export const LURE_LEVEL_XP = Array(5)
   .map((n, i) => Math.ceil(n * XP_GROWTH ** i));
 
 // ==========================================================================
-// DAY CYCLE
+// DREAM POINTS
 // ==========================================================================
-export const DAY_DURATION_MS = 15 * 60 * 1000;
-
-export enum DayPhase {
-  NIGHT = "NIGHT",
-  DAWN = "DAWN",
-  SUNRISE = "SUNRISE",
-}
-
-export const DAY_PHASE_BOUNDARIES_MS = [5, 12, 15].map((m) => m * 60 * 1000);
-
 const START_DREAM_MONEY = 1000;
 const DREAM_MONEY_GROWTH = 1.5;
 export const DREAM_POINT_MONEY_THRESHOLDS = Array(10)
