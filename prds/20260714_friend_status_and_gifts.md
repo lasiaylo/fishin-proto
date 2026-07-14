@@ -1,81 +1,82 @@
-# PRD: Friend
+# PRD: Gifting Friends
 ## Context
 
-A large part of fishing is the oral exchange of knowledge that is learned only through experience. I want this game to reflect on this experience, allowing players to feel like they've both grown in the game and also as a player. Alongside this, I want to experiment on the feeling of parallel play. 
-To first start testing this feeling, I want to introduce an NPC that will parallel play with the player, offering them tips and gifts as they help each other out in their journey.
+Right now, when an NPC logs in, their name just shows up in the chatroom. Nothing else happens, however. In real life, friends in a chatroom are always doing something.
+
+This PRD outlines features that'll make NPCs feel more lively and give players more chances to interact with them.
 
 ## Requirements
-- Chatroom List:
-  - Underneath the event log, show a current list of all active players at a location.
-  - Whenever an NPC joins, show their name "Big Ghost" in the chatroom
-- Gift request:
-  - At certain points, an NPC will open a gift request to the player. Show this as an alert under the chatroom interface. The player can choose to accept or ignore it.
-  - Accepting a gift will post an event to the event log and add the gift to the player's inventory.
-- Tips:
-  - The NPC can gift a tip, which will show up in the player's InventoryView
-  - The TipView will show a list of collected tip titles. Hovering over a title will show a popup of the full tip.
+- Chat Room Popup
+  - Hovering over an NPC's name will show a pop-up.
+  - This popup will:
+    - Show what the NPC is currently doing (use dummy text for now).
+    - Their gift availability 
+    - Gift button
+- Gifts
+  - NPCs will be available to be gifted to every 7 minutes. 
+  - Clicking the Gift Button in the Chatroom popup show a popup for gifting. Players can give any one fish currently in their cooler.
+  - Giving a gift does nothing for now, but let's keep track of gifted fish.
 
-Both the NPC logging in and the Gift request will be triggered at certain points in the game (i.e. after 10 casts).  I haven't quite figured that out yet, so let's have these events trigger only on button presses:
-- n -> NPC logs in
-- m -> NPC opens a gift request containing a tip
-
+- Inventory Locking
+  - Clicking on a fish in the cooler "locks" it, preventing it from being sold.
+  - Clicking on a locked fish "unlocks" it, making it able to be sold.
+  - Locked fish have a lock icon next to them. 
+  - Hovering over an unlocked fish shows the lock icon.
+ 
 ## Solution
 
-**Tips are a static CSV catalog, like everything else.** A new top-level `public/data/Tips.csv` (columns: `id,title,text`) holds the flavor content — no gameplay/display split like `Fish`/`Shop`/`Bait` need, since a tip has no numeric stat, only a title and a body. A new `src/stores/tipStore.ts` (`useTipData`, `initTipData()`) loads it once at startup the same way `baitStore`/`rodStore`/`fishStore` load their static catalogs, via a new `loadTipData()` in `csvLoader.ts` following the existing `loadBaitData` shape (single fetch + `parseCSV`, no display-map merge needed).
+**The chatroom popup is a Radix `HoverCard`, not the `Tooltip` `MyButton`/`TipView` already use.** `Tooltip` is reserved for inert text in this codebase; the popup here needs to host a clickable Gift button, and Radix's `Tooltip` isn't meant to hold interactive children on hover. `HoverCard` is the primitive built for exactly this ("hover reveals a rich, interactive popover"), so it's a new import but the natural fit rather than stretching `Tooltip`. In `ChatroomView.tsx`, each name in the `chatroom` roster gets wrapped in `HoverCard.Root`/`HoverCard.Trigger`/`HoverCard.Content` instead of a plain `Text` row. `HoverCard.Content` renders three things stacked in a `Flex direction="column"`: a dummy activity line (new `NPC_ACTIVITY_DUMMY = "watching their line"` constant — there's only one NPC and the PRD says dummy text is fine, so no per-NPC activity table yet), a gift-availability line, and a `MyButton` labeled "gift".
 
-**`friendStore` holds the mutable NPC/chat state**, separate from the static tip catalog — mirroring the existing split between a static `*Data` store and the mutable state that references it (e.g. `baitStore` vs. `baitInventory` on `playerStore`). It tracks: `chatroom: string[]` (names currently "present" — starts empty, gains `"Big Ghost"` once the NPC logs in), `pendingGift: { tipId: string } | null` (at most one open request at a time), and `collectedTipIds: string[]` (accepted tips, in acceptance order — this is what `TipView` reads). `FRIEND_NPC_NAME = "Big Ghost"` lives in `constants.ts`; there's only one NPC today so it isn't data-driven.
+**Gift availability is a 7-minute cooldown keyed by NPC name, computed the same way in both the hover-card label and the button's disabled state.** `friendStore` gains `lastGiftedAt: Record<string, number>` (ms timestamp of the last successful gift to that name; an absent key means "never gifted, always available" — mirrors how `chatroom` already keys presence off the name string rather than an NPC id, since there's still only one NPC type). A new `GIFT_COOLDOWN_MS = 7 * 60 * 1000` constant lives in `constants.ts` next to the other timing constants. `friendStore` exports a pure helper `isGiftAvailable(name, now = Date.now())` so `ChatroomView` and the gift button both derive the same true/false instead of duplicating the arithmetic. Because the popover only exists while the `HoverCard.Content` is mounted, a live "available in Xm Ys" countdown can use a plain `useEffect` + `setInterval(1000)` scoped to that content (no new global ticking timer) — the interval starts on mount and is cleared on unmount, which Radix already handles by mounting/unmounting `HoverCard.Content` on hover in/out.
 
-**Chatroom UI sits directly under `EventView`.** A new `ChatroomView.tsx` renders the `chatroom` roster as a plain list (same `Text size="1" color="gray"` styling as `EventView`'s event lines, for visual continuity), and, when `pendingGift` is set, an inline alert block beneath the roster with "accept"/"ignore" `MyButton`s — not a full-screen overlay like `EndOfDayPopup`, since the PRD calls for it to sit "under the chatroom interface" as part of the same small side panel, not interrupt play. `App.jsx` wraps `EventView` and the new `ChatroomView` in a column `Flex` so they stack in the same left-hand slot, while `ActionsSection`/`InventoryView` remain unaffected siblings.
+**Clicking "gift" opens a new `GiftDialog.tsx`, a Radix `Dialog` (also new to the codebase) rather than another `HoverCard`.** Picking one of several fish is a deliberate, modal choice — not a glanceable hover — so it gets its own component and its own open/close state (`giftDialogOpen`, local to `ChatroomView`, the same lightweight local-`useState` pattern `InventoryView` already uses for its sale popup). `GiftDialog` reads `usePlayer((s) => s.inventory)` (the cooler) and renders one row per fish with the same `Code`/`RARITY_COLOR` styling `InventoryView` uses for the cooler list; an empty cooler renders a single "cooler is empty" row instead of blank space. Clicking a row calls `giftFish(name, index)` and closes the dialog.
 
-**Accepting a gift moves a tip id into `collectedTipIds` and posts an event; ignoring just clears `pendingGift`.** Since the only gift content this PRD implements is a tip, `pendingGift` models that directly (`{ tipId }`) rather than introducing a generic `Gift`/`Item` type for a single case — there's no other content type to unify against yet. `acceptGift()` appends to `collectedTipIds`, clears `pendingGift`, and calls `pushEvent(EventMsg.GIFT_ACCEPTED(tip.title))` (new `EventMsg` entry, colored like the existing `CAUGHT`/`SOLD_FISH` two-part messages). `ignoreGift()` only clears `pendingGift` — no event, no inventory change.
+**`giftFish` is a new friendStore action, deliberately not reusing `acceptGift`.** `acceptGift`/`pendingGift` (from the earlier friend PRD) model the NPC gifting *the player* a tip and log an event; `giftFish` models the reverse direction — the player gifting the NPC a fish — and per this PRD "does nothing for now," so it must NOT push an event or touch the wallet, unlike `acceptGift`. `giftFish(name, index)` no-ops if `!isGiftAvailable(name)` or `inventory[index]` doesn't exist; otherwise it calls a new `removeFishFromInventory(index)` in `playerStore` (playerStore owns `inventory`, so it — not friendStore — is responsible for mutating it; today only bulk `sellAllFish()` exists, there's no per-slot removal yet), appends the removed fish to a new `giftedFish: InventoryFish[]` array in `friendStore` state (this is the "let's keep track of gifted fish" requirement — an append-only log, same shape as `collectedTipIds` tracking accepted tips), and sets `lastGiftedAt[name] = Date.now()`.
 
-**`TipView` is a new component mounted inside `InventoryView`**, as a fourth stacked section alongside "cooler" and "tackle box." It maps `collectedTipIds` to their `tipStore` titles and renders each as a `Text` row wrapped in a Radix `Tooltip` (the same primitive `MyButton` already uses for its hover description) showing the tip's full `text` on hover — no new hover/popup mechanism needed.
+**Inventory locking reuses the cooler rows `InventoryView` already renders, adding click-to-toggle instead of a new list.** `InventoryFish` (in `playerStore.ts`) gains a `locked: boolean` field, defaulted `false` in `addFishToInventory`. A new `toggleFishLock(index)` flips it. The cooler `Code` rows in `InventoryView` become clickable (`onClick={() => toggleFishLock(i)}`); a new `LOCK_SYMBOL` constant (single-glyph, matching the existing `CURRENCY_SYMBOL`/`DREAM_POINT_SYMBOL` convention) renders next to a row when `item.locked` is true, and next to an unlocked row only while hovered — tracked with a local `hoveredIndex` state and `onMouseEnter`/`onMouseLeave`, the same scale of local state `InventoryView` already keeps for its sale-amount popup.
 
-**The two debug hotkeys slot into `App.jsx`'s existing `handleKey`**, alongside the `` ` `` and `Escape` `if` blocks (no switch refactor, no new listener): `n` calls `friendStore.npcLogin(FRIEND_NPC_NAME)` (adds to `chatroom` if not already present, and posts an `EventMsg.NPC_LOGIN` event — same pairing of "state change + event log entry" already used for other actions in this file); `m` calls `friendStore.openGiftRequest()`, which picks the first `tipStore` entry not already in `collectedTipIds` and sets it as `pendingGift` (a no-op, matching `forceEndDay`'s already-true no-op, if a gift is already pending or every tip has been collected).
+**Locking must actually block the sale, which means touching `sellAllFish` and its one caller.** `sellAllFish()` (in `playerStore.ts`) currently sells and clears the entire `inventory` unconditionally. It's changed to partition `inventory` into locked/unlocked, sum and pay out only the unlocked subset, and keep the locked fish in `inventory` afterward. Its only caller, `ActionsSection.tsx`'s `handleTabChange`, snapshots `inventory` before calling `sellAllFish()` and then loops over it to push a `SOLD_FISH` event per fish (`src/components/ActionsSection.tsx:29`) — that loop must filter to `!fish.locked` too, or a locked fish that didn't actually sell would still log a false "sold" event.
 
 ```
-'n' ──► friendStore.npcLogin("Big Ghost") ──► chatroom: [...,"Big Ghost"]  ──► event log: "Big Ghost joined"
-                                                        │
-                                              ChatroomView renders roster
+hover "big ghost" ──► HoverCard.Content mounts
+                            │
+              ┌─────────────┼──────────────────┐
+        activity text   isGiftAvailable()   gift button
+        (dummy string)   label + countdown       │
+                                                click
+                                                   │
+                                        GiftDialog opens, lists cooler
+                                                   │
+                                          click a fish row
+                                                   │
+                                    giftFish(name, index)
+                                          │              │
+                          removeFishFromInventory(index)  giftedFish += fish
+                                                          lastGiftedAt[name] = now
 
-'m' ──► friendStore.openGiftRequest() ──► pendingGift = { tipId }
-                                                        │
-                                        ChatroomView shows accept/ignore alert
-                                            ┌───────────┴────────────┐
-                                       accept()                  ignore()
-                                            │                         │
-                              collectedTipIds += tipId          pendingGift = null
-                              pendingGift = null
-                              event log: "received a tip: <title>"
-                                            │
-                                     TipView (in InventoryView)
-                              lists collected titles; hover ──► full text (Tooltip)
+click cooler row (InventoryView) ──► toggleFishLock(i) ──► item.locked flips
+                                                                  │
+                                            sellAllFish() skips locked fish
 ```
 
-This feature has no timing, bite-probability, XP, or fight-outcome effect — chatroom presence, gift requests, and tips are flavor/side systems triggered only by debug hotkeys for now, with no wallet or fish-catch impact — so per the `CLAUDE.md` sync rule, no `EconomyModel.ts` changes are needed for this phase.
+Neither system changes per-cast timing, bite probability, XP, or fight-outcome math — gifting only moves a fish that was already caught out of the cooler without paying for it (an opt-in player choice, not a change to the expected-value formulas `EconomyModel.ts` computes), and locking only delays when a fish is sold. Per the `CLAUDE.md` sync rule, no `EconomyModel.ts` changes are needed for this phase.
 
 ## Implementation Plan
 
-### Phase 1 — Tips data + static catalog
-**`public/data/Tips.csv`** (new): `id,title,text` rows, a handful of sample tips.
-**`src/util/csvLoader.ts`**: add `TipData { id, title, text }` interface and `loadTipData()`, following `loadBaitData`'s single-fetch-plus-`parseCSV` shape (no display-map merge).
-**`src/stores/tipStore.ts`** (new): `useTipData` holding the loaded `TipData[]`, plus `initTipData()` called from `App.jsx`'s startup `useEffect` alongside the other `init*` calls.
+### Phase 1 — Inventory locking
+**`src/util/constants.ts`**: add `LOCK_SYMBOL` (single glyph, alongside `CURRENCY_SYMBOL`/`DREAM_POINT_SYMBOL`).
+**`src/stores/playerStore.ts`**: add `locked: boolean` to `InventoryFish` (default `false` in `addFishToInventory`); add `toggleFishLock(index: number)`; change `sellAllFish()` to only sell+remove fish where `!locked`, leaving locked fish in `inventory`.
+**`src/components/ActionsSection.tsx`**: filter the pre-`sellAllFish()` inventory snapshot to `!fish.locked` before looping to push `SOLD_FISH` events (`handleTabChange`, around line 29).
+**`src/components/InventoryView.tsx`**: make each cooler `Code` row clickable (`toggleFishLock(i)`); add local `hoveredIndex` state; render `LOCK_SYMBOL` next to a row when `item.locked` or when `hoveredIndex === i`.
 
-### Phase 2 — `friendStore`
-**`src/util/constants.ts`**: add `FRIEND_NPC_NAME = "Big Ghost"`.
-**`src/stores/friendStore.ts`** (new): state — `chatroom: string[]`, `pendingGift: { tipId: string } | null`, `collectedTipIds: string[]`.
-- `npcLogin(name)` — appends `name` to `chatroom` if not already present; pushes `EventMsg.NPC_LOGIN(name)`.
-- `openGiftRequest()` — no-op if `pendingGift` is already set or every `tipStore` id is already in `collectedTipIds`; otherwise picks the first uncollected tip id and sets `pendingGift = { tipId }`.
-- `acceptGift()` — no-op if `pendingGift` is null; otherwise appends `pendingGift.tipId` to `collectedTipIds`, clears `pendingGift`, and pushes `EventMsg.GIFT_ACCEPTED(title)` (title looked up from `tipStore`).
-- `ignoreGift()` — clears `pendingGift` only.
+### Phase 2 — Gift cooldown + gifted-fish tracking
+**`src/util/constants.ts`**: add `GIFT_COOLDOWN_MS = 7 * 60 * 1000` and `NPC_ACTIVITY_DUMMY = "watching their line"`.
+**`src/stores/playerStore.ts`**: add `removeFishFromInventory(index: number)` — removes and returns the fish at that slot (no-op / `undefined` if out of range).
+**`src/stores/friendStore.ts`**: add state `lastGiftedAt: Record<string, number>` and `giftedFish: InventoryFish[]`; add `isGiftAvailable(name: string, now?: number): boolean` (pure, reads `lastGiftedAt` + `GIFT_COOLDOWN_MS`); add `giftFish(name: string, index: number)` — no-op if gift unavailable or slot empty, otherwise calls `removeFishFromInventory`, appends to `giftedFish`, sets `lastGiftedAt[name] = Date.now()`. No event log, no wallet/XP change.
 
-### Phase 3 — Event messages
-**`src/util/eventMessages.ts`**: add `NPC_LOGIN: (name: string) => \`${name} logs in\`` and `GIFT_ACCEPTED: (title: string) => ["received a tip: ", title]`, matching the existing `CAUGHT`/`SOLD_FISH` two-part colored-message shape.
+### Phase 3 — Chatroom hover popup
+**`src/components/ChatroomView.tsx`**: wrap each roster name in `HoverCard.Root`/`Trigger`/`Content` (replacing the plain `Text` row); `Content` renders the dummy activity line, an availability line driven by `isGiftAvailable`/`lastGiftedAt` with a `setInterval`-based live countdown scoped to the content's mount lifecycle, and a `MyButton` labeled "gift" that sets local `giftDialogOpen = true` (and records which name is being gifted to, for the single-NPC case just `FRIEND_NPC_NAME`).
 
-### Phase 4 — Chatroom UI
-**`src/components/ChatroomView.tsx`** (new): reads `chatroom` and `pendingGift` from `friendStore`. Renders the roster as `Text` rows (same size/color as `EventView`'s lines). When `pendingGift` is set, renders an alert block underneath with the pending tip's title/teaser and two `MyButton`s calling `acceptGift()` / `ignoreGift()`.
-**`src/App.jsx`**: wrap `<EventView />` and the new `<ChatroomView />` in a `Flex direction="column"` so the chatroom sits directly under the event log in the same left-hand column; add `initTipData()` to the startup `useEffect`; extend `handleKey` with `if (e.key === "n") npcLogin(FRIEND_NPC_NAME);` and `if (e.key === "m") openGiftRequest();`.
-
-### Phase 5 — TipView
-**`src/components/TipView.tsx`** (new): reads `collectedTipIds` from `friendStore` and the full catalog from `tipStore`, rendering one `Text` row per collected tip (title only), each wrapped in a Radix `Tooltip` (`content={tip.text}`, same props shape as `MyButton`'s) showing the full tip body on hover.
-**`src/components/InventoryView.tsx`**: render `<TipView />` as a fourth section, below "tackle box", following the same `Flex direction="column" gap` sectioning already used for "cooler" and "tackle box".
+### Phase 4 — Gift dialog
+**`src/components/GiftDialog.tsx`** (new): Radix `Dialog.Root open={giftDialogOpen} onOpenChange={...}`; `Dialog.Content` lists `usePlayer((s) => s.inventory)` as `Code`/`RARITY_COLOR` rows (same styling `InventoryView` uses for the cooler), or a "cooler is empty" row when empty; clicking a row calls `giftFish(FRIEND_NPC_NAME, index)` and closes the dialog.
+**`src/components/ChatroomView.tsx`**: render `<GiftDialog />`, passing/owning `giftDialogOpen`.

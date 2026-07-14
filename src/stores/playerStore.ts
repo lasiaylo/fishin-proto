@@ -20,6 +20,7 @@ export interface InventoryFish {
   fish: FishData;
   effectivePrice: number;
   rarity: Rarity;
+  locked: boolean;
 }
 
 export interface PlayerState extends PlayerStats {
@@ -153,14 +154,46 @@ export function addFishToInventory(fish: FishData, effectivePrice: number) {
     return {
       inventory: [
         ...s.inventory,
-        { fish, effectivePrice, rarity: fish.rarity ?? Rarity.COMMON },
+        {
+          fish,
+          effectivePrice,
+          rarity: fish.rarity ?? Rarity.COMMON,
+          locked: false,
+        },
       ],
     };
   });
 }
 
+export function toggleFishLock(index: number) {
+  usePlayer.setState((s) => {
+    const item = s.inventory[index];
+    if (!item) return s;
+    const inventory = [...s.inventory];
+    inventory[index] = { ...item, locked: !item.locked };
+    return { inventory };
+  });
+}
+
+export function removeFishFromInventory(
+  index: number,
+): InventoryFish | undefined {
+  const { inventory } = usePlayer.getState();
+  const item = inventory[index];
+  if (!item) return undefined;
+  usePlayer.setState({
+    inventory: inventory.filter((_, i) => i !== index),
+  });
+  return item;
+}
+
 export function sellAllFish() {
   const { inventory } = usePlayer.getState();
-  const total = inventory.reduce((sum, f) => sum + f.effectivePrice, 0);
-  usePlayer.setState((s) => ({ inventory: [], wallet: s.wallet + total }));
+  const total = inventory
+    .filter((f) => !f.locked)
+    .reduce((sum, f) => sum + f.effectivePrice, 0);
+  usePlayer.setState((s) => ({
+    inventory: s.inventory.filter((f) => f.locked),
+    wallet: s.wallet + total,
+  }));
 }

@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { pushEvent } from "./eventLogStore";
 import { EventMsg } from "../util/eventMessages";
 import { getTipById, useTipData } from "./tipStore";
+import { InventoryFish, removeFishFromInventory } from "./playerStore";
+import { GIFT_COOLDOWN_MS } from "../util/constants";
 
 interface PendingGift {
   tipId: string;
@@ -11,12 +13,16 @@ interface FriendState {
   chatroom: string[];
   pendingGift: PendingGift | null;
   collectedTipIds: string[];
+  lastGiftedAt: Record<string, number>;
+  giftedFish: InventoryFish[];
 }
 
 export const useFriend = create<FriendState>(() => ({
   chatroom: [],
   pendingGift: null,
   collectedTipIds: [],
+  lastGiftedAt: {},
+  giftedFish: [],
 }));
 
 export function npcLogin(name: string) {
@@ -55,4 +61,21 @@ export function acceptGift() {
 
 export function ignoreGift() {
   useFriend.setState({ pendingGift: null });
+}
+
+export function isGiftAvailable(name: string, now: number = Date.now()) {
+  const lastGiftedAt = useFriend.getState().lastGiftedAt[name];
+  return lastGiftedAt === undefined || now - lastGiftedAt >= GIFT_COOLDOWN_MS;
+}
+
+export function giftFish(name: string, index: number) {
+  if (!isGiftAvailable(name)) return;
+
+  const fish = removeFishFromInventory(index);
+  if (!fish) return;
+
+  useFriend.setState((s) => ({
+    giftedFish: [...s.giftedFish, fish],
+    lastGiftedAt: { ...s.lastGiftedAt, [name]: Date.now() },
+  }));
 }
