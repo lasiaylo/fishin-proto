@@ -83,8 +83,9 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
   const baitData = useBaitData((s) => s.baitData);
 
   const assignment = rodSlotAssignments[slotIndex] ?? null;
-  const selectedItem = rodSlotItems[slotIndex] ?? BASE_BAIT_ID;
+  const selectedItem = rodSlotItems[slotIndex] ?? null;
   const isWaitType =
+    selectedItem !== null &&
     getTackleType(selectedItem) === TackleType.BAIT &&
     selectedItem.startsWith(BAIT_ID_PREFIX);
 
@@ -430,20 +431,21 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     cancelAnimationFrame(luringRafRef.current);
     emptyReelCountRef.current += 1;
     const { rodSlotItems: items } = usePlayer.getState();
-    const item = items[slotIndex] ?? BASE_BAIT_ID;
-    if (getTackleType(item) === TackleType.LURE) {
+    const item = items[slotIndex] ?? null;
+    if (item !== null && getTackleType(item) === TackleType.LURE) {
       addLureXp(item, castDistanceRef.current * XP_PER_DISTANCE);
     }
     setGameState(GameState.Idle);
   }
 
-  const baitCount = baitInventory[selectedItem] ?? 0;
+  const baitCount =
+    selectedItem !== null ? (baitInventory[selectedItem] ?? 0) : 0;
   const castDisabled =
     invCount >= inventorySize || (isWaitType && baitCount === 0);
 
   let controls: React.ReactNode;
   if (gameState === GameState.Idle) {
-    if (assignment === null) {
+    if (assignment === null || selectedItem === null) {
       controls = null;
     } else if (invCount >= inventorySize) {
       controls = <Text size="1">the cooler is full</Text>;
@@ -498,7 +500,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     );
   }
 
-  const lureXpEntry = lureXpData[selectedItem];
+  const lureXpEntry = selectedItem !== null ? lureXpData[selectedItem] : undefined;
   const lureXpVal = lureXpEntry?.xp ?? 0;
   const lureLevel = lureXpEntry?.level ?? 0;
   const lureProgress = lureXpProgress(lureXpVal, lureLevel);
@@ -541,12 +543,15 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
                 <Select.Root
                   size="1"
                   color="gray"
-                  value={selectedItem}
-                  onValueChange={(v) => setSlotItem(slotIndex, v)}
+                  value={selectedItem ?? "none"}
+                  onValueChange={(v) =>
+                    setSlotItem(slotIndex, v === "none" ? null : v)
+                  }
                   disabled={gameState !== GameState.Idle}
                 >
                   <Select.Trigger variant="soft" />
                   <Select.Content>
+                    <Select.Item value="none">None</Select.Item>
                     <Select.Group>
                       <Select.Label>baits</Select.Label>
                       {Object.entries(baitInventory).map(([id, count]) => {
@@ -580,7 +585,8 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
                   </Select.Content>
                 </Select.Root>
               </Flex>
-              {getTackleType(selectedItem) === TackleType.LURE && (
+              {selectedItem !== null &&
+                getTackleType(selectedItem) === TackleType.LURE && (
                 <Flex align="center" gap="2">
                   <Text size="1" color="gray">
                     {`lvl ${lureLevel}`}
