@@ -115,6 +115,7 @@ export class FightEngine {
     startDistance: number = START_DISTANCE,
     targetDistance: number = startDistance,
     config?: Partial<FightConfig>,
+    playerSpeedMultiplier: number = 1,
   ) {
     this.fishAtk = fishAttack;
     this.fishDef = fishDefense;
@@ -123,6 +124,7 @@ export class FightEngine {
     this.playerDef = playerDef;
     this.lineHp = lineHp;
     this.cfg = { ...DEFAULT_FIGHT_CONFIG, ...config };
+    this.cfg.baseSpeed *= playerSpeedMultiplier;
     this.startDistance = startDistance;
     this.targetDistance = targetDistance;
 

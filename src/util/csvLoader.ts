@@ -38,6 +38,7 @@ export interface RodData {
   attackLevels: number[];
   defenseLevels: number[];
   castMax: number;
+  speedMultiplier: number;
 }
 
 const STAT_NAME_VALUES = new Set<string>(Object.values(StatName));
@@ -76,6 +77,7 @@ export async function loadRodData(
     attackLevels: row[1].split(" ").map(Number),
     defenseLevels: row[2].split(" ").map(Number),
     castMax: Number(row[3]),
+    speedMultiplier: Number(row[4]),
   }));
 }
 

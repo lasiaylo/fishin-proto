@@ -21,11 +21,13 @@ export function getRodStats(rod: Rod): {
   attack: number;
   defense: number;
   castMax: number;
+  speedMultiplier: number;
 } {
   const data = getRodDataById(rod.id);
   return {
     attack: levelStat(data?.attackLevels ?? [], rod.attackLevel),
     defense: levelStat(data?.defenseLevels ?? [], rod.defenseLevel),
     castMax: data?.castMax ?? CAST_MAX,
+    speedMultiplier: data?.speedMultiplier ?? 1,
   };
 }

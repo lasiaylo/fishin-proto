@@ -13,7 +13,7 @@ export class StoryTriggerListener {
       (totalCasts) => {
         if (!this.fired && totalCasts >= CAST_MILESTONE) {
           this.fired = true;
-          pushEvent(EventMsg.STORY_DUMMY);
+          // pushEvent(EventMsg.STORY_DUMMY);
         }
       },
     );

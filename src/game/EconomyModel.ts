@@ -76,7 +76,13 @@ export interface EconomyRound {
   upgradeLevels: Record<string, number>;
   boughtLure: boolean;
   playerStats: PlayerStats;
-  rodStats: { id: string; attack: number; defense: number; castMax: number }[]; // snapshot of rods
+  rodStats: {
+    id: string;
+    attack: number;
+    defense: number;
+    castMax: number;
+    speedMultiplier: number;
+  }[]; // snapshot of rods
   lureLevels: Record<string, number>; // lureId → current level after this round
   lureXp: Record<string, number>; // lureId → cumulative XP after this round
   cumulativeMoneyEarned: number; // lifetime gross income, never reset — drives dream points
@@ -118,9 +124,10 @@ function runTrials(
   atk: number,
   def: number,
   n: number,
+  speedMult: number = 1,
 ): { winCount: number; avgFightTime: number; avgWinTension: number } {
   const zoneDist = avgZoneDistance(fish.zones);
-  const key = `${fish.attack}|${fish.defense}|${fish.thrash}|${fish.hp}|${zoneDist}|${atk}|${def}|${player.lineHP}|${n}`;
+  const key = `${fish.attack}|${fish.defense}|${fish.thrash}|${fish.hp}|${zoneDist}|${atk}|${def}|${player.lineHP}|${n}|${speedMult}`;
   const cached = trialsCache.get(key);
   if (cached) return cached;
 
@@ -133,6 +140,8 @@ function runTrials(
     player.lineHP,
     zoneDist,
     fish.hp,
+    undefined,
+    speedMult,
   );
   let winCount = 0;
   let totalWinTime = 0;
@@ -197,10 +206,11 @@ function evalLure(
   lureWinRates: Record<string, number>;
   lureRemainingHP: Record<string, number>;
 } {
-  const { attack: lureRodAtk, defense: lureRodDef } = econRodStats(
-    rods[0],
-    rodData,
-  );
+  const {
+    attack: lureRodAtk,
+    defense: lureRodDef,
+    speedMultiplier: lureRodSpeedMult,
+  } = econRodStats(rods[0], rodData);
   const incomeMultiplier = 1 + player.incomeBoostPercent / 100;
   let bestRate;
   let best = null;
@@ -234,6 +244,7 @@ function evalLure(
           lureRodAtk,
           lureRodDef,
           evalTrials,
+          lureRodSpeedMult,
         );
         const avgEarnings =
           (variant.basePrice * incomeMultiplier * winCount) / evalTrials;
@@ -462,12 +473,18 @@ interface EconRod {
 function econRodStats(
   rod: EconRod,
   rodData: RodData[],
-): { attack: number; defense: number; castMax: number } {
+): {
+  attack: number;
+  defense: number;
+  castMax: number;
+  speedMultiplier: number;
+} {
   const data = rodData.find((r) => r.id === rod.id);
   return {
     attack: levelStat(data?.attackLevels ?? [], rod.attackLevel),
     defense: levelStat(data?.defenseLevels ?? [], rod.defenseLevel),
     castMax: data?.castMax ?? CAST_MAX,
+    speedMultiplier: data?.speedMultiplier ?? 1,
   };
 }
 
@@ -784,6 +801,7 @@ export function simulateEconomy(
               baitRodStats.attack,
               baitRodStats.defense,
               evalTrials,
+              baitRodStats.speedMultiplier,
             );
             const avgEarnings =
               (variant.basePrice * incomeMultiplier * winCount) / evalTrials;

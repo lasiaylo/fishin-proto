@@ -305,9 +305,9 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     } = usePlayer.getState();
     const rodId = assignments[slotIndex];
     const rod = rods.find((r) => r.id === rodId);
-    const { attack, defense } = rod
+    const { attack, defense, speedMultiplier } = rod
       ? getRodStats(rod)
-      : { attack: 0, defense: 0 };
+      : { attack: 0, defense: 0, speedMultiplier: 1 };
     lineHpRef.current = lineHP;
 
     const fish = caughtFishRef.current!;
@@ -321,6 +321,8 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
       lineHP,
       luringDistanceRef.current,
       fish.hp,
+      undefined,
+      speedMultiplier,
     );
 
     lastTimeRef.current = null;
