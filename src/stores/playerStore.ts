@@ -3,7 +3,6 @@ import { subscribeWithSelector } from "zustand/middleware";
 import { FishData } from "../util/csvLoader";
 import {
   BAIT_MAX_STACK,
-  BASE_BAIT_ID,
   getTackleType,
   INITIAL_PLAYER_STATE,
   Rarity,
@@ -107,7 +106,7 @@ export function addRod(id: string) {
 export function addRodSlot() {
   usePlayer.setState((s) => ({
     rodSlotAssignments: [...s.rodSlotAssignments, null],
-    rodSlotItems: [...s.rodSlotItems, BASE_BAIT_ID],
+    rodSlotItems: [...s.rodSlotItems, null],
   }));
 }
 
