@@ -10,7 +10,13 @@ import { GIFT_COOLDOWN_MS, NPC_ACTIVITY_DUMMY } from "../util/constants";
 import { GiftDialog } from "./GiftDialog";
 import { MyButton } from "./MyButton";
 
-function GiftAvailability({ name }: { name: string }) {
+function GiftPopoverContent({
+  name,
+  onGift,
+}: {
+  name: string;
+  onGift: () => void;
+}) {
   const lastGiftedAt = useFriend((s) => s.lastGiftedAt[name]);
   const [, setTick] = useState(0);
 
@@ -19,23 +25,29 @@ function GiftAvailability({ name }: { name: string }) {
     return () => clearInterval(id);
   }, []);
 
-  if (isGiftAvailable(name)) {
-    return (
-      <Text size="1" color="grass">
-        gift available
-      </Text>
-    );
+  const available = isGiftAvailable(name);
+
+  let statusText = "gift available";
+  if (!available) {
+    const remainingMs = GIFT_COOLDOWN_MS - (Date.now() - (lastGiftedAt ?? 0));
+    const remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
+    const mins = Math.floor(remainingSec / 60);
+    const secs = remainingSec % 60;
+    statusText = `gift available in ${mins}m ${secs}s`;
   }
 
-  const remainingMs = GIFT_COOLDOWN_MS - (Date.now() - (lastGiftedAt ?? 0));
-  const remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
-  const mins = Math.floor(remainingSec / 60);
-  const secs = remainingSec % 60;
-
   return (
-    <Text size="1" color="gray">
-      gift available in {mins}m {secs}s
-    </Text>
+    <Flex direction="column" gap="2">
+      <Text size="1" color="gray">
+        {NPC_ACTIVITY_DUMMY}
+      </Text>
+      <Text size="1" color={available ? "grass" : "gray"}>
+        {statusText}
+      </Text>
+      <MyButton onClick={onGift} disabled={!available}>
+        gift
+      </MyButton>
+    </Flex>
   );
 }
 
@@ -61,15 +73,10 @@ export function ChatroomView() {
               </Text>
             </HoverCard.Trigger>
             <HoverCard.Content size="1" maxWidth="200px">
-              <Flex direction="column" gap="2">
-                <Text size="1" color="gray">
-                  {NPC_ACTIVITY_DUMMY}
-                </Text>
-                <GiftAvailability name={name} />
-                <MyButton onClick={() => setGiftDialogName(name)}>
-                  gift
-                </MyButton>
-              </Flex>
+              <GiftPopoverContent
+                name={name}
+                onGift={() => setGiftDialogName(name)}
+              />
             </HoverCard.Content>
           </HoverCard.Root>
         ))}
