@@ -16,7 +16,10 @@ import {
 } from "../stores/playerStore";
 import { pushEvent } from "../stores/eventLogStore";
 import { EventMsg } from "../util/eventMessages";
-import { incrementTotalCasts } from "../stores/metricsStore";
+import {
+  incrementTotalCasts,
+  incrementTotalFishCaught,
+} from "../stores/metricsStore";
 import { FightEngine, FightState, Outcome } from "../game/FightEngine";
 import { useSessionLog } from "../stores/sessionLogStore";
 import { addLureXp, lureXpProgress, useLureXp } from "../stores/lureXpStore";
@@ -387,6 +390,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
 
     if (result === Outcome.WIN) {
       addFishToInventory(fish, effectivePrice);
+      incrementTotalFishCaught();
       const msg = EventMsg.CAUGHT(fish.name);
       pushEvent(
         msg[0],
