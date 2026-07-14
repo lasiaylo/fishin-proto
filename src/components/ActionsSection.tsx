@@ -5,15 +5,22 @@ import { PondView } from "./PondView";
 import { DreamShopView } from "./DreamShopView";
 import { sellAllFish, usePlayer } from "../stores/playerStore";
 import { useDreamStore } from "../stores/dreamStore";
+import { useMetrics } from "../stores/metricsStore";
 import { pushEvent } from "../stores/eventLogStore";
 import { useSessionLog } from "../stores/sessionLogStore";
-import { RARITY_COLOR, computeDreamPoints } from "../util/constants";
+import {
+  RARITY_COLOR,
+  computeDreamPoints,
+  INITIAL_PLAYER_STATE,
+} from "../util/constants";
 import { EventMsg } from "../util/eventMessages";
 
 export function ActionsSection() {
   const [tab, setTab] = useState("pond");
   const cumulativeMoneyEarned = useDreamStore((s) => s.cumulativeMoneyEarned);
   const dreamUnlocked = computeDreamPoints(cumulativeMoneyEarned) >= 1;
+  const totalFishCaught = useMetrics((s) => s.totalFishCaught);
+  const shopUnlocked = totalFishCaught >= INITIAL_PLAYER_STATE.inventorySize;
 
   function handleTabChange(value: string) {
     if (value === "shop") {
@@ -43,7 +50,7 @@ export function ActionsSection() {
       <Tabs.Root value={tab} onValueChange={handleTabChange}>
         <Tabs.List>
           <Tabs.Trigger value="pond">pond</Tabs.Trigger>
-          <Tabs.Trigger value="shop">shop</Tabs.Trigger>
+          {shopUnlocked && <Tabs.Trigger value="shop">shop</Tabs.Trigger>}
           {dreamUnlocked && <Tabs.Trigger value="dream">dream</Tabs.Trigger>}
         </Tabs.List>
         <Tabs.Content value="pond">
@@ -51,11 +58,13 @@ export function ActionsSection() {
             <PondView />
           </Flex>
         </Tabs.Content>
-        <Tabs.Content value="shop">
-          <Flex className={"fade-in"}>
-            <ShopView />
-          </Flex>
-        </Tabs.Content>
+        {shopUnlocked && (
+          <Tabs.Content value="shop">
+            <Flex className={"fade-in"}>
+              <ShopView />
+            </Flex>
+          </Tabs.Content>
+        )}
         {dreamUnlocked && (
           <Tabs.Content value="dream">
             <Flex className={"fade-in"}>
