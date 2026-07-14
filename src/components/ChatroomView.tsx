@@ -7,6 +7,8 @@ export function ChatroomView() {
   const chatroom = useFriend((s) => s.chatroom);
   const pendingGift = useFriend((s) => s.pendingGift);
 
+  if (chatroom.length === 0) return null;
+
   return (
     <Flex direction="column" gap="3" width="200px">
       <Separator size={"4"} />
