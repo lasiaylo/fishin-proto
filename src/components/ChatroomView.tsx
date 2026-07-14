@@ -12,7 +12,9 @@ export function ChatroomView() {
   return (
     <Flex direction="column" gap="3" width="200px">
       <Separator size={"4"} />
-      <Text size={"1"}>the pond</Text>
+      <Text size={"1"} style={{ textDecoration: "underline" }}>
+        the pond
+      </Text>
       <Flex direction="column" gap="1">
         {chatroom.map((name) => (
           <Text className="fade-in" key={name} size="1" color="gray">
