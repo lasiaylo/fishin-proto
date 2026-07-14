@@ -587,22 +587,21 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
                   </Select.Content>
                 </Select.Root>
               </Flex>
-              {selectedItem !== null && (
-                <Flex align="end" gap="2">
-                  <Text size="1" color="gray">
-                    {getTackleDirections(selectedItem)}
-                  </Text>
-                </Flex>
-              )}
               {selectedItem !== null &&
                 getTackleType(selectedItem) === TackleType.LURE && (
-                  <Flex align="center" gap="2">
+                  <Flex
+                    direction={"row"}
+                    align={"end"}
+                    flexGrow={"1"}
+                    gap="1"
+                    maxWidth={"150px"}
+                  >
                     <Text size="1" color="gray">
                       {`lvl ${lureLevel}`}
                     </Text>
                     <Progress
                       radius="none"
-                      size="2"
+                      size="1"
                       value={Math.round(lureProgress * 100)}
                     />
                   </Flex>
@@ -610,6 +609,14 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
             </>
           )}
         </Flex>
+        {selectedItem !== null && (
+          <Flex align="end" gap="2">
+            <Text size="1" color="gray">
+              {getTackleDirections(selectedItem)}
+            </Text>
+          </Flex>
+        )}
+
         <Flex flexGrow={"1"}>{controls}</Flex>
       </Flex>
     </Flex>

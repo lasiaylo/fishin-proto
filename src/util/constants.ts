@@ -10,6 +10,7 @@ export const BASE_BAIT_ID = "BAIT_0";
 export const BASE_BAIT_NAME = "Worm";
 export const BAIT_ID_PREFIX = "BAIT_";
 export const BAIT_MAX_STACK = 10;
+export const BAIT_START_COUNT = 5;
 
 // ==========================================================================
 // PLAYER
@@ -29,7 +30,7 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
   inventorySize: 3,
   incomeBoostPercent: 0,
   ownedLures: new Set<string>(),
-  baitInventory: { [BASE_BAIT_ID]: BAIT_MAX_STACK },
+  baitInventory: { [BASE_BAIT_ID]: BAIT_START_COUNT },
   ownedRods: [{ id: "ROD_1", attackLevel: 0, defenseLevel: 0 }],
   rodSlotAssignments: [null],
   rodSlotItems: [null],
@@ -99,9 +100,7 @@ export enum TackleType {
 }
 
 export function getTackleType(lureId: string): TackleType {
-  return lureId.startsWith(BAIT_ID_PREFIX) || lureId === BASE_LURE_ID
-    ? TackleType.BAIT
-    : TackleType.LURE;
+  return lureId.startsWith(BAIT_ID_PREFIX) ? TackleType.BAIT : TackleType.LURE;
 }
 
 export function getTackleDirections(lureId: string): string {

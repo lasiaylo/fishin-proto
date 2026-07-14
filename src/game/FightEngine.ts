@@ -34,7 +34,7 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   startStruggleWeight: 0.5,
   gracePercent: 0.2,
   minStruggleDistance: 10,
-  baseSpeed: 13,
+  baseSpeed: 10,
   minSpeed: 4,
   distanceMultRange: [0.9, 1.1],
   thrashMultRange: [0.95, 1.05],

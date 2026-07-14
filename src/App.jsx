@@ -15,7 +15,7 @@ import { initRodData } from "./stores/rodStore";
 import { initTipData } from "./stores/tipStore";
 import { npcLogin, openGiftRequest } from "./stores/friendStore";
 import { FRIEND_NPC_NAME } from "./util/constants";
-import { pushEvent } from "./stores/eventLogStore";
+import { clearEvents, pushEvent } from "./stores/eventLogStore";
 import { EventMsg } from "./util/eventMessages";
 import "./game/StoryTriggerListener";
 import { useCsvConfig } from "./stores/csvConfigStore";
@@ -34,6 +34,7 @@ function App() {
   );
 
   useEffect(() => {
+    clearEvents();
     const { fishCSV, shopCSV } = useCsvConfig.getState();
     if (fishCSV === GENERATED_FISH_CSV) {
       loadFishDisplayMap().then((displayMap) =>
