@@ -148,7 +148,7 @@ export function FightTraceTab({
   fishData: FishData[];
   rodData: RodData[];
 }) {
-  const rod0 = rodData.find((r) => r.id === "ROD_0");
+  const rod0 = rodData.find((r) => r.id === "ROD_1");
   const [fishId, setFishId] = useState(() => {
     const stored = localStorage.getItem("debug_selectedFishId");
     if (stored && fishData.some((f) => f.id === stored)) return stored;

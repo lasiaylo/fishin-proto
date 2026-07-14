@@ -50,7 +50,7 @@ export function GraphsTab({
   onShopRowsChange: (rows: string[][]) => void;
 }) {
   const baseAttack = levelStat(
-    rodData.find((r) => r.id === "ROD_0")?.attackLevels ?? [],
+    rodData.find((r) => r.id === "ROD_1")?.attackLevels ?? [],
     0,
   );
   const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
@@ -127,6 +127,9 @@ export function GraphsTab({
   const lureColors = Object.fromEntries(
     lureIds.map((id, i) => [id, COLORS[i % COLORS.length]]),
   );
+  const isBaitId = (id: string) => id.startsWith("BAIT_");
+  const lureOnlyIds = lureIds.filter((id) => !isBaitId(id));
+  const baitOnlyIds = lureIds.filter((id) => isBaitId(id));
 
   useEffect(() => {
     paramsRef.current = {
@@ -409,7 +412,7 @@ export function GraphsTab({
             tooltipLabelFormatter={(v: number) => `Stat: ${v}`}
           >
             <Legend />
-            {lureIds.map((id) => (
+            {lureOnlyIds.map((id) => (
               <Line
                 key={id}
                 dataKey={`wr_${id}`}
@@ -422,7 +425,29 @@ export function GraphsTab({
           </EconomyChart>
 
           <EconomyChart
-            title="Remaining Line HP % vs Attack & Defense"
+            title="Bait Win Rate vs Attack & Defense"
+            data={sweepData}
+            {...statChartProps}
+            yDomain={[0, 1]}
+            yTickFormatter={(v: number) => `${Math.round(v * 100)}%`}
+            tooltipFormatter={(v: number) => `${(v * 100).toFixed(1)}%` as any}
+            tooltipLabelFormatter={(v: number) => `Stat: ${v}`}
+          >
+            <Legend />
+            {baitOnlyIds.map((id) => (
+              <Line
+                key={id}
+                dataKey={`wr_${id}`}
+                stroke={lureColors[id]}
+                name={id}
+                {...lineProps}
+                connectNulls={false}
+              />
+            ))}
+          </EconomyChart>
+
+          <EconomyChart
+            title="Lure Remaining Line HP % vs Attack & Defense"
             data={sweepData}
             {...statChartProps}
             yDomain={[0, 100]}
@@ -431,12 +456,34 @@ export function GraphsTab({
             tooltipLabelFormatter={(v: number) => `Stat: ${v}`}
           >
             <Legend />
-            {lureIds.map((id) => (
+            {lureOnlyIds.map((id) => (
               <Line
                 key={id}
                 dataKey={`hp_${id}`}
                 stroke={lureColors[id]}
                 name={id === "" ? "No Lure" : id}
+                {...lineProps}
+                connectNulls={false}
+              />
+            ))}
+          </EconomyChart>
+
+          <EconomyChart
+            title="Bait Remaining Line HP % vs Attack & Defense"
+            data={sweepData}
+            {...statChartProps}
+            yDomain={[0, 100]}
+            yTickFormatter={(v: number) => `${Math.round(v)}%`}
+            tooltipFormatter={(v: number) => `${v.toFixed(1)}%` as any}
+            tooltipLabelFormatter={(v: number) => `Stat: ${v}`}
+          >
+            <Legend />
+            {baitOnlyIds.map((id) => (
+              <Line
+                key={id}
+                dataKey={`hp_${id}`}
+                stroke={lureColors[id]}
+                name={id}
                 {...lineProps}
                 connectNulls={false}
               />

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Flex, Grid, Text, Table, Button, Separator } from "@radix-ui/themes";
 import { NumInput } from "./shared";
+import { loadRodData, type RodData } from "../../util/csvLoader";
 
 export const GENERATED_FISH_CSV = "__generated_fish__";
 export const GENERATED_SHOP_CSV = "__generated_shop__";
@@ -297,6 +298,7 @@ function computeLureCostTable(
   fishRows: string[][],
   shopRows: string[][],
   startingAD: number,
+  rodData: RodData[],
 ): {
   lureId: string;
   lurePrice: number;
@@ -330,20 +332,41 @@ function computeLureCostTable(
     return fish[Math.floor(fish.length / 2)].ad;
   };
 
-  // Parse ATTACK and DEFENSE shop rows
+  // Parse ATTACK and DEFENSE shop rows (ROD_1's, since that's the rod the
+  // player starts with and the lure-cost projection tracks)
   const body = shopRows.slice(1);
-  const attackRow = body.find((r) => r[0] === "ATTACK");
-  const defenseRow = body.find((r) => r[0] === "DEFENSE");
+  const attackRow = body.find((r) => r[0] === "ROD_1_ATTACK");
+  const defenseRow = body.find((r) => r[0] === "ROD_1_DEFENSE");
   const attackPrices = attackRow ? attackRow[1].split(" ").map(Number) : [];
-  const attackVPL = attackRow ? Number(attackRow[3]) : 1;
   const defensePrices = defenseRow ? defenseRow[1].split(" ").map(Number) : [];
-  const defenseVPL = defenseRow ? Number(defenseRow[3]) : 1;
+
+  // Buying a level from the shop only advances the rod's upgrade index —
+  // the actual stat gained per level is whatever RodGameplay.csv says for
+  // that index, which is not necessarily the shop's flat ValuePerLevel.
+  const rod1 = rodData.find((r) => r.id === "ROD_1");
+  const attackStatLevels = rod1?.attackLevels ?? [];
+  const defenseStatLevels = rod1?.defenseLevels ?? [];
 
   const sumSlice = (prices: number[], from: number, count: number) => {
     let total = 0;
     for (let i = from; i < from + count && i < prices.length; i++)
       total += prices[i];
     return total;
+  };
+
+  // How many additional levels (starting from index `fromIndex`, which has
+  // already been bought) are needed for the stat to increase by `gain`.
+  const levelsForGain = (
+    statLevels: number[],
+    fromIndex: number,
+    gain: number,
+  ) => {
+    if (gain <= 0 || statLevels.length === 0) return 0;
+    const startIndex = Math.min(fromIndex, statLevels.length - 1);
+    const base = statLevels[startIndex];
+    let idx = startIndex;
+    while (idx < statLevels.length - 1 && statLevels[idx] - base < gain) idx++;
+    return idx - startIndex;
   };
 
   const lureShopRows = body.filter((r) => r[0]?.startsWith("LURE_"));
@@ -362,8 +385,12 @@ function computeLureCostTable(
 
     const targetAD = midAD(lureId);
     const statGain = Math.max(0, targetAD - prevAD);
-    const attackLevels = attackVPL > 0 ? Math.ceil(statGain / attackVPL) : 0;
-    const defenseLevels = defenseVPL > 0 ? Math.ceil(statGain / defenseVPL) : 0;
+    const attackLevels = levelsForGain(attackStatLevels, attackBought, statGain);
+    const defenseLevels = levelsForGain(
+      defenseStatLevels,
+      defenseBought,
+      statGain,
+    );
     const adUpgradeCost =
       sumSlice(attackPrices, attackBought, attackLevels) +
       sumSlice(defensePrices, defenseBought, defenseLevels);
@@ -392,15 +419,17 @@ function LureCostTable({
   fishRows,
   shopRows,
   startingAD,
+  rodData,
 }: {
   fishRows: string[][];
   shopRows: string[][];
   startingAD: number;
+  rodData: RodData[];
 }) {
-  const data = computeLureCostTable(fishRows, shopRows, startingAD);
+  const data = computeLureCostTable(fishRows, shopRows, startingAD, rodData);
   if (data.length === 0) return null;
   return (
-    <Flex direction="column" gap="2">
+    <Flex direction="column" gap="2" maxWidth={"500px"}>
       <Text size="2" weight="bold">
         Fish needed to buy next lure
       </Text>
@@ -409,9 +438,9 @@ function LureCostTable({
           <Table.Row>
             <Table.ColumnHeaderCell>Lure</Table.ColumnHeaderCell>
             <Table.ColumnHeaderCell>Lure Cost</Table.ColumnHeaderCell>
-            <Table.ColumnHeaderCell>Fish (Lure Only)</Table.ColumnHeaderCell>
-            <Table.ColumnHeaderCell>A/D Upgrade Cost</Table.ColumnHeaderCell>
-            <Table.ColumnHeaderCell>Fish (A/D Only)</Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell>A/D Cost</Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell>Lure Fish</Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell>A/D Fish </Table.ColumnHeaderCell>
             <Table.ColumnHeaderCell>Total Fish</Table.ColumnHeaderCell>
           </Table.Row>
         </Table.Header>
@@ -428,8 +457,8 @@ function LureCostTable({
               <Table.Row key={lureId}>
                 <Table.Cell>{lureId}</Table.Cell>
                 <Table.Cell>{lurePrice}</Table.Cell>
-                <Table.Cell>{fishNeeded}</Table.Cell>
                 <Table.Cell>{adUpgradeCost}</Table.Cell>
+                <Table.Cell>{fishNeeded}</Table.Cell>
                 <Table.Cell>{adFishNeeded}</Table.Cell>
                 <Table.Cell>{totalFishNeeded}</Table.Cell>
               </Table.Row>
@@ -1192,6 +1221,11 @@ export function CsvGeneratorPanel({
   const [showPreview, setShowPreview] = useState(true);
   const [fishRows, setFishRows] = useState<string[][]>([]);
   const [shopRows, setShopRows] = useState<string[][]>([]);
+  const [rodData, setRodData] = useState<RodData[]>([]);
+
+  useEffect(() => {
+    loadRodData().then(setRodData).catch(() => setRodData([]));
+  }, []);
   const [levels, setLevels] = useState<number>(
     () => loadStored(SHARED_STORAGE_KEY, { levels: 3, startingAD: 10 }).levels,
   );
@@ -1309,6 +1343,7 @@ export function CsvGeneratorPanel({
               fishRows={fishRows}
               shopRows={shopRows}
               startingAD={startingAD}
+              rodData={rodData}
             />
           )}
         </>

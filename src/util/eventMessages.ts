@@ -1,5 +1,5 @@
 export const EventMsg = {
-  WELCOME: "it's dark and the water is calm",
+  WELCOME: "the water is calm",
   CAST: "the line whips through the air",
   LAND_BAD: "it lands like a rock",
   LAND_GOOD: "it lands like a feather",
@@ -12,6 +12,6 @@ export const EventMsg = {
 
   STORY_DUMMY: "you feel something stir in the water...",
 
-  NPC_LOGIN: (name: string) => `${name} logs in`,
+  NPC_LOGIN: (name: string) => `a ${name} comes by`,
   GIFT_ACCEPTED: (title: string) => ["received a tip: ", title],
 } as const;

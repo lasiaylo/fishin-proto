@@ -2,7 +2,7 @@ import { PlayerState } from "../stores/playerStore";
 
 export const CURRENCY_SYMBOL = "࿔";
 export const DREAM_POINT_SYMBOL = "✦";
-export const FRIEND_NPC_NAME = "Big Ghost";
+export const FRIEND_NPC_NAME = "big ghost";
 export const BASE_FISH_ID = "FISH_B_0";
 export const BASE_LURE_ID = "LURE_0";
 export const BASE_LURE_NAME = "Worm";
@@ -15,7 +15,7 @@ export const BAIT_START_COUNT = 5;
 // ==========================================================================
 // PLAYER
 // ==========================================================================
-export const CAST_MAX = 40;
+export const CAST_MAX = 30;
 export const REEL_MIN = 5;
 
 export interface Rod {
@@ -66,7 +66,7 @@ export const CAST_MIN = 5;
 export const CAST_DURATION_MIN = 0.5;
 export const CAST_DURATION_MAX = 1.5;
 
-export const CAST_CHARGE_DURATION = 2000;
+export const CAST_CHARGE_DURATION = 1500;
 export const LURING_REEL_MAX_SPEED = 8;
 export const LURE_REEL_SPEED_PER_LEVEL = 1;
 export const LURING_REEL_ACCEL = 20;

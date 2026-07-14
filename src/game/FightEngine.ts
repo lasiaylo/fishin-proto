@@ -43,8 +43,8 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   initialBiteAtkMult: 1.5,
   deltaMode: "EaseInEaseOut",
   easeScale: 2,
-  easeMidpoint: 0.4,
-  easeSlope: 0.3,
+  easeMidpoint: 0.3,
+  easeSlope: 0.4,
 };
 
 const CRIT_CHECK_INTERVAL = 0.5;

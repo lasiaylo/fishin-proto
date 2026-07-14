@@ -39,4 +39,4 @@ An offline simulation used for balancing. It runs hundreds of rounds analyticall
 
 ## Background jobs: no automatic PRs
 
-When running as a background job in this repo, do not open a pull request when finishing a task. Commit the work, but do not push it. Don't report this behavior in the recap.
+When running as a background job in this repo, do not open a pull request when finishing a task. Commit the work, but do not push it. Don't mention anything you did around the commit in the recap. The recap should just be able the actual changes.
