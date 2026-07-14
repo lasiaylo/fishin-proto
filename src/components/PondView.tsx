@@ -448,8 +448,6 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
   if (gameState === GameState.Idle) {
     if (assignment === null || selectedItem === null) {
       controls = null;
-    } else if (invCount >= inventorySize) {
-      controls = <Text size="1">the cooler is full</Text>;
     } else if (isWaitType && baitCount === 0) {
       controls = <Text size="1">no bait</Text>;
     } else {
@@ -625,15 +623,22 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
 
 export function PondView() {
   const rodCount = usePlayer((s) => s.rodSlotAssignments.length);
+  const isCoolerFull = usePlayer(
+    (s) => s.inventory.length >= s.inventorySize,
+  );
 
   return (
     <Flex className="fade-in" width="100%" direction="column" gap="4" p="3">
-      {Array.from({ length: rodCount }).map((_, i) => (
-        <React.Fragment key={i}>
-          {i > 0 && <Separator size="4" />}
-          <RodRow slotIndex={i} />
-        </React.Fragment>
-      ))}
+      {isCoolerFull ? (
+        <Text size="1">the cooler is full</Text>
+      ) : (
+        Array.from({ length: rodCount }).map((_, i) => (
+          <React.Fragment key={i}>
+            {i > 0 && <Separator size="4" />}
+            <RodRow slotIndex={i} />
+          </React.Fragment>
+        ))
+      )}
     </Flex>
   );
 }
