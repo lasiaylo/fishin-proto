@@ -27,24 +27,26 @@ function GiftPopoverContent({
 
   const available = isGiftAvailable(name);
 
-  let statusText = "gift available";
-  if (!available) {
-    const remainingMs = GIFT_COOLDOWN_MS - (Date.now() - (lastGiftedAt ?? 0));
-    const remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
-    const mins = Math.floor(remainingSec / 60);
-    const secs = remainingSec % 60;
-    statusText = `gift available in ${mins}m ${secs}s`;
-  }
+  const remainingMs = available
+    ? 0
+    : GIFT_COOLDOWN_MS - (Date.now() - (lastGiftedAt ?? 0));
+  const remainingPercent = Math.max(
+    0,
+    Math.min(100, (remainingMs / GIFT_COOLDOWN_MS) * 100),
+  );
 
   return (
     <Flex direction="column" gap="2">
       <Text size="1" color="gray">
         {NPC_ACTIVITY_DUMMY}
       </Text>
-      <Text size="1" color={available ? "grass" : "gray"}>
-        {statusText}
-      </Text>
-      <MyButton onClick={onGift} disabled={!available}>
+      <MyButton
+        onClick={onGift}
+        disabled={!available}
+        style={{
+          background: `linear-gradient(90deg, var(--gray-a6) ${remainingPercent}%, transparent ${remainingPercent}%)`,
+        }}
+      >
         gift
       </MyButton>
     </Flex>

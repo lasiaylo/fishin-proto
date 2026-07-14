@@ -10,6 +10,7 @@ export function MyButton({
   description,
   children,
   minWidth,
+  style,
 }: {
   children: ReactNode;
   onClick?: () => void;
@@ -18,6 +19,7 @@ export function MyButton({
   disabled?: boolean;
   description?: string;
   minWidth?: number;
+  style?: React.CSSProperties;
 }) {
   const button = (
     <Box flexGrow={"0"}>
@@ -29,7 +31,7 @@ export function MyButton({
         onMouseDown={onMouseDown}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseUp}
-        style={{ height: "auto" }}
+        style={{ height: "auto", ...style }}
       >
         <Box minWidth={`${minWidth ?? 0}px`} py={"2"}>
           <Text size={"1"}>{children}</Text>
