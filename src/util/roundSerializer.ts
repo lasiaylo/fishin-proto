@@ -11,11 +11,14 @@ const HEADERS = [
   "wallet",
   "rate",
   "lureId",
+  "baitId",
   "boughtLure",
   "rodAtk",
   "rodDef",
+  "rodSpeedMult",
   "lineHP",
   "inventorySize",
+  "incomeBoostPercent",
   "upgradesBought",
   "upgradeLevels",
   "fishCatchTimes",
@@ -25,6 +28,9 @@ const HEADERS = [
   "lureRemainingHP",
   "lureXp",
   "lureLevels",
+  "cumulativeMoneyEarned",
+  "dreamPoints",
+  "dreamUpgradesBought",
 ] as const;
 
 function escapeCell(value: string): string {
@@ -47,11 +53,14 @@ export function roundsToCSV(rounds: EconomyRound[]): string {
       r.wallet.toFixed(4),
       r.rate.toFixed(6),
       r.lureId,
+      r.baitId,
       r.boughtLure ? "1" : "0",
       r.rodStats[0]?.attack ?? 0,
       r.rodStats[0]?.defense ?? 0,
+      r.rodStats[0]?.speedMultiplier ?? 1,
       r.playerStats.lineHP,
       r.playerStats.inventorySize,
+      r.playerStats.incomeBoostPercent,
       JSON.stringify(r.upgradesBought),
       JSON.stringify(r.upgradeLevels),
       JSON.stringify(r.fishCatchTimes),
@@ -61,6 +70,9 @@ export function roundsToCSV(rounds: EconomyRound[]): string {
       JSON.stringify(r.lureRemainingHP),
       JSON.stringify(r.lureXp),
       JSON.stringify(r.lureLevels),
+      r.cumulativeMoneyEarned.toFixed(4),
+      r.dreamPoints.toFixed(4),
+      JSON.stringify(r.dreamUpgradesBought),
     ].map((v) => escapeCell(String(v)));
     rows.push(cells.join(","));
   }
@@ -113,6 +125,7 @@ export function csvToRounds(csv: string): EconomyRound[] {
     const obj = (key: string) => JSON.parse(get(key) || "{}");
     const rodAtk = Number(get("rodAtk"));
     const rodDef = Number(get("rodDef"));
+    const rodSpeedMult = Number(get("rodSpeedMult") || "1");
     return {
       round: Number(get("round")),
       cumulativeTime: Number(get("cumulativeTime")),
@@ -123,14 +136,22 @@ export function csvToRounds(csv: string): EconomyRound[] {
       wallet: Number(get("wallet")),
       rate: Number(get("rate")),
       lureId: get("lureId"),
+      baitId: get("baitId"),
       boughtLure: get("boughtLure") === "1",
       rodCount: 1,
       playerStats: {
         lineHP: Number(get("lineHP")),
         inventorySize: Number(get("inventorySize")),
+        incomeBoostPercent: Number(get("incomeBoostPercent")),
       },
       rodStats: [
-        { id: "ROD_1", attack: rodAtk, defense: rodDef, castMax: CAST_MAX },
+        {
+          id: "ROD_1",
+          attack: rodAtk,
+          defense: rodDef,
+          castMax: CAST_MAX,
+          speedMultiplier: rodSpeedMult,
+        },
       ],
       fishCatchTimes: obj("fishCatchTimes"),
       fishEarnings: obj("fishEarnings"),
@@ -141,6 +162,9 @@ export function csvToRounds(csv: string): EconomyRound[] {
       upgradeLevels: obj("upgradeLevels"),
       lureXp: obj("lureXp"),
       lureLevels: obj("lureLevels"),
+      cumulativeMoneyEarned: Number(get("cumulativeMoneyEarned")),
+      dreamPoints: Number(get("dreamPoints")),
+      dreamUpgradesBought: arr("dreamUpgradesBought"),
     };
   });
 }

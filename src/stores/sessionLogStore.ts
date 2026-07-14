@@ -1,9 +1,11 @@
 import { create } from "zustand";
 import { FishData } from "../util/csvLoader";
 import { EconomyRound } from "../game/EconomyModel";
-import { PlayerStats } from "./playerStore";
+import { PlayerStats, usePlayer } from "./playerStore";
+import { getRodStats } from "./rodStore";
+import { useDreamStore } from "./dreamStore";
 import { useLureXp } from "./lureXpStore";
-import { computeLureLevel } from "../util/constants";
+import { BAIT_ID_PREFIX, computeLureLevel } from "../util/constants";
 
 interface CatchRecord {
   fish: FishData;
@@ -205,6 +207,19 @@ export const useSessionLog = create<SessionLogState>((set, get) => ({
 
     const boughtLure = s.pendingLureBought;
 
+    const { ownedRods, rodSlotAssignments, rodSlotItems } = usePlayer.getState();
+    const slotRods = rodSlotAssignments.map((rodId) =>
+      rodId ? ownedRods.find((r) => r.id === rodId) : undefined,
+    );
+    const rodStats = slotRods
+      .filter((r): r is NonNullable<typeof r> => r !== undefined)
+      .map((r) => ({ id: r.id, ...getRodStats(r) }));
+    const baitSlotItem = rodSlotItems.find(
+      (item, i) => i > 0 && slotRods[i] && item?.startsWith(BAIT_ID_PREFIX),
+    );
+    const baitId = baitSlotItem ?? "";
+    const { cumulativeMoneyEarned, dreamPoints } = useDreamStore.getState();
+
     const round: EconomyRound = {
       round: roundCount,
       cumulativeTime,
@@ -215,6 +230,8 @@ export const useSessionLog = create<SessionLogState>((set, get) => ({
       wallet: walletBeforeSell,
       rate,
       lureId,
+      baitId,
+      rodCount: rodStats.length,
       fishCatchTimes,
       fishEarnings,
       lureRates,
@@ -224,12 +241,16 @@ export const useSessionLog = create<SessionLogState>((set, get) => ({
       upgradeLevels: { ...s.upgradeLevels },
       boughtLure,
       playerStats: { ...playerStats },
+      rodStats,
       lureXp: Object.fromEntries(
         Object.entries(useLureXp.getState().lures).map(([id, e]) => [id, e.xp]),
       ),
       lureLevels: Object.fromEntries(
         Object.entries(useLureXp.getState().lures).map(([id, e]) => [id, computeLureLevel(e.xp)]),
       ),
+      cumulativeMoneyEarned,
+      dreamPoints,
+      dreamUpgradesBought: [],
     };
 
     set({
