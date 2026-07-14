@@ -4,13 +4,16 @@ import { ShopView } from "./ShopView";
 import { PondView } from "./PondView";
 import { DreamShopView } from "./DreamShopView";
 import { sellAllFish, usePlayer } from "../stores/playerStore";
+import { useDreamStore } from "../stores/dreamStore";
 import { pushEvent } from "../stores/eventLogStore";
 import { useSessionLog } from "../stores/sessionLogStore";
-import { RARITY_COLOR } from "../util/constants";
+import { RARITY_COLOR, computeDreamPoints } from "../util/constants";
 import { EventMsg } from "../util/eventMessages";
 
 export function ActionsSection() {
   const [tab, setTab] = useState("pond");
+  const cumulativeMoneyEarned = useDreamStore((s) => s.cumulativeMoneyEarned);
+  const dreamUnlocked = computeDreamPoints(cumulativeMoneyEarned) >= 1;
 
   function handleTabChange(value: string) {
     if (value === "shop") {
@@ -40,7 +43,7 @@ export function ActionsSection() {
         <Tabs.List>
           <Tabs.Trigger value="pond">pond</Tabs.Trigger>
           <Tabs.Trigger value="shop">shop</Tabs.Trigger>
-          <Tabs.Trigger value="dream">dream</Tabs.Trigger>
+          {dreamUnlocked && <Tabs.Trigger value="dream">dream</Tabs.Trigger>}
         </Tabs.List>
         <Tabs.Content value="pond">
           <Flex className={"fade-in"}>
@@ -52,11 +55,13 @@ export function ActionsSection() {
             <ShopView />
           </Flex>
         </Tabs.Content>
-        <Tabs.Content value="dream">
-          <Flex className={"fade-in"}>
-            <DreamShopView />
-          </Flex>
-        </Tabs.Content>
+        {dreamUnlocked && (
+          <Tabs.Content value="dream">
+            <Flex className={"fade-in"}>
+              <DreamShopView />
+            </Flex>
+          </Tabs.Content>
+        )}
       </Tabs.Root>
     </Flex>
   );
