@@ -31,6 +31,7 @@ import {
   CAST_DURATION_MAX,
   CAST_DURATION_MIN,
   CAST_MIN,
+  getTackleDirections,
   getTackleType,
   lureReelMaxSpeed,
   LURING_REEL_ACCEL,
@@ -500,7 +501,8 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     );
   }
 
-  const lureXpEntry = selectedItem !== null ? lureXpData[selectedItem] : undefined;
+  const lureXpEntry =
+    selectedItem !== null ? lureXpData[selectedItem] : undefined;
   const lureXpVal = lureXpEntry?.xp ?? 0;
   const lureLevel = lureXpEntry?.level ?? 0;
   const lureProgress = lureXpProgress(lureXpVal, lureLevel);
@@ -586,25 +588,25 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
                 </Select.Root>
               </Flex>
               {selectedItem !== null && (
-                <Flex align="center" gap="2">
+                <Flex align="end" gap="2">
                   <Text size="1" color="gray">
-                    {getTackleType(selectedItem)}
+                    {getTackleDirections(selectedItem)}
                   </Text>
                 </Flex>
               )}
               {selectedItem !== null &&
                 getTackleType(selectedItem) === TackleType.LURE && (
-                <Flex align="center" gap="2">
-                  <Text size="1" color="gray">
-                    {`lvl ${lureLevel}`}
-                  </Text>
-                  <Progress
-                    radius="none"
-                    size="2"
-                    value={Math.round(lureProgress * 100)}
-                  />
-                </Flex>
-              )}
+                  <Flex align="center" gap="2">
+                    <Text size="1" color="gray">
+                      {`lvl ${lureLevel}`}
+                    </Text>
+                    <Progress
+                      radius="none"
+                      size="2"
+                      value={Math.round(lureProgress * 100)}
+                    />
+                  </Flex>
+                )}
             </>
           )}
         </Flex>

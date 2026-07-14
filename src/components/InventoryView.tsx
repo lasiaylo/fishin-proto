@@ -8,6 +8,7 @@ import {
   computeDreamPoints,
   computeDreamPointsProgress,
   CURRENCY_SYMBOL,
+  DREAM_POINT_SYMBOL,
   RARITY_COLOR,
 } from "../util/constants";
 import { StatName } from "../util/csvLoader";
@@ -53,15 +54,7 @@ export function InventoryView() {
       gap={"6"}
       pt="40px"
     >
-      <Flex direction="column" gap="1">
-        <Text size="1" color="gray">
-          LVL {lvl}
-        </Text>
-
-        <Progress radius="none" size="2" value={lvlProgressPct} />
-      </Flex>
-
-      <Flex width={"100%"} direction={"column"}>
+      <Flex width={"100%"} direction={"column"} gap="2">
         <Code size="2">
           {CURRENCY_SYMBOL} <AnimatedNumber value={wallet} />
         </Code>
@@ -76,6 +69,12 @@ export function InventoryView() {
             +{popup.amount}
           </Code>
         )}
+        <Flex direction="row" align="center" gap="2">
+          <Text size="1" color="gray">
+            {`${DREAM_POINT_SYMBOL} ${lvl}`}
+          </Text>
+          <Progress radius="none" size="2" value={lvlProgressPct} />
+        </Flex>
       </Flex>
 
       <Flex direction="column" gap="1">

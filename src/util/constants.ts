@@ -65,7 +65,7 @@ export const CAST_MIN = 5;
 export const CAST_DURATION_MIN = 0.5;
 export const CAST_DURATION_MAX = 1.5;
 
-export const CAST_CHARGE_DURATION = 1500;
+export const CAST_CHARGE_DURATION = 2000;
 export const LURING_REEL_MAX_SPEED = 8;
 export const LURE_REEL_SPEED_PER_LEVEL = 1;
 export const LURING_REEL_ACCEL = 20;
@@ -102,6 +102,12 @@ export function getTackleType(lureId: string): TackleType {
   return lureId.startsWith(BAIT_ID_PREFIX) || lureId === BASE_LURE_ID
     ? TackleType.BAIT
     : TackleType.LURE;
+}
+
+export function getTackleDirections(lureId: string): string {
+  return lureId.startsWith(BAIT_ID_PREFIX) || lureId === BASE_LURE_ID
+    ? "cast and wait"
+    : "cast and reel";
 }
 
 export const WAIT_ZONE_RANGES: Record<Zone, [number, number]> = {
