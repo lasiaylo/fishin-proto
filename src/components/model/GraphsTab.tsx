@@ -30,7 +30,6 @@ import {
   GENERATED_SHOP_CSV,
 } from "./CsvGenerator";
 import { EconomyChart, lineProps } from "./EconomyChart";
-import { INITIAL_PLAYER_STATE } from "../../util/constants";
 
 export function GraphsTab({
   fishData: defaultFishData,
@@ -53,7 +52,9 @@ export function GraphsTab({
     rodData.find((r) => r.id === "ROD_1")?.attackLevels ?? [],
     0,
   );
-  const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
+  const [lineHP, setLineHP] = useState(() =>
+    levelStat(rodData.find((r) => r.id === "ROD_1")?.lineHpLevels ?? [], 0),
+  );
   const [minStat, setMinStat] = useState(baseAttack);
   const [maxStat, setMaxStat] = useState(baseAttack + 10);
   const [trialsPerFish, setTrialsPerFish] = useState(100);
@@ -188,9 +189,10 @@ export function GraphsTab({
         const { rates, earnings, winRates, remainingHPs } = computeLureStats(
           activeFishData,
           locationData,
-          { lineHP, inventorySize, incomeBoostPercent: 0 },
+          { inventorySize, incomeBoostPercent: 0 },
           s,
           s,
+          lineHP,
           trialsPerFish,
         );
         const winRateKeyed = Object.fromEntries(

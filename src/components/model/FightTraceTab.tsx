@@ -26,7 +26,6 @@ import { levelStat, type FishData, type RodData } from "../../util/csvLoader";
 import { avgZoneDistance } from "../../util/zones";
 import { COLORS, NumInput, FishSelect, EngineConfigRow } from "./shared";
 import { randomizeFishStats } from "../../stores/fishStore";
-import { INITIAL_PLAYER_STATE } from "../../util/constants";
 
 const LINE_CHART_THRESHOLD = 20;
 
@@ -168,7 +167,9 @@ export function FightTraceTab({
     levelStat(rod0?.attackLevels ?? [], 0),
   );
   const [drag, setDrag] = useState(levelStat(rod0?.defenseLevels ?? [], 0));
-  const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
+  const [lineHP, setLineHP] = useState(
+    levelStat(rod0?.lineHpLevels ?? [], 0),
+  );
   const [trialCount, setTrialCount] = useState(20);
   const [randomize, setRandomize] = useState(false);
   const [engineCfg, setEngineCfg] = useState<FightConfig>(DEFAULT_FIGHT_CONFIG);

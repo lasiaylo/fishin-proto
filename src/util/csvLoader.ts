@@ -20,6 +20,7 @@ export enum StatName {
   ROD = "ROD",
   ROD_ATTACK = "ROD_ATTACK",
   ROD_DEFENSE = "ROD_DEFENSE",
+  ROD_LINE_HP = "ROD_LINE_HP",
   ROD_SLOT = "ROD_SLOT",
   INCOME = "INCOME",
 }
@@ -35,6 +36,7 @@ export interface RodData {
   id: string;
   attackLevels: number[];
   defenseLevels: number[];
+  lineHpLevels: number[];
   castMax: number;
   speedMultiplier: number;
   reelMaxSpeed: number;
@@ -75,9 +77,10 @@ export async function loadRodData(
     id: row[0],
     attackLevels: row[1].split(" ").map(Number),
     defenseLevels: row[2].split(" ").map(Number),
-    castMax: Number(row[3]),
-    speedMultiplier: Number(row[4]),
-    reelMaxSpeed: Number(row[5]),
+    lineHpLevels: row[3].split(" ").map(Number),
+    castMax: Number(row[4]),
+    speedMultiplier: Number(row[5]),
+    reelMaxSpeed: Number(row[6]),
   }));
 }
 
@@ -251,7 +254,8 @@ function categoryFromStat(stat: StatName): string {
   if (
     stat === StatName.ROD ||
     stat === StatName.ROD_ATTACK ||
-    stat === StatName.ROD_DEFENSE
+    stat === StatName.ROD_DEFENSE ||
+    stat === StatName.ROD_LINE_HP
   )
     return "rods";
   return "misc";

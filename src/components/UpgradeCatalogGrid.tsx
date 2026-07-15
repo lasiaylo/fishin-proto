@@ -51,7 +51,9 @@ export function UpgradeCatalogGrid({
     });
 
   const isAttackOrDefense = (u: UpgradeEntry) =>
-    u.stat === StatName.ROD_ATTACK || u.stat === StatName.ROD_DEFENSE;
+    u.stat === StatName.ROD_ATTACK ||
+    u.stat === StatName.ROD_DEFENSE ||
+    u.stat === StatName.ROD_LINE_HP;
 
   const groups = CATEGORY_ORDER.map((cat) => ({
     label: cat,

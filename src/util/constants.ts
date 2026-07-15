@@ -25,16 +25,16 @@ export interface Rod {
   id: string;
   attackLevel: number;
   defenseLevel: number;
+  lineHpLevel: number;
 }
 
 export const INITIAL_PLAYER_STATE: PlayerState = {
   wallet: 0,
-  lineHP: 20,
   inventorySize: 4,
   incomeBoostPercent: 0,
   ownedLures: new Set<string>(),
   baitInventory: { [BASE_BAIT_ID]: BAIT_START_COUNT },
-  ownedRods: [{ id: "ROD_1", attackLevel: 0, defenseLevel: 0 }],
+  ownedRods: [{ id: "ROD_1", attackLevel: 0, defenseLevel: 0, lineHpLevel: 0 }],
   rodSlotAssignments: [null],
   rodSlotItems: [null],
   inventory: [],

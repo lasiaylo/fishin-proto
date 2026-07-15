@@ -4,6 +4,7 @@ import { csvToRounds } from "../../util/roundSerializer";
 import { Line, ReferenceArea, ReferenceLine, Legend } from "recharts";
 import { simulateEconomy, type EconomyRound } from "../../game/EconomyModel";
 import {
+  levelStat,
   StatName,
   loadFishData,
   loadFishDisplayMap,
@@ -117,7 +118,9 @@ export function EconomyTab({
   onFishRowsChange: (rows: string[][]) => void;
   onShopRowsChange: (rows: string[][]) => void;
 }) {
-  const [lineHP, setLineHP] = useState(INITIAL_PLAYER_STATE.lineHP);
+  const [lineHP, setLineHP] = useState(() =>
+    levelStat(rodData.find((r) => r.id === "ROD_1")?.lineHpLevels ?? [], 0),
+  );
   const [inventorySize, setInventorySize] = useState(
     INITIAL_PLAYER_STATE.inventorySize,
   );
@@ -303,16 +306,19 @@ export function EconomyTab({
       for (const pair of pairs) {
         const data = pairData[pair.id];
         if (!data) continue;
+        const rodDataForSim = rodData.map((r) =>
+          r.id === "ROD_1" ? { ...r, lineHpLevels: [lineHP] } : r,
+        );
         results[pair.id] = simulateEconomy(
           data.fish,
           data.shop,
           locationData,
-          { lineHP, inventorySize, incomeBoostPercent: 0 },
+          { inventorySize, incomeBoostPercent: 0 },
           simMinutes,
           evalTrials,
           pair.upgradeStrategy,
           undefined,
-          rodData,
+          rodDataForSim,
         );
       }
       setPairRounds(results);
@@ -382,7 +388,7 @@ export function EconomyTab({
     time: r.cumulativeTime,
     attack: r.rodStats[0]?.attack ?? 0,
     defense: r.rodStats[0]?.defense ?? 0,
-    lineHP: r.playerStats.lineHP,
+    lineHP: r.rodStats[0]?.lineHP ?? 0,
   }));
 
   const lureRateData = primaryRounds.map((r) => ({

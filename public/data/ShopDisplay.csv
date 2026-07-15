@@ -1,9 +1,11 @@
 ID, Name, Description, Category, Subcategory
 ROD_1_ATTACK, reel, reel in fish faster, rods, lil guppy
 ROD_1_DEFENSE, drag, prevent fish from taking the line out as quickly, rods, lil guppy
+ROD_1_LINE_HP, line, strengthen your line so it can take more strain before snapping, rods, lil guppy
 ROD_2, maple scout, an all-around reliable rod, rods, maple scout
 ROD_2_ATTACK, reel , reel in fish faster, rods, maple scout
 ROD_2_DEFENSE, drag , prevent fish from taking the line out as quickly, rods, maple scout
+ROD_2_LINE_HP, line , strengthen your line so it can take more strain before snapping, rods, maple scout
 LURE_1, jighead, , lures,
 LURE_2, spinner, , lures,
 LURE_3, deep diver, , lures,

@@ -73,6 +73,7 @@ export interface EconomyRound {
     id: string;
     attack: number;
     defense: number;
+    lineHP: number;
     castMax: number;
     speedMultiplier: number;
   }[]; // snapshot of rods
@@ -113,14 +114,14 @@ function expandFishByRarity(
 
 function runTrials(
   fish: FishData,
-  player: PlayerStats,
   atk: number,
   def: number,
+  lineHp: number,
   n: number,
   speedMult: number = 1,
 ): { winCount: number; avgFightTime: number; avgWinTension: number } {
   const zoneDist = avgZoneDistance(fish.zones);
-  const key = `${fish.attack}|${fish.defense}|${fish.thrash}|${fish.hp}|${zoneDist}|${atk}|${def}|${player.lineHP}|${n}|${speedMult}`;
+  const key = `${fish.attack}|${fish.defense}|${fish.thrash}|${fish.hp}|${zoneDist}|${atk}|${def}|${lineHp}|${n}|${speedMult}`;
   const cached = trialsCache.get(key);
   if (cached) return cached;
 
@@ -130,7 +131,7 @@ function runTrials(
     fish.thrash,
     atk,
     def,
-    player.lineHP,
+    lineHp,
     zoneDist,
     fish.hp,
     undefined,
@@ -202,6 +203,7 @@ function evalLure(
   const {
     attack: lureRodAtk,
     defense: lureRodDef,
+    lineHP: lureRodLineHp,
     speedMultiplier: lureRodSpeedMult,
   } = econRodStats(rods[0], rodData);
   const incomeMultiplier = 1 + player.incomeBoostPercent / 100;
@@ -233,9 +235,9 @@ function evalLure(
         const combinedWeight = fishWeight * rarityWeight;
         const { winCount, avgFightTime, avgWinTension } = runTrials(
           variant,
-          player,
           lureRodAtk,
           lureRodDef,
+          lureRodLineHp,
           evalTrials,
           lureRodSpeedMult,
         );
@@ -247,7 +249,7 @@ function evalLure(
         totalFightTime += avgFightTime * combinedWeight;
         totalWinRate += (winCount / evalTrials) * combinedWeight;
         totalRemainingHP +=
-          ((player.lineHP - avgWinTension) / player.lineHP) *
+          ((lureRodLineHp - avgWinTension) / lureRodLineHp) *
           100 *
           combinedWeight;
       }
@@ -380,6 +382,7 @@ function cheapestUpgrade(
       case StatName.ROD_SLOT:
       case StatName.ROD_ATTACK:
       case StatName.ROD_DEFENSE:
+      case StatName.ROD_LINE_HP:
       case StatName.BAIT:
         return 0;
       default:
@@ -457,6 +460,7 @@ interface EconRod {
   id: string;
   attackLevel: number;
   defenseLevel: number;
+  lineHpLevel: number;
 }
 
 function econRodStats(
@@ -465,6 +469,7 @@ function econRodStats(
 ): {
   attack: number;
   defense: number;
+  lineHP: number;
   castMax: number;
   speedMultiplier: number;
   reelMaxSpeed: number;
@@ -473,6 +478,7 @@ function econRodStats(
   return {
     attack: levelStat(data.attackLevels, rod.attackLevel),
     defense: levelStat(data.defenseLevels, rod.defenseLevel),
+    lineHP: levelStat(data.lineHpLevels, rod.lineHpLevel),
     castMax: data.castMax,
     speedMultiplier: data.speedMultiplier,
     reelMaxSpeed: data.reelMaxSpeed,
@@ -506,7 +512,12 @@ function applyUpgrade(
         (baitStock[upgrade.id] ?? 0) + upgrade.valuePerLevel;
       break;
     case StatName.ROD: {
-      const newRod = { id: upgrade.id, attackLevel: 0, defenseLevel: 0 };
+      const newRod = {
+        id: upgrade.id,
+        attackLevel: 0,
+        defenseLevel: 0,
+        lineHpLevel: 0,
+      };
       if (openSlotsRef.value > 0) {
         openSlotsRef.value--;
         rodCountRef.value++;
@@ -542,6 +553,14 @@ function applyUpgrade(
       if (rod) rod.defenseLevel += 1;
       break;
     }
+    case StatName.ROD_LINE_HP: {
+      const rodId = upgrade.id.replace("_LINE_HP", "");
+      const rod =
+        rods.find((r) => r.id === rodId) ??
+        benchedRods.find((r) => r.id === rodId);
+      if (rod) rod.lineHpLevel += 1;
+      break;
+    }
   }
 }
 
@@ -551,6 +570,7 @@ export function computeLureStats(
   player: PlayerStats,
   atk: number,
   def: number,
+  lineHp: number,
   trialsPerFish: number,
 ): {
   rates: Record<string, number>;
@@ -585,9 +605,9 @@ export function computeLureStats(
         const combinedWeight = fishWeight * rarityWeight;
         const { winCount, avgFightTime, avgWinTension } = runTrials(
           variant,
-          player,
           atk,
           def,
+          lineHp,
           trialsPerFish,
         );
         const avgEarnings =
@@ -597,9 +617,7 @@ export function computeLureStats(
         totalWinRate += (winCount / trialsPerFish) * combinedWeight;
         if (winCount > 0) {
           totalRemainingHP +=
-            ((player.lineHP - avgWinTension) / player.lineHP) *
-            100 *
-            combinedWeight;
+            ((lineHp - avgWinTension) / lineHp) * 100 * combinedWeight;
           totalWinWeight += combinedWeight;
         }
       }
@@ -685,6 +703,7 @@ export function simulateEconomy(
       id: initialRod.id,
       attackLevel: initialRod.attackLevel,
       defenseLevel: initialRod.defenseLevel,
+      lineHpLevel: initialRod.lineHpLevel,
     },
   ];
   const rodCountRef = { value: 1 };
@@ -783,9 +802,9 @@ export function simulateEconomy(
             const combinedWeight = fishWeight * rarityWeight;
             const { winCount, avgFightTime: baitFightTime } = runTrials(
               variant,
-              player,
               baitRodStats.attack,
               baitRodStats.defense,
+              baitRodStats.lineHP,
               evalTrials,
               baitRodStats.speedMultiplier,
             );

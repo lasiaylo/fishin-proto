@@ -119,7 +119,10 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
   const castLocationRef = useRef<string>("");
   const caughtFishRef = useRef<FishData | null>(null);
   const fightRef = useRef<FightEngine | null>(null);
-  const lineHpRef = useRef<number>(usePlayer.getState().lineHP);
+  const initialAssignedRod = ownedRods.find((r) => r.id === assignment);
+  const lineHpRef = useRef<number>(
+    initialAssignedRod ? getRodStats(initialAssignedRod).lineHP : 1,
+  );
   const rafRef = useRef<number>(0);
   const lastTimeRef = useRef<number | null>(null);
   const reelRef = useRef<boolean>(false);
@@ -292,16 +295,13 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
       (castDistanceRef.current - luringDistanceRef.current) * XP_PER_DISTANCE;
     setGameState(GameState.Fighting);
 
-    const {
-      rodSlotAssignments: assignments,
-      ownedRods: rods,
-      lineHP,
-    } = usePlayer.getState();
+    const { rodSlotAssignments: assignments, ownedRods: rods } =
+      usePlayer.getState();
     const rodId = assignments[slotIndex];
     const rod = rods.find((r) => r.id === rodId);
-    const { attack, defense, speedMultiplier } = rod
+    const { attack, defense, lineHP, speedMultiplier } = rod
       ? getRodStats(rod)
-      : { attack: 0, defense: 0, speedMultiplier: 1 };
+      : { attack: 0, defense: 0, lineHP: 1, speedMultiplier: 1 };
     lineHpRef.current = lineHP;
 
     const fish = caughtFishRef.current!;
@@ -347,11 +347,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     cancelAnimationFrame(rafRef.current);
     reelRef.current = false;
     const fish = caughtFishRef.current!;
-    const {
-      lineHP,
-      rodSlotItems: items,
-      incomeBoostPercent,
-    } = usePlayer.getState();
+    const { rodSlotItems: items, incomeBoostPercent } = usePlayer.getState();
     const item = items[slotIndex] ?? BASE_BAIT_ID;
     const effectivePrice = Math.round(
       fish.basePrice * (1 + incomeBoostPercent / 100),
@@ -364,7 +360,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
         result === Outcome.WIN,
         finalState.time,
         finalState.tension,
-        lineHP,
+        lineHpRef.current,
         item,
         effectivePrice,
       );

@@ -122,6 +122,9 @@ function generateShopRows(
   defenseFn: FunctionConfig,
   defenseVPL: number,
   defenseCount: number,
+  lineHpFn: FunctionConfig,
+  lineHpVPL: number,
+  lineHpCount: number,
   lureFn: FunctionConfig,
   lureCount: number,
   baitFn: FunctionConfig,
@@ -159,6 +162,13 @@ function generateShopRows(
       priceList(defenseFn, defenseCount),
       "ROD_DEFENSE",
       String(defenseVPL),
+      r > 1 ? rodId : "",
+    ]);
+    rows.push([
+      `${rodId}_LINE_HP`,
+      priceList(lineHpFn, lineHpCount),
+      "ROD_LINE_HP",
+      String(lineHpVPL),
       r > 1 ? rodId : "",
     ]);
   }
@@ -732,6 +742,9 @@ const SHOP_DEFAULTS: {
   defenseFn: FunctionConfig;
   defenseVPL: number;
   defenseCount: number;
+  lineHpFn: FunctionConfig;
+  lineHpVPL: number;
+  lineHpCount: number;
   lureFn: FunctionConfig;
   baitFn: FunctionConfig;
   baitCount: number;
@@ -756,6 +769,14 @@ const SHOP_DEFAULTS: {
   },
   defenseVPL: 1,
   defenseCount: 10,
+  lineHpFn: {
+    type: "LINEAR",
+    startValue: 20,
+    scaleFactor: 4,
+    growthRate: 0.8,
+  },
+  lineHpVPL: 1,
+  lineHpCount: 10,
   lureFn: { type: "LINEAR", startValue: 10, scaleFactor: 4, growthRate: 0.8 },
   baitFn: { type: "LINEAR", startValue: 5, scaleFactor: 5, growthRate: 0.8 },
   baitCount: 1,
@@ -798,6 +819,12 @@ function ShopGenerator({
   const [defenseVPL, setDefenseVPL] = useState(() => stored.defenseVPL);
   const [defenseCount, setDefenseCount] = useState(() => stored.defenseCount);
 
+  const [lineHpFn, setLineHpFn] = useState<FunctionConfig>(
+    () => stored.lineHpFn,
+  );
+  const [lineHpVPL, setLineHpVPL] = useState(() => stored.lineHpVPL);
+  const [lineHpCount, setLineHpCount] = useState(() => stored.lineHpCount);
+
   const [lureFn, setLureFn] = useState<FunctionConfig>(() => stored.lureFn);
   const [baitFn, setBaitFn] = useState<FunctionConfig>(() => stored.baitFn);
   const [baitCount, setBaitCount] = useState(() => stored.baitCount);
@@ -819,6 +846,9 @@ function ShopGenerator({
     defenseFn,
     defenseVPL,
     defenseCount,
+    lineHpFn,
+    lineHpVPL,
+    lineHpCount,
     lureFn,
     lureCount,
     baitFn,
@@ -839,6 +869,9 @@ function ShopGenerator({
         defenseFn,
         defenseVPL,
         defenseCount,
+        lineHpFn,
+        lineHpVPL,
+        lineHpCount,
         lureFn,
         baitFn,
         baitCount,
@@ -857,6 +890,9 @@ function ShopGenerator({
     defenseFn,
     defenseVPL,
     defenseCount,
+    lineHpFn,
+    lineHpVPL,
+    lineHpCount,
     lureFn,
     lureCount,
     baitFn,
@@ -874,6 +910,9 @@ function ShopGenerator({
     setDefenseFn(initialRef.current.defenseFn);
     setDefenseVPL(initialRef.current.defenseVPL);
     setDefenseCount(initialRef.current.defenseCount);
+    setLineHpFn(initialRef.current.lineHpFn);
+    setLineHpVPL(initialRef.current.lineHpVPL);
+    setLineHpCount(initialRef.current.lineHpCount);
     setLureFn(initialRef.current.lureFn);
     setBaitFn(initialRef.current.baitFn);
     setBaitCount(initialRef.current.baitCount);
@@ -940,6 +979,31 @@ function ShopGenerator({
               label="Upgrades"
               value={defenseCount}
               onChange={setDefenseCount}
+              min={1}
+            />
+          </Flex>
+        </Flex>
+
+        <Flex direction="column" gap="2">
+          <Text size="1" weight="bold">
+            LINE HP
+          </Text>
+          <FunctionSelect
+            label="Price curve"
+            value={lineHpFn}
+            onChange={setLineHpFn}
+          />
+          <Flex gap="3" wrap="wrap" align="end">
+            <NumInput
+              label="ValuePerLevel"
+              value={lineHpVPL}
+              onChange={setLineHpVPL}
+              min={1}
+            />
+            <NumInput
+              label="Upgrades"
+              value={lineHpCount}
+              onChange={setLineHpCount}
               min={1}
             />
           </Flex>
@@ -1031,6 +1095,7 @@ function ShopGenerator({
           const comment = [
             `# ROD_ATTACK price curve: ${fnConfigStr(attackFn)} | ValuePerLevel=${attackVPL} | Upgrades=${attackCount}`,
             `# ROD_DEFENSE price curve: ${fnConfigStr(defenseFn)} | ValuePerLevel=${defenseVPL} | Upgrades=${defenseCount}`,
+            `# ROD_LINE_HP price curve: ${fnConfigStr(lineHpFn)} | ValuePerLevel=${lineHpVPL} | Upgrades=${lineHpCount}`,
             `# LURE price curve: ${fnConfigStr(lureFn)} | Lures=${lureCount}`,
             `# BAIT price curve: ${fnConfigStr(baitFn)} | Tiers=${baitCount}`,
             `# ROD_HOLDER price curve: ${fnConfigStr(rodHolderFn)} | Levels=${rodHolderLevels}`,
@@ -1182,6 +1247,9 @@ export function getGeneratedShopRows(): string[][] {
     defenseFn,
     defenseVPL,
     defenseCount,
+    lineHpFn,
+    lineHpVPL,
+    lineHpCount,
     lureFn,
     baitFn,
     baitCount,
@@ -1197,6 +1265,9 @@ export function getGeneratedShopRows(): string[][] {
     defenseFn,
     defenseVPL,
     defenseCount,
+    lineHpFn,
+    lineHpVPL,
+    lineHpCount,
     lureFn,
     levels,
     baitFn,

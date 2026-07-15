@@ -20,6 +20,7 @@ export function getRodDataById(id: string): RodData {
 export function getRodStats(rod: Rod): {
   attack: number;
   defense: number;
+  lineHP: number;
   castMax: number;
   speedMultiplier: number;
   reelMaxSpeed: number;
@@ -28,6 +29,7 @@ export function getRodStats(rod: Rod): {
   return {
     attack: levelStat(data.attackLevels, rod.attackLevel),
     defense: levelStat(data.defenseLevels, rod.defenseLevel),
+    lineHP: levelStat(data.lineHpLevels, rod.lineHpLevel),
     castMax: data.castMax,
     speedMultiplier: data.speedMultiplier,
     reelMaxSpeed: data.reelMaxSpeed,

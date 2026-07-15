@@ -27,12 +27,11 @@ export function ActionsSection() {
 
   function handleTabChange(value: string) {
     if (value === "shop") {
-      const { inventory, wallet, lineHP, inventorySize, incomeBoostPercent } =
+      const { inventory, wallet, inventorySize, incomeBoostPercent } =
         usePlayer.getState();
       const sold = inventory.filter((fish) => !fish.locked);
       if (sold.length > 0) {
         useSessionLog.getState().finalizeRound(wallet, {
-          lineHP,
           inventorySize,
           incomeBoostPercent,
         });

@@ -16,7 +16,6 @@ import { pushEvent } from "./eventLogStore";
 import { useDebugSettings } from "./debugSettingsStore";
 
 export interface PlayerStats {
-  lineHP: number;
   inventorySize: number;
   incomeBoostPercent: number;
 }
@@ -109,7 +108,10 @@ export function addRod(id: string) {
   usePlayer.setState((s) => {
     if (s.ownedRods.some((r) => r.id === id)) return s;
     return {
-      ownedRods: [...s.ownedRods, { id, attackLevel: 0, defenseLevel: 0 }],
+      ownedRods: [
+        ...s.ownedRods,
+        { id, attackLevel: 0, defenseLevel: 0, lineHpLevel: 0 },
+      ],
     };
   });
 }
@@ -140,7 +142,7 @@ export function assignRodToSlot(slotIdx: number, rodId: string | null) {
 
 export function setRodLevel(
   rodId: string,
-  stat: "attackLevel" | "defenseLevel",
+  stat: "attackLevel" | "defenseLevel" | "lineHpLevel",
   level: number,
 ) {
   usePlayer.setState((s) => {

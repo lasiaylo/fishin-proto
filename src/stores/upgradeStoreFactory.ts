@@ -56,6 +56,11 @@ function applyStatEffect(upgrade: UpgradeEntry, level: number, delta: number) {
       setRodLevel(rodId, "defenseLevel", level);
       break;
     }
+    case StatName.ROD_LINE_HP: {
+      const rodId = upgrade.id.replace("_LINE_HP", "");
+      setRodLevel(rodId, "lineHpLevel", level);
+      break;
+    }
   }
 }
 
