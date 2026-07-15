@@ -32,31 +32,31 @@ export function ReelView({
   }, [onReelStart]);
 
   return (
-    <Flex direction="column" flexGrow={"1"} gap="6">
-      <Flex gap={"4"} align={"center"}>
-        <div
-          onPointerDown={() => {
-            isPointerDown.current = true;
-            if (onReelStart) onReelStart();
-          }}
-          onPointerUp={() => {
+    <Flex direction="row" flexGrow={"1"} gap="5" width={"100%"}>
+      <div
+        onPointerDown={() => {
+          isPointerDown.current = true;
+          if (onReelStart) onReelStart();
+        }}
+        onPointerUp={() => {
+          isPointerDown.current = false;
+          if (onReelEnd) onReelEnd();
+        }}
+        onPointerLeave={() => {
+          if (isPointerDown.current) {
             isPointerDown.current = false;
             if (onReelEnd) onReelEnd();
-          }}
-          onPointerLeave={() => {
-            if (isPointerDown.current) {
-              isPointerDown.current = false;
-              if (onReelEnd) onReelEnd();
-            }
-          }}
-        >
-          <MyButton disabled={!onReelStart} minWidth={150}>
-            reel
-          </MyButton>
-        </div>
-      </Flex>
+          }
+        }}
+      >
+        <MyButton disabled={!onReelStart} minWidth={100}>
+          reel
+        </MyButton>
+      </div>
+
       <Flex
         position={"relative"}
+        flexGrow={"1"}
         direction="column"
         gap="4"
         className={"fade-in"}

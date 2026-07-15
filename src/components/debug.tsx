@@ -33,13 +33,18 @@ import {
 export function Debug() {
   return (
     <Flex direction="row" gap="4" p="4" wrap="wrap">
-      <SessionLogSection />
-      <CsvSwitcherSection />
+      <Flex direction="column" gap="4">
+        <SessionLogSection />
+        <CsvSwitcherSection />
+        <RodSlotSection />
+      </Flex>
       <ShopUpgradeSection />
-      <RodSlotSection />
+      <Flex direction="column" gap="4">
+        <MoneySection />
+        <EventLogSection />
+      </Flex>
+
       <StoreView />
-      <MoneySection />
-      <EventLogSection />
     </Flex>
   );
 }
@@ -214,7 +219,9 @@ function CsvSwitcherSection() {
     setCsvConfig({ fishCSV: newFile });
     if (newFile === GENERATED_FISH_CSV) {
       const displayMap = await loadFishDisplayMap();
-      initFishFromData(parseFishGameplayRows(getGeneratedFishRows(), displayMap));
+      initFishFromData(
+        parseFishGameplayRows(getGeneratedFishRows(), displayMap),
+      );
     } else {
       initFish(newFile);
     }

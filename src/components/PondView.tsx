@@ -3,7 +3,7 @@ import gsap from "gsap";
 import { Flex, Progress, Select, Separator, Text } from "@radix-ui/themes";
 import { useShallow } from "zustand/react/shallow";
 import { ChargeButton } from "./ChargeButton";
-import { BaitData, FishData, StatName } from "../util/csvLoader";
+import { FishData, StatName } from "../util/csvLoader";
 import { getBiteChance, getZones } from "../util/zones";
 import { randomizeFishStats, useFish } from "../stores/fishStore";
 import { pickFishForZone, useLocation } from "../stores/locationStore";
@@ -50,7 +50,7 @@ enum GameState {
   Idle = "idle",
   CastAnimation = "cast_animation",
   Luring = "luring",
-  Waiting = "waiting",
+  Baiting = "waiting",
   Fighting = "fighting",
 }
 
@@ -206,15 +206,9 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     const assignedRod = ownedRods.find((r) => r.id === assignment) as Rod;
     const effectiveReelMaxSpeed = getRodStats(assignedRod).reelMaxSpeed;
 
-    const bait = useBaitData
-      .getState()
-      .baitData.find((b) => b.id === item) as BaitData;
-    const waitMin = bait.waitMin;
-    const waitMax = bait.waitMax;
-
     const newGameState =
-      lureType === TackleType.BAIT ? GameState.Waiting : GameState.Luring;
-
+      lureType === TackleType.BAIT ? GameState.Baiting : GameState.Luring;
+    const bait = useBaitData.getState().baitData.find((b) => b.id === item);
     setGameState(newGameState);
     setLuringDistance(initialDistance);
 
@@ -261,8 +255,10 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
         } else {
           waitCountdownRef.current = null;
         }
-      } else if (newGameState === GameState.Waiting) {
+      } else if (newGameState === GameState.Baiting) {
         if (waitCountdownRef.current === null) {
+          const waitMin = bait?.waitMin as number;
+          const waitMax = bait?.waitMax as number;
           waitCountdownRef.current =
             waitMin + Math.random() * (waitMax - waitMin);
         }
@@ -452,7 +448,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
           <ChargeButton
             onRelease={handleCastRelease}
             maxHoldMs={CAST_CHARGE_DURATION}
-            width={150}
+            width={100}
             disabled={castDisabled}
           >
             cast
@@ -464,7 +460,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     controls = <ReelView distance={castProgress} lineHp={lineHpRef.current} />;
   } else if (
     gameState === GameState.Luring ||
-    gameState === GameState.Waiting
+    gameState === GameState.Baiting
   ) {
     controls = (
       <ReelView
@@ -613,7 +609,9 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
           </Flex>
         )}
 
-        <Flex flexGrow={"1"}>{controls}</Flex>
+        <Flex flexGrow={"1"} height={"100px"}>
+          {controls}
+        </Flex>
       </Flex>
     </Flex>
   );

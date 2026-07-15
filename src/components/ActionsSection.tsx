@@ -5,6 +5,7 @@ import { PondView } from "./PondView";
 import { DreamShopView } from "./DreamShopView";
 import { sellAllFish, usePlayer } from "../stores/playerStore";
 import { useDreamStore } from "../stores/dreamStore";
+import { useShop } from "../stores/shopStore";
 import { useMetrics } from "../stores/metricsStore";
 import { pushEvent } from "../stores/eventLogStore";
 import { useSessionLog } from "../stores/sessionLogStore";
@@ -20,7 +21,9 @@ export function ActionsSection() {
   const cumulativeMoneyEarned = useDreamStore((s) => s.cumulativeMoneyEarned);
   const dreamUnlocked = computeDreamPoints(cumulativeMoneyEarned) >= 1;
   const totalFishCaught = useMetrics((s) => s.totalFishCaught);
-  const shopUnlocked = totalFishCaught >= INITIAL_PLAYER_STATE.inventorySize;
+  const hasShopUpgrades = useShop((s) => s.upgrades.some((u) => u.level > 0));
+  const shopUnlocked =
+    totalFishCaught >= INITIAL_PLAYER_STATE.inventorySize || hasShopUpgrades;
 
   function handleTabChange(value: string) {
     if (value === "shop") {
