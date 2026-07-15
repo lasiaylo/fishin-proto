@@ -39,6 +39,7 @@ import {
   lureReelMaxSpeed,
   LURING_REEL_ACCEL,
   LURING_REEL_DECEL,
+  LURING_REEL_MAX_SPEED,
   Rarity,
   RARITY_COLOR,
   REEL_MIN,
@@ -210,7 +211,11 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     const item = items[slotIndex] ?? BASE_BAIT_ID;
     const lureType = getTackleType(item);
     const lureLevel = useLureXp.getState().lures[item]?.level ?? 0;
-    const effectiveReelMaxSpeed = lureReelMaxSpeed(lureLevel);
+    const assignedRod = ownedRods.find((r) => r.id === assignment);
+    const rodReelMaxSpeed = assignedRod
+      ? getRodStats(assignedRod).reelMaxSpeed
+      : LURING_REEL_MAX_SPEED;
+    const effectiveReelMaxSpeed = lureReelMaxSpeed(lureLevel, rodReelMaxSpeed);
 
     const bait = useBaitData.getState().baitData.find((b) => b.id === item);
     const waitMin = bait?.waitMin ?? WAIT_DEFAULT_MIN;

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { RodData, loadRodData, levelStat } from "../util/csvLoader";
-import { Rod, CAST_MAX } from "../util/constants";
+import { Rod, CAST_MAX, LURING_REEL_MAX_SPEED } from "../util/constants";
 
 interface RodDataState {
   rodData: RodData[];
@@ -22,6 +22,7 @@ export function getRodStats(rod: Rod): {
   defense: number;
   castMax: number;
   speedMultiplier: number;
+  reelMaxSpeed: number;
 } {
   const data = getRodDataById(rod.id);
   return {
@@ -29,5 +30,6 @@ export function getRodStats(rod: Rod): {
     defense: levelStat(data?.defenseLevels ?? [], rod.defenseLevel),
     castMax: data?.castMax ?? CAST_MAX,
     speedMultiplier: data?.speedMultiplier ?? 1,
+    reelMaxSpeed: data?.reelMaxSpeed ?? LURING_REEL_MAX_SPEED,
   };
 }

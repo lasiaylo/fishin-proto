@@ -193,8 +193,11 @@ export function computeLureLevel(xp: number): number {
   return computeLevelFromThresholds(LURE_LEVEL_XP, xp);
 }
 
-export function lureReelMaxSpeed(level: number): number {
-  return LURING_REEL_MAX_SPEED + level * LURE_REEL_SPEED_PER_LEVEL;
+export function lureReelMaxSpeed(
+  level: number,
+  baseReelMaxSpeed: number = LURING_REEL_MAX_SPEED,
+): number {
+  return baseReelMaxSpeed + level * LURE_REEL_SPEED_PER_LEVEL;
 }
 
 export function applyLureXp(

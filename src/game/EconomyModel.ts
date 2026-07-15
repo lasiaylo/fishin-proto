@@ -314,6 +314,7 @@ function perCastOverhead(
   fishByLure: Map<string, FishData[]>,
   lureLevel = 0,
   baitDataMap: Map<string, BaitData> = new Map(),
+  reelMaxSpeed = LURING_REEL_MAX_SPEED,
 ): number {
   const isBait = getTackleType(lureId) === TackleType.BAIT;
   const pool = fishByLure.get(lureId) ?? [];
@@ -327,7 +328,11 @@ function perCastOverhead(
   const castAnimDuration = lerp(CAST_DURATION_MIN, CAST_DURATION_MAX, castT);
   const luringTime = isBait
     ? expectedWaitTime(baitDataMap.get(lureId))
-    : expectedLuringTime(effectiveCast, lureReelMaxSpeed(lureLevel), lureLevel);
+    : expectedLuringTime(
+        effectiveCast,
+        lureReelMaxSpeed(lureLevel, reelMaxSpeed),
+        lureLevel,
+      );
   return chargeTime + castAnimDuration + luringTime + RESULT_DURATION / 1000;
 }
 
@@ -478,6 +483,7 @@ function econRodStats(
   defense: number;
   castMax: number;
   speedMultiplier: number;
+  reelMaxSpeed: number;
 } {
   const data = rodData.find((r) => r.id === rod.id);
   return {
@@ -485,6 +491,7 @@ function econRodStats(
     defense: levelStat(data?.defenseLevels ?? [], rod.defenseLevel),
     castMax: data?.castMax ?? CAST_MAX,
     speedMultiplier: data?.speedMultiplier ?? 1,
+    reelMaxSpeed: data?.reelMaxSpeed ?? LURING_REEL_MAX_SPEED,
   };
 }
 
@@ -737,6 +744,7 @@ export function simulateEconomy(
       fishByTackle,
       lureLevel,
       baitDataMap,
+      lureRodStats.reelMaxSpeed,
     );
     if (!(lureId in lureWinRates))
       throw new Error(`No win rate for lureId "${lureId}"`);
@@ -783,6 +791,7 @@ export function simulateEconomy(
           fishByTackle,
           0,
           baitDataMap,
+          baitRodStats.reelMaxSpeed,
         );
         let baitTotalEarnings = 0;
         let baitTotalFightTime = 0;
@@ -885,7 +894,10 @@ export function simulateEconomy(
       if (isBait) {
         xpPerRound = castsPerRound * winRate * XP_WIN;
       } else {
-        const reelMaxSpeed = lureReelMaxSpeed(lureLevel);
+        const reelMaxSpeed = lureReelMaxSpeed(
+          lureLevel,
+          lureRodStats.reelMaxSpeed,
+        );
         const avgLuringDist =
           expectedLuringTime(effectiveCast, reelMaxSpeed, lureLevel) *
           reelMaxSpeed;
