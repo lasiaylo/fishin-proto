@@ -119,10 +119,10 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
   const castLocationRef = useRef<string>("");
   const caughtFishRef = useRef<FishData | null>(null);
   const fightRef = useRef<FightEngine | null>(null);
-  const initialAssignedRod = ownedRods.find((r) => r.id === assignment);
-  const lineHpRef = useRef<number>(
-    initialAssignedRod ? getRodStats(initialAssignedRod).lineHP : 1,
-  );
+  // Placeholder until the first startFight()/startCastLoop() call resolves
+  // the equipped rod's real lineHP (rod data loads asynchronously, so it
+  // isn't safe to read here during PondView's initial render).
+  const lineHpRef = useRef<number>(1);
   const rafRef = useRef<number>(0);
   const lastTimeRef = useRef<number | null>(null);
   const reelRef = useRef<boolean>(false);
