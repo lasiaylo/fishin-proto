@@ -55,8 +55,8 @@ export const LURE_LEVEL_XP = Array(5)
 // ==========================================================================
 // DREAM POINTS
 // ==========================================================================
-const START_DREAM_MONEY = 1000;
-const DREAM_MONEY_GROWTH = 1.5;
+const START_DREAM_MONEY = 100;
+const DREAM_MONEY_GROWTH = 2;
 export const DREAM_POINT_MONEY_THRESHOLDS = Array(10)
   .fill(START_DREAM_MONEY)
   .map((n, i) => Math.ceil(n * DREAM_MONEY_GROWTH ** i));
@@ -69,7 +69,7 @@ export const CAST_MIN = 5;
 export const CAST_DURATION_MIN = 0.5;
 export const CAST_DURATION_MAX = 1.5;
 
-export const CAST_CHARGE_DURATION = 1500;
+export const CAST_CHARGE_DURATION = 1000;
 
 export const LURING_REEL_ACCEL = 20;
 export const LURING_REEL_DECEL = 20;
@@ -106,6 +106,7 @@ export function getTackleType(lureId: string): TackleType {
 }
 
 export function getTackleDirections(lureId: string): string {
+  console.log(lureId);
   return lureId.startsWith(BAIT_ID_PREFIX) || lureId === BASE_LURE_ID
     ? "method: wait"
     : "method: retrieve";

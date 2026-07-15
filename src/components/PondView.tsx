@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { Flex, Progress, Select, Separator, Text } from "@radix-ui/themes";
 import { useShallow } from "zustand/react/shallow";
-import { ChargeButton } from "./ChargeButton";
+import { DelayButton } from "./DelayButton";
 import { FishData, StatName } from "../util/csvLoader";
 import { getBiteChance, getZones } from "../util/zones";
 import { randomizeFishStats, useFish } from "../stores/fishStore";
@@ -441,14 +441,14 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     } else {
       controls = (
         <Flex flexGrow={"1"}>
-          <ChargeButton
-            onRelease={handleCastRelease}
-            maxHoldMs={CAST_CHARGE_DURATION}
+          <DelayButton
+            onComplete={() => handleCastRelease(100)}
+            delayMs={CAST_CHARGE_DURATION}
             width={100}
             disabled={castDisabled}
           >
             cast
-          </ChargeButton>
+          </DelayButton>
         </Flex>
       );
     }
