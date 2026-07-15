@@ -134,8 +134,8 @@ export enum Rarity {
 }
 
 export const RARITY_WEIGHTS: Record<Rarity, number> = {
-  [Rarity.COMMON]: 0.6,
-  [Rarity.UNCOMMON]: 0.35,
+  [Rarity.COMMON]: 0.7,
+  [Rarity.UNCOMMON]: 0.25,
   [Rarity.RARE]: 0.05,
 };
 
