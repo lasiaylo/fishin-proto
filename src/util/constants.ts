@@ -71,7 +71,6 @@ export const CAST_DURATION_MAX = 1.5;
 
 export const CAST_CHARGE_DURATION = 1500;
 export const LURING_REEL_MAX_SPEED = 8;
-export const LURE_REEL_SPEED_PER_LEVEL = 1;
 export const LURING_REEL_ACCEL = 20;
 export const LURING_REEL_DECEL = 20;
 
@@ -86,11 +85,11 @@ export enum Zone {
 
 export const ZONE_RANGES: Record<Zone, [number, number]> = {
   [Zone.CLOSE]: [5, CAST_MAX],
-  [Zone.MID]: [20, 60],
+  [Zone.MID]: [5, 60],
   [Zone.FAR]: [60, 90],
 };
 export const BITE_CHECK_INTERVAL = 1;
-export const TARGET_BITE_CHANCE = 0.5;
+export const TARGET_BITE_CHANCE = 0.4;
 export const BITE_CHANCE_INCREMENT = 0.1;
 export const LURE_BITE_CHANCE_PER_LEVEL = 0.1;
 
@@ -112,17 +111,8 @@ export function getTackleDirections(lureId: string): string {
     : "cast and reel";
 }
 
-export const WAIT_ZONE_RANGES: Record<Zone, [number, number]> = {
-  [Zone.CLOSE]: [5, 50],
-  [Zone.MID]: [50, 80],
-  [Zone.FAR]: [50, 80],
-};
-
-export const WAIT_PRIME_MIN = 5;
-export const WAIT_PRIME_MAX = 10;
 export const WAIT_DEFAULT_MIN = 5;
 export const WAIT_DEFAULT_MAX = 10;
-export const WAIT_PRIME_REDUCTION = 0.5;
 
 // ==========================================================================
 // RARITY
@@ -191,13 +181,6 @@ export function applyThresholdGain(
 
 export function computeLureLevel(xp: number): number {
   return computeLevelFromThresholds(LURE_LEVEL_XP, xp);
-}
-
-export function lureReelMaxSpeed(
-  level: number,
-  baseReelMaxSpeed: number = LURING_REEL_MAX_SPEED,
-): number {
-  return baseReelMaxSpeed + level * LURE_REEL_SPEED_PER_LEVEL;
 }
 
 export function applyLureXp(

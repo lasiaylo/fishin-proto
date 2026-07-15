@@ -4,7 +4,6 @@ import {
   BITE_CHECK_INTERVAL,
   LURE_BITE_CHANCE_PER_LEVEL,
   TARGET_BITE_CHANCE,
-  WAIT_ZONE_RANGES,
   Zone,
   ZONE_RANGES,
 } from "./constants";
@@ -35,10 +34,6 @@ function zonesAtDistance(
 
 export function getZones(distance: number): Zone[] {
   return zonesAtDistance(distance, ZONE_RANGES);
-}
-
-export function getWaitZones(distance: number): Zone[] {
-  return zonesAtDistance(distance, WAIT_ZONE_RANGES);
 }
 
 export function avgZoneDistance(zones: Zone[]): number {

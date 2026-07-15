@@ -23,7 +23,6 @@ import {
   getTackleType,
   INITIAL_PLAYER_STATE,
   LURE_BITE_CHANCE_PER_LEVEL,
-  lureReelMaxSpeed,
   TackleType,
   LURING_REEL_MAX_SPEED,
   Rarity,
@@ -32,10 +31,8 @@ import {
   RARITY_WEIGHTS,
   RESULT_DURATION,
   TARGET_BITE_CHANCE,
-  WAIT_PRIME_MAX,
-  WAIT_PRIME_MIN,
-  WAIT_PRIME_REDUCTION,
-  WAIT_ZONE_RANGES,
+  WAIT_DEFAULT_MAX,
+  WAIT_DEFAULT_MIN,
   XP_PER_DISTANCE,
   XP_WIN,
   Zone,
@@ -303,9 +300,9 @@ function evalLure(
 
 function expectedWaitTime(bait?: BaitData): number {
   if (bait) {
-    return ((bait.waitMin + bait.waitMax) / 2) * (1 - WAIT_PRIME_REDUCTION);
+    return (bait.waitMin + bait.waitMax) / 2;
   }
-  return ((WAIT_PRIME_MIN + WAIT_PRIME_MAX) / 2) * (1 - WAIT_PRIME_REDUCTION);
+  return (WAIT_DEFAULT_MIN + WAIT_DEFAULT_MAX) / 2;
 }
 
 function perCastOverhead(
@@ -318,9 +315,8 @@ function perCastOverhead(
 ): number {
   const isBait = getTackleType(lureId) === TackleType.BAIT;
   const pool = fishByLure.get(lureId) ?? [];
-  const zoneRanges = isBait ? WAIT_ZONE_RANGES : ZONE_RANGES;
   const validZones = [...new Set(pool.flatMap((f) => f.zones))];
-  const maxZoneDist = Math.max(...validZones.map((z) => zoneRanges[z][1]));
+  const maxZoneDist = Math.max(...validZones.map((z) => ZONE_RANGES[z][1]));
   const effectiveCast = Math.min(castMax, maxZoneDist);
   const castT =
     castMax > CAST_MIN ? (effectiveCast - CAST_MIN) / (castMax - CAST_MIN) : 0;
@@ -328,11 +324,7 @@ function perCastOverhead(
   const castAnimDuration = lerp(CAST_DURATION_MIN, CAST_DURATION_MAX, castT);
   const luringTime = isBait
     ? expectedWaitTime(baitDataMap.get(lureId))
-    : expectedLuringTime(
-        effectiveCast,
-        lureReelMaxSpeed(lureLevel, reelMaxSpeed),
-        lureLevel,
-      );
+    : expectedLuringTime(effectiveCast, reelMaxSpeed, lureLevel);
   return chargeTime + castAnimDuration + luringTime + RESULT_DURATION / 1000;
 }
 
@@ -753,11 +745,10 @@ export function simulateEconomy(
     // pBite: probability of getting a fight on a single cast
     const isBait = getTackleType(lureId) === TackleType.BAIT;
     const pool = fishByTackle.get(lureId) ?? [];
-    const zoneRanges = isBait ? WAIT_ZONE_RANGES : ZONE_RANGES;
     const validZones = [...new Set(pool.flatMap((f) => f.zones))];
     const maxZoneDist =
       validZones.length > 0
-        ? Math.max(...validZones.map((z) => zoneRanges[z][1]))
+        ? Math.max(...validZones.map((z) => ZONE_RANGES[z][1]))
         : lureRodStats.castMax;
     const effectiveCast = Math.min(lureRodStats.castMax, maxZoneDist);
     const pBite = isBait
@@ -894,10 +885,7 @@ export function simulateEconomy(
       if (isBait) {
         xpPerRound = castsPerRound * winRate * XP_WIN;
       } else {
-        const reelMaxSpeed = lureReelMaxSpeed(
-          lureLevel,
-          lureRodStats.reelMaxSpeed,
-        );
+        const reelMaxSpeed = lureRodStats.reelMaxSpeed;
         const avgLuringDist =
           expectedLuringTime(effectiveCast, reelMaxSpeed, lureLevel) *
           reelMaxSpeed;

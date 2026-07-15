@@ -4,7 +4,7 @@ import { Flex, Progress, Select, Separator, Text } from "@radix-ui/themes";
 import { useShallow } from "zustand/react/shallow";
 import { ChargeButton } from "./ChargeButton";
 import { FishData, StatName } from "../util/csvLoader";
-import { getBiteChance, getWaitZones, getZones } from "../util/zones";
+import { getBiteChance, getZones } from "../util/zones";
 import { randomizeFishStats, useFish } from "../stores/fishStore";
 import { pickFishForZone, useLocation } from "../stores/locationStore";
 import {
@@ -36,7 +36,6 @@ import {
   CAST_MIN,
   getTackleDirections,
   getTackleType,
-  lureReelMaxSpeed,
   LURING_REEL_ACCEL,
   LURING_REEL_DECEL,
   LURING_REEL_MAX_SPEED,
@@ -47,7 +46,6 @@ import {
   TackleType,
   WAIT_DEFAULT_MAX,
   WAIT_DEFAULT_MIN,
-  WAIT_PRIME_REDUCTION,
   XP_LOSS,
   XP_PER_DISTANCE,
   XP_WIN,
@@ -215,7 +213,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     const rodReelMaxSpeed = assignedRod
       ? getRodStats(assignedRod).reelMaxSpeed
       : LURING_REEL_MAX_SPEED;
-    const effectiveReelMaxSpeed = lureReelMaxSpeed(lureLevel, rodReelMaxSpeed);
+    const effectiveReelMaxSpeed = rodReelMaxSpeed;
 
     const bait = useBaitData.getState().baitData.find((b) => b.id === item);
     const waitMin = bait?.waitMin ?? WAIT_DEFAULT_MIN;
@@ -271,16 +269,12 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
         }
       } else if (newGameState === GameState.Waiting) {
         if (waitCountdownRef.current === null) {
-          const inPrimeZone =
-            getWaitZones(luringDistanceRef.current).length > 0;
-          const raw = waitMin + Math.random() * (waitMax - waitMin);
-          waitCountdownRef.current = inPrimeZone
-            ? raw * (1 - WAIT_PRIME_REDUCTION)
-            : raw;
+          waitCountdownRef.current =
+            waitMin + Math.random() * (waitMax - waitMin);
         }
         waitCountdownRef.current -= dt;
         if (waitCountdownRef.current <= 0) {
-          const waitZones = getWaitZones(luringDistanceRef.current);
+          const waitZones = getZones(luringDistanceRef.current);
           const fish = pickFishForZone(
             castLocationRef.current,
             waitZones,

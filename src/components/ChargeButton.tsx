@@ -27,7 +27,7 @@ export function ChargeButton({
     function tick() {
       if (startRef.current === null) return;
       const t = Math.min(1, (Date.now() - startRef.current) / maxHoldMs);
-      setChargePercent(gsap.parseEase("power2.out")(t) * 100);
+      setChargePercent(gsap.parseEase("power3.out")(t) * 100);
       rafRef.current = requestAnimationFrame(tick);
     }
     rafRef.current = requestAnimationFrame(tick);
