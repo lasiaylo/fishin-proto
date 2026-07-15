@@ -96,6 +96,15 @@ export function addBait(id: string, qty: number) {
   }));
 }
 
+export function setBaitCount(id: string, count: number) {
+  usePlayer.setState((s) => ({
+    baitInventory: {
+      ...s.baitInventory,
+      [id]: Math.max(0, Math.min(BAIT_MAX_STACK, count)),
+    },
+  }));
+}
+
 export function addRod(id: string) {
   usePlayer.setState((s) => {
     if (s.ownedRods.some((r) => r.id === id)) return s;

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Flex, Separator, Text, Button } from "@radix-ui/themes";
-import { setMoney, usePlayer } from "../stores/playerStore";
+import { setMoney, setBaitCount, usePlayer } from "../stores/playerStore";
+import { useBaitData } from "../stores/baitStore";
 import {
   useShop,
   setUpgradeLevelDebug,
@@ -41,10 +42,39 @@ export function Debug() {
       <ShopUpgradeSection />
       <Flex direction="column" gap="4">
         <MoneySection />
+        <BaitSection />
         <EventLogSection />
       </Flex>
 
       <StoreView />
+    </Flex>
+  );
+}
+
+function BaitSection() {
+  const baitData = useBaitData((s) => s.baitData);
+  const baitInventory = usePlayer((s) => s.baitInventory);
+
+  return (
+    <Flex direction="column" gap="2">
+      <Text weight="bold">Bait</Text>
+      <Separator size="4" />
+      <Flex gap="2" direction="column">
+        {baitData.map((b) => (
+          <Flex key={b.id} gap="2" align="center">
+            <Text size="1" style={{ width: "80px" }}>
+              {b.name}
+            </Text>
+            <input
+              type="number"
+              min={0}
+              value={baitInventory[b.id] ?? 0}
+              onChange={(e) => setBaitCount(b.id, Number(e.target.value))}
+              style={{ width: "50px" }}
+            />
+          </Flex>
+        ))}
+      </Flex>
     </Flex>
   );
 }
