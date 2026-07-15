@@ -8,11 +8,13 @@ export function StatBar({
   value,
   max,
   color,
+  progressColor,
 }: {
   label: string;
   value: number;
   max: number;
   color?: progressPropDefs.color;
+  progressColor?: string;
 }) {
   const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
   return (
@@ -25,7 +27,18 @@ export function StatBar({
           {Math.ceil(value)} / {Math.ceil(max)}
         </Text>
       </Flex>
-      <Progress radius={"none"} value={pct} color={color} size="3" />
+      <Progress
+        radius={"none"}
+        value={pct}
+        color={color}
+        size="3"
+        className={progressColor ? "saturating-progress" : undefined}
+        style={
+          progressColor
+            ? ({ "--accent-track": progressColor } as React.CSSProperties)
+            : undefined
+        }
+      />
     </Flex>
   );
 }
