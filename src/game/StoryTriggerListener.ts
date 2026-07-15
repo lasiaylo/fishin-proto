@@ -17,7 +17,7 @@ export class StoryTriggerListener {
             npcLogin(FRIEND_NPC_NAME);
             setTimeout(() => {
               pushEvent(EventMsg.FRIEND_CASTS);
-            });
+            }, 2000);
           }, 1000);
         }
       },

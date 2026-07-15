@@ -29,7 +29,7 @@ export function GiftDialog({
         <Flex direction="column" gap="1">
           {inventory.length === 0 ? (
             <Text size="1" color="gray">
-              cooler is empty
+              the cooler is empty
             </Text>
           ) : (
             inventory.map((item, i) => (

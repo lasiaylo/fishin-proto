@@ -448,7 +448,11 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     if (assignment === null || selectedItem === null) {
       controls = null;
     } else if (isWaitType && baitCount === 0) {
-      controls = <Text size="1">no bait</Text>;
+      controls = (
+        <Text size="1" color="gray">
+          no bait
+        </Text>
+      );
     } else {
       controls = (
         <Flex flexGrow={"1"}>
