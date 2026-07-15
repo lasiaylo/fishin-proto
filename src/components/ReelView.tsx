@@ -70,11 +70,13 @@ export function ReelView({
             fightState?.phase === Phase.STRUGGLE ? STRUGGLE_COLOR : undefined
           }
         />
-        <StatBar
-          label="hp"
-          value={lineHp - (fightState?.tension ?? 0)}
-          max={lineHp}
-        />
+        {fightState && (
+          <StatBar
+            label="hp"
+            value={lineHp - fightState.tension}
+            max={lineHp}
+          />
+        )}
       </Flex>
     </Flex>
   );
