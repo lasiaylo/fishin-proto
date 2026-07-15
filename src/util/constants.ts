@@ -107,8 +107,8 @@ export function getTackleType(lureId: string): TackleType {
 
 export function getTackleDirections(lureId: string): string {
   return lureId.startsWith(BAIT_ID_PREFIX) || lureId === BASE_LURE_ID
-    ? "cast and wait"
-    : "cast and reel";
+    ? "method: wait"
+    : "method: retrieve";
 }
 
 // ==========================================================================
