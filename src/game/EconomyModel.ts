@@ -16,7 +16,6 @@ import {
   CAST_CHARGE_DURATION,
   CAST_DURATION_MAX,
   CAST_DURATION_MIN,
-  CAST_MAX,
   CAST_MIN,
   computeDreamPoints,
   computeLureLevel,
@@ -24,15 +23,12 @@ import {
   INITIAL_PLAYER_STATE,
   LURE_BITE_CHANCE_PER_LEVEL,
   TackleType,
-  LURING_REEL_MAX_SPEED,
   Rarity,
   RARITY_PRICE_MULTIPLIER,
   RARITY_STAT_MULTIPLIER,
   RARITY_WEIGHTS,
   RESULT_DURATION,
   TARGET_BITE_CHANCE,
-  WAIT_DEFAULT_MAX,
-  WAIT_DEFAULT_MIN,
   XP_PER_DISTANCE,
   XP_WIN,
   Zone,
@@ -298,11 +294,8 @@ function evalLure(
   };
 }
 
-function expectedWaitTime(bait?: BaitData): number {
-  if (bait) {
-    return (bait.waitMin + bait.waitMax) / 2;
-  }
-  return (WAIT_DEFAULT_MIN + WAIT_DEFAULT_MAX) / 2;
+function expectedWaitTime(bait: BaitData): number {
+  return (bait.waitMin + bait.waitMax) / 2;
 }
 
 function perCastOverhead(
@@ -311,7 +304,7 @@ function perCastOverhead(
   fishByLure: Map<string, FishData[]>,
   lureLevel = 0,
   baitDataMap: Map<string, BaitData> = new Map(),
-  reelMaxSpeed = LURING_REEL_MAX_SPEED,
+  reelMaxSpeed: number,
 ): number {
   const isBait = getTackleType(lureId) === TackleType.BAIT;
   const pool = fishByLure.get(lureId) ?? [];
@@ -322,16 +315,20 @@ function perCastOverhead(
     castMax > CAST_MIN ? (effectiveCast - CAST_MIN) / (castMax - CAST_MIN) : 0;
   const chargeTime = lerp(0, CAST_CHARGE_DURATION / 1000, castT);
   const castAnimDuration = lerp(CAST_DURATION_MIN, CAST_DURATION_MAX, castT);
-  const luringTime = isBait
-    ? expectedWaitTime(baitDataMap.get(lureId))
-    : expectedLuringTime(effectiveCast, reelMaxSpeed, lureLevel);
+  let luringTime;
+  if (isBait) {
+    const bait = baitDataMap.get(lureId) as BaitData;
+    luringTime = expectedWaitTime(bait);
+  } else {
+    luringTime = expectedLuringTime(effectiveCast, reelMaxSpeed, lureLevel);
+  }
   return chargeTime + castAnimDuration + luringTime + RESULT_DURATION / 1000;
 }
 
 function expectedLuringTime(
   effectiveCast: number,
-  reelMaxSpeed = LURING_REEL_MAX_SPEED,
-  lureLevel = 0,
+  reelMaxSpeed: number,
+  lureLevel: number,
 ): number {
   const biteChance =
     TARGET_BITE_CHANCE + lureLevel * LURE_BITE_CHANCE_PER_LEVEL;
@@ -371,7 +368,6 @@ function cheapestUpgrade(
   levels: Record<string, number>,
   currency: number,
   player: PlayerStats,
-  rods: EconRod[],
   baitStock: Record<string, number>,
 ): { upgrade: ShopUpgradeData; price: number } | null {
   const statValue = (stat: StatName): number => {
@@ -458,7 +454,7 @@ function prioritizeLureUpgrade(
     }
   }
 
-  return cheapestUpgrade(shopData, levels, wallet, player, rods, baitStock);
+  return cheapestUpgrade(shopData, levels, wallet, player, baitStock);
 }
 
 interface EconRod {
@@ -477,13 +473,13 @@ function econRodStats(
   speedMultiplier: number;
   reelMaxSpeed: number;
 } {
-  const data = rodData.find((r) => r.id === rod.id);
+  const data = rodData.find((r) => r.id === rod.id) as RodData;
   return {
-    attack: levelStat(data?.attackLevels ?? [], rod.attackLevel),
-    defense: levelStat(data?.defenseLevels ?? [], rod.defenseLevel),
-    castMax: data?.castMax ?? CAST_MAX,
-    speedMultiplier: data?.speedMultiplier ?? 1,
-    reelMaxSpeed: data?.reelMaxSpeed ?? LURING_REEL_MAX_SPEED,
+    attack: levelStat(data.attackLevels, rod.attackLevel),
+    defense: levelStat(data.defenseLevels, rod.defenseLevel),
+    castMax: data.castMax,
+    speedMultiplier: data.speedMultiplier,
+    reelMaxSpeed: data.reelMaxSpeed,
   };
 }
 
@@ -849,7 +845,6 @@ export function simulateEconomy(
       dreamLevels,
       dreamPoints,
       player,
-      rods,
       baitStock,
     );
     while (nextDreamUpgrade !== null) {
@@ -874,7 +869,6 @@ export function simulateEconomy(
         dreamLevels,
         dreamPoints,
         player,
-        rods,
         baitStock,
       );
     }
@@ -913,7 +907,7 @@ export function simulateEconomy(
           baitStock,
         );
       }
-      return cheapestUpgrade(shopData, levels, w, player, rods, baitStock);
+      return cheapestUpgrade(shopData, levels, w, player, baitStock);
     };
 
     let nextUpgrade = pickUpgrade(wallet);

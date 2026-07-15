@@ -70,7 +70,7 @@ export const CAST_DURATION_MIN = 0.5;
 export const CAST_DURATION_MAX = 1.5;
 
 export const CAST_CHARGE_DURATION = 1500;
-export const LURING_REEL_MAX_SPEED = 8;
+
 export const LURING_REEL_ACCEL = 20;
 export const LURING_REEL_DECEL = 20;
 
@@ -110,9 +110,6 @@ export function getTackleDirections(lureId: string): string {
     ? "cast and wait"
     : "cast and reel";
 }
-
-export const WAIT_DEFAULT_MIN = 5;
-export const WAIT_DEFAULT_MAX = 10;
 
 // ==========================================================================
 // RARITY

@@ -3,7 +3,7 @@ import gsap from "gsap";
 import { Flex, Progress, Select, Separator, Text } from "@radix-ui/themes";
 import { useShallow } from "zustand/react/shallow";
 import { ChargeButton } from "./ChargeButton";
-import { FishData, StatName } from "../util/csvLoader";
+import { BaitData, FishData, StatName } from "../util/csvLoader";
 import { getBiteChance, getZones } from "../util/zones";
 import { randomizeFishStats, useFish } from "../stores/fishStore";
 import { pickFishForZone, useLocation } from "../stores/locationStore";
@@ -16,10 +16,7 @@ import {
 } from "../stores/playerStore";
 import { pushEvent } from "../stores/eventLogStore";
 import { EventMsg } from "../util/eventMessages";
-import {
-  incrementTotalCasts,
-  incrementTotalFishCaught,
-} from "../stores/metricsStore";
+import { incrementTotalCasts } from "../stores/metricsStore";
 import { FightEngine, FightState, Outcome } from "../game/FightEngine";
 import { useSessionLog } from "../stores/sessionLogStore";
 import { addLureXp, lureXpProgress, useLureXp } from "../stores/lureXpStore";
@@ -38,14 +35,11 @@ import {
   getTackleType,
   LURING_REEL_ACCEL,
   LURING_REEL_DECEL,
-  LURING_REEL_MAX_SPEED,
   Rarity,
-  RARITY_COLOR,
   REEL_MIN,
   RESULT_DURATION,
+  Rod,
   TackleType,
-  WAIT_DEFAULT_MAX,
-  WAIT_DEFAULT_MIN,
   XP_LOSS,
   XP_PER_DISTANCE,
   XP_WIN,
@@ -206,18 +200,17 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     waitCountdownRef.current = null;
 
     const { rodSlotItems: items } = usePlayer.getState();
-    const item = items[slotIndex] ?? BASE_BAIT_ID;
+    const item = items[slotIndex] as string;
     const lureType = getTackleType(item);
     const lureLevel = useLureXp.getState().lures[item]?.level ?? 0;
-    const assignedRod = ownedRods.find((r) => r.id === assignment);
-    const rodReelMaxSpeed = assignedRod
-      ? getRodStats(assignedRod).reelMaxSpeed
-      : LURING_REEL_MAX_SPEED;
-    const effectiveReelMaxSpeed = rodReelMaxSpeed;
+    const assignedRod = ownedRods.find((r) => r.id === assignment) as Rod;
+    const effectiveReelMaxSpeed = getRodStats(assignedRod).reelMaxSpeed;
 
-    const bait = useBaitData.getState().baitData.find((b) => b.id === item);
-    const waitMin = bait?.waitMin ?? WAIT_DEFAULT_MIN;
-    const waitMax = bait?.waitMax ?? WAIT_DEFAULT_MAX;
+    const bait = useBaitData
+      .getState()
+      .baitData.find((b) => b.id === item) as BaitData;
+    const waitMin = bait.waitMin;
+    const waitMax = bait.waitMax;
 
     const newGameState =
       lureType === TackleType.BAIT ? GameState.Waiting : GameState.Luring;
@@ -262,7 +255,8 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
             initialDistance - luringDistanceRef.current >= REEL_MIN
           ) {
             lastBiteCheckDistanceRef.current = luringDistanceRef.current;
-            if (checkBite(luringDistanceRef.current, item, lureLevel)) return;
+            if (checkBite(luringDistanceRef.current, item as string, lureLevel))
+              return;
           }
         } else {
           waitCountdownRef.current = null;
@@ -278,7 +272,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
           const fish = pickFishForZone(
             castLocationRef.current,
             waitZones,
-            item,
+            item as string,
           );
           if (fish) {
             caughtFishRef.current = fish;
