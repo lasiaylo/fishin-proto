@@ -523,7 +523,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
             >
               <Select.Trigger variant="soft" />
               <Select.Content>
-                <Select.Item value="none">None</Select.Item>
+                <Select.Item value="none">none</Select.Item>
                 {availableRods.map((rod) => (
                   <Select.Item key={rod.id} value={rod.id}>
                     {shopUpgrades.find((u) => u.id === rod.id)?.name ??
@@ -550,7 +550,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
                 >
                   <Select.Trigger variant="soft" />
                   <Select.Content>
-                    <Select.Item value="none">None</Select.Item>
+                    <Select.Item value="none">none</Select.Item>
                     <Select.Group>
                       <Select.Label>baits</Select.Label>
                       {Object.entries(baitInventory).map(([id, count]) => {
