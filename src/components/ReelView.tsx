@@ -4,8 +4,7 @@ import { FightState, Phase } from "../game/FightEngine";
 import { MyButton } from "./MyButton";
 import { StatBar } from "./StatBar";
 
-const REST_COLOR = "hsl(0, 0%, 60%)";
-const STRUGGLE_COLOR = "hsl(0, 80%, 55%)";
+const STRUGGLE_COLOR = "hsl(0 80% 55% / 0.49)";
 
 interface ReelViewProps {
   distance: number;
@@ -68,11 +67,7 @@ export function ReelView({
           value={distance}
           max={100}
           progressColor={
-            fightState
-              ? fightState.phase === Phase.STRUGGLE
-                ? STRUGGLE_COLOR
-                : REST_COLOR
-              : undefined
+            fightState?.phase === Phase.STRUGGLE ? STRUGGLE_COLOR : undefined
           }
         />
         <StatBar
