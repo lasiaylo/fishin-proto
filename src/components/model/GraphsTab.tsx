@@ -387,12 +387,32 @@ export function GraphsTab({
             tooltipLabelFormatter={(v: number) => `Stat: ${v}`}
           >
             <Legend />
-            {lureIds.map((id) => (
+            {lureOnlyIds.map((id) => (
               <Line
                 key={id || "__no_lure__"}
                 dataKey={id === "" ? (d: any) => d[""] : id}
                 stroke={lureColors[id]}
                 name={id === "" ? "No Lure" : id}
+                {...lineProps}
+                connectNulls={false}
+              />
+            ))}
+          </EconomyChart>
+
+          <EconomyChart
+            title="Bait Income Rate vs Attack & Defense"
+            data={sweepData}
+            {...statChartProps}
+            tooltipFormatter={(v: number) => +v.toFixed(3) as any}
+            tooltipLabelFormatter={(v: number) => `Stat: ${v}`}
+          >
+            <Legend />
+            {baitOnlyIds.map((id) => (
+              <Line
+                key={id}
+                dataKey={id}
+                stroke={lureColors[id]}
+                name={id}
                 {...lineProps}
                 connectNulls={false}
               />
