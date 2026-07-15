@@ -9,6 +9,7 @@ import { Debug } from "./components/debug";
 import { initShop, initShopFromRows } from "./stores/shopStore";
 import { initDreamShop } from "./stores/dreamShopStore";
 import { initFish, initFishFromData } from "./stores/fishStore";
+import { restorePersistedRodSlots } from "./stores/playerStore";
 import { initLocations } from "./stores/locationStore";
 import { initBaitData } from "./stores/baitStore";
 import { initRodData } from "./stores/rodStore";
@@ -35,6 +36,11 @@ function App() {
 
   useEffect(() => {
     clearEvents();
+    // Must run before shop/dream-shop init below: those establish rod slot
+    // count via setRodSlotCount, which preserves whatever's already at each
+    // index, so restoring first means the upgrade-driven resize keeps these
+    // assignments instead of them being overwritten before restore runs.
+    restorePersistedRodSlots();
     const { fishCSV, shopCSV } = useCsvConfig.getState();
     if (fishCSV === GENERATED_FISH_CSV) {
       loadFishDisplayMap().then((displayMap) =>

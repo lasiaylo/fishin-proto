@@ -13,6 +13,7 @@ import {
 import { incrementTotalFishCaught } from "./metricsStore";
 import { EventMsg } from "../util/eventMessages";
 import { pushEvent } from "./eventLogStore";
+import { useDebugSettings } from "./debugSettingsStore";
 
 export interface PlayerStats {
   lineHP: number;
@@ -155,6 +156,44 @@ export function setSlotItem(slotIdx: number, itemId: string | null) {
     arr[slotIdx] = itemId;
     return { rodSlotItems: arr };
   });
+}
+
+const ROD_SLOT_STORAGE_KEY = "debug_rod_slot_assignments";
+
+interface PersistedRodSlots {
+  assignments: (string | null)[];
+  items: (string | null)[];
+}
+
+usePlayer.subscribe(
+  (s) => [s.rodSlotAssignments, s.rodSlotItems] as const,
+  ([assignments, items]) => {
+    if (!useDebugSettings.getState().persistRodSlots) return;
+    localStorage.setItem(
+      ROD_SLOT_STORAGE_KEY,
+      JSON.stringify({ assignments, items } satisfies PersistedRodSlots),
+    );
+  },
+);
+
+// Must run before shop/dream-shop init: those establish the slot count via
+// setRodSlotCount, which preserves whatever is already at each index — so
+// restoring first means the upgrade-driven resize naturally keeps these
+// assignments (truncating/padding as needed) instead of them being
+// overwritten before restore gets a chance to read them back.
+export function restorePersistedRodSlots() {
+  if (!useDebugSettings.getState().persistRodSlots) return;
+  const raw = localStorage.getItem(ROD_SLOT_STORAGE_KEY);
+  if (!raw) return;
+  try {
+    const { assignments, items }: PersistedRodSlots = JSON.parse(raw);
+    usePlayer.setState({
+      rodSlotAssignments: assignments,
+      rodSlotItems: items,
+    });
+  } catch {
+    // malformed persisted data, ignore
+  }
 }
 
 export function addFishToInventory(fish: FishData, effectivePrice: number) {

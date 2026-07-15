@@ -25,6 +25,10 @@ import { parseFishGameplayRows, loadFishDisplayMap } from "../util/csvLoader";
 import { pushEvent } from "../stores/eventLogStore";
 import { useSessionLog } from "../stores/sessionLogStore";
 import { downloadCSV } from "../util/roundSerializer";
+import {
+  useDebugSettings,
+  setPersistRodSlots,
+} from "../stores/debugSettingsStore";
 
 export function Debug() {
   return (
@@ -32,9 +36,32 @@ export function Debug() {
       <SessionLogSection />
       <CsvSwitcherSection />
       <ShopUpgradeSection />
+      <RodSlotSection />
       <StoreView />
       <MoneySection />
       <EventLogSection />
+    </Flex>
+  );
+}
+
+function RodSlotSection() {
+  const persistRodSlots = useDebugSettings((s) => s.persistRodSlots);
+
+  return (
+    <Flex direction="column" gap="2">
+      <Text weight="bold">Rod Slots</Text>
+      <Separator size="4" />
+      <Flex align="center" gap="1">
+        <input
+          id="persist-rod-slots"
+          type="checkbox"
+          checked={persistRodSlots}
+          onChange={(e) => setPersistRodSlots(e.target.checked)}
+        />
+        <label htmlFor="persist-rod-slots">
+          <Text size="1">Persist slot assignments between reloads</Text>
+        </label>
+      </Flex>
     </Flex>
   );
 }
