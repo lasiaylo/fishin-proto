@@ -61,10 +61,6 @@ export function setStat(stat: string, value: number) {
   usePlayer.setState((s) => ({ ...s, [stat]: value }));
 }
 
-export function addToStat(stat: keyof PlayerStats, value: number) {
-  usePlayer.setState((s) => ({ ...s, [stat]: s[stat] + value }));
-}
-
 export function addLure(lureId: string) {
   usePlayer.setState((s) => {
     const lures = new Set(s.ownedLures);
@@ -108,11 +104,20 @@ export function addRod(id: string) {
   });
 }
 
-export function addRodSlot() {
-  usePlayer.setState((s) => ({
-    rodSlotAssignments: [...s.rodSlotAssignments, null],
-    rodSlotItems: [...s.rodSlotItems, null],
-  }));
+export function setRodSlotCount(count: number) {
+  usePlayer.setState((s) => {
+    if (s.rodSlotAssignments.length === count) return s;
+    return {
+      rodSlotAssignments: Array.from(
+        { length: count },
+        (_, i) => s.rodSlotAssignments[i] ?? null,
+      ),
+      rodSlotItems: Array.from(
+        { length: count },
+        (_, i) => s.rodSlotItems[i] ?? null,
+      ),
+    };
+  });
 }
 
 export function assignRodToSlot(slotIdx: number, rodId: string | null) {

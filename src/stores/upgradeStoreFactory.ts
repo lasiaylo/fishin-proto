@@ -5,12 +5,13 @@ import {
   addBait,
   addLure,
   addRod,
-  addRodSlot,
+  setRodSlotCount,
   setRodLevel,
-  addToStat,
+  setStat,
   removeLure,
 } from "./playerStore";
 import { useSessionLog } from "./sessionLogStore";
+import { INITIAL_PLAYER_STATE } from "../util/constants";
 
 export interface UpgradeEntry extends ShopUpgradeData {
   level: number;
@@ -32,20 +33,18 @@ function applyStatEffect(upgrade: UpgradeEntry, level: number, delta: number) {
       if (level > 0) addLure(upgrade.id);
       else removeLure(upgrade.id);
       break;
-    case StatName.HP:
-      addToStat("lineHP", delta * upgrade.valuePerLevel);
-      break;
-    case StatName.INVENTORY:
-      addToStat("inventorySize", delta * upgrade.valuePerLevel);
-      break;
     case StatName.INCOME:
-      addToStat("incomeBoostPercent", delta * upgrade.valuePerLevel);
+      setStat(
+        "incomeBoostPercent",
+        INITIAL_PLAYER_STATE.incomeBoostPercent +
+          level * upgrade.valuePerLevel,
+      );
       break;
     case StatName.ROD:
       if (delta > 0) addRod(upgrade.id);
       break;
     case StatName.ROD_SLOT:
-      if (delta > 0) addRodSlot();
+      setRodSlotCount(1 + level * upgrade.valuePerLevel);
       break;
     case StatName.ROD_ATTACK: {
       const rodId = upgrade.id.replace("_ATTACK", "");

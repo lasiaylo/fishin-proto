@@ -14,9 +14,7 @@ export interface FishData {
 }
 
 export enum StatName {
-  HP = "HP",
   LURE = "LURE",
-  INVENTORY = "INVENTORY",
   WIN = "win",
   BAIT = "BAIT",
   ROD = "ROD",
@@ -251,7 +249,6 @@ function categoryFromStat(stat: StatName): string {
   if (stat === StatName.LURE) return "lures";
   if (stat === StatName.BAIT) return "bait";
   if (
-    stat === StatName.HP ||
     stat === StatName.ROD ||
     stat === StatName.ROD_ATTACK ||
     stat === StatName.ROD_DEFENSE

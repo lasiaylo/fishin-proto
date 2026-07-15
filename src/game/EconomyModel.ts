@@ -372,10 +372,6 @@ function cheapestUpgrade(
 ): { upgrade: ShopUpgradeData; price: number } | null {
   const statValue = (stat: StatName): number => {
     switch (stat) {
-      case StatName.HP:
-        return player.lineHP;
-      case StatName.INVENTORY:
-        return player.inventorySize;
       case StatName.INCOME:
         return player.incomeBoostPercent;
       case StatName.LURE:
@@ -501,12 +497,6 @@ function applyUpgrade(
   switch (upgrade.stat) {
     case StatName.LURE:
       ownedLures.add(upgrade.id);
-      break;
-    case StatName.HP:
-      player.lineHP += upgrade.valuePerLevel;
-      break;
-    case StatName.INVENTORY:
-      player.inventorySize += upgrade.valuePerLevel;
       break;
     case StatName.INCOME:
       player.incomeBoostPercent += upgrade.valuePerLevel;
