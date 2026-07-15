@@ -1,8 +1,11 @@
 import React, { useEffect, useRef } from "react";
-import { Box, Flex, Text } from "@radix-ui/themes";
-import { FightState } from "../game/FightEngine";
+import { Flex } from "@radix-ui/themes";
+import { FightState, Phase } from "../game/FightEngine";
 import { MyButton } from "./MyButton";
 import { StatBar } from "./StatBar";
+
+const REST_COLOR = "hsl(0, 0%, 60%)";
+const STRUGGLE_COLOR = "hsl(0, 80%, 55%)";
 
 interface ReelViewProps {
   distance: number;
@@ -52,9 +55,6 @@ export function ReelView({
             reel
           </MyButton>
         </div>
-        <Text size="2" color="gray">
-          {fightState?.phase ?? " "}
-        </Text>
       </Flex>
       <Flex
         position={"relative"}
@@ -63,7 +63,18 @@ export function ReelView({
         className={"fade-in"}
         style={{ opacity: fading ? 0 : 1, transition: "opacity 0.6s ease" }}
       >
-        <StatBar label="distance" value={distance} max={100} />
+        <StatBar
+          label="distance"
+          value={distance}
+          max={100}
+          progressColor={
+            fightState
+              ? fightState.phase === Phase.STRUGGLE
+                ? STRUGGLE_COLOR
+                : REST_COLOR
+              : undefined
+          }
+        />
         <StatBar
           label="hp"
           value={lineHp - (fightState?.tension ?? 0)}
