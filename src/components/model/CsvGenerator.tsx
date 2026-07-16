@@ -104,7 +104,7 @@ function generateFishRows(
     levels,
     (l) => `LURE_${l}`,
     (i) => `FISH_${i}`,
-    "40",
+    "35",
   );
   return [...header, ...baitRows, ...lureRows];
 }
@@ -398,7 +398,11 @@ function computeLureCostTable(
 
     const targetAD = midAD(lureId);
     const statGain = Math.max(0, targetAD - prevAD);
-    const attackLevels = levelsForGain(attackStatLevels, attackBought, statGain);
+    const attackLevels = levelsForGain(
+      attackStatLevels,
+      attackBought,
+      statGain,
+    );
     const defenseLevels = levelsForGain(
       defenseStatLevels,
       defenseBought,
@@ -1317,7 +1321,9 @@ export function CsvGeneratorPanel({
   const [rodData, setRodData] = useState<RodData[]>([]);
 
   useEffect(() => {
-    loadRodData().then(setRodData).catch(() => setRodData([]));
+    loadRodData()
+      .then(setRodData)
+      .catch(() => setRodData([]));
   }, []);
   const [levels, setLevels] = useState<number>(
     () => loadStored(SHARED_STORAGE_KEY, { levels: 3, startingAD: 10 }).levels,

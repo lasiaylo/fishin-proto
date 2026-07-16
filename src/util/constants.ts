@@ -106,7 +106,6 @@ export function getTackleType(lureId: string): TackleType {
 }
 
 export function getTackleDirections(lureId: string): string {
-  console.log(lureId);
   return lureId.startsWith(BAIT_ID_PREFIX) || lureId === BASE_LURE_ID
     ? "method: wait"
     : "method: retrieve";
