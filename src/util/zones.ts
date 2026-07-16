@@ -36,9 +36,37 @@ export function getZones(distance: number): Zone[] {
   return zonesAtDistance(distance, ZONE_RANGES);
 }
 
+const avgZoneDistanceCache = new Map<string, number>();
+
 export function avgZoneDistance(zones: Zone[]): number {
   if (zones.length === 0) return 50;
+
+  const key = [...new Set(zones)].sort().join(",");
+  const cached = avgZoneDistanceCache.get(key);
+  if (cached !== undefined) return cached;
+
   const mins = zones.map((z) => ZONE_RANGES[z][0]);
   const maxs = zones.map((z) => ZONE_RANGES[z][1]);
-  return (Math.min(...mins) + Math.max(...maxs)) / 2;
+  const min = Math.min(...mins);
+  const max = Math.max(...maxs);
+
+  // Bites are checked every BITE_CHECK_INTERVAL while reeling in from `max`
+  // down to `min`, at a constant per-check probability. That makes an
+  // earlier (farther) check more likely to land the bite than a later
+  // (closer) one, so the expected bite distance skews toward `max` rather
+  // than sitting at the flat midpoint.
+  const numChecks = Math.max(1, Math.round((max - min) / BITE_CHECK_INTERVAL));
+  const p = perCheckProbability(TARGET_BITE_CHANCE, numChecks);
+
+  let weightSum = 0;
+  let distanceSum = 0;
+  for (let k = 0; k < numChecks; k++) {
+    const weight = (1 - p) ** k * p;
+    const distance = max - k * BITE_CHECK_INTERVAL;
+    weightSum += weight;
+    distanceSum += weight * distance;
+  }
+  const result = weightSum > 0 ? distanceSum / weightSum : (min + max) / 2;
+  avgZoneDistanceCache.set(key, result);
+  return result;
 }

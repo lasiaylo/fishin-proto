@@ -126,7 +126,7 @@ export function ModelView() {
               <FightTraceTab fishData={activeFishData} rodData={rodData} />
             </Tabs.Content>
             <Tabs.Content value="sweep">
-              <ParamSweepTab fishData={activeFishData} />
+              <ParamSweepTab fishData={activeFishData} rodData={rodData} />
             </Tabs.Content>
             <Tabs.Content value="economy">
               <EconomyTab

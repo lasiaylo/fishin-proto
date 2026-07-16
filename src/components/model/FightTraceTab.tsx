@@ -159,7 +159,7 @@ export function FightTraceTab({
   const [fishBasePrice, setFishBasePrice] = useState(
     fishData[0]?.basePrice ?? 0,
   );
-  const [fishHp, setFishHp] = useState(fishData[0]?.hp ?? 0);
+  const [targetDistance, setTargetDistance] = useState(fishData[0]?.hp ?? 0);
   const [fightStartDistance, setFightStartDistance] = useState(
     avgZoneDistance(fishData[0]?.zones ?? []),
   );
@@ -191,7 +191,7 @@ export function FightTraceTab({
       setFishStrength(fish.defense);
       setFishThrash(fish.thrash);
       setFishBasePrice(fish.basePrice);
-      setFishHp(fish.hp);
+      setTargetDistance(fish.hp);
       setFightStartDistance(avgZoneDistance(fish.zones));
     }
   }, [fishId, fishData]);
@@ -211,7 +211,7 @@ export function FightTraceTab({
           drag,
           lineHP,
           fightStartDistance,
-          fishHp,
+          targetDistance,
           engineCfg,
         );
     const CHUNK = 5;
@@ -324,7 +324,12 @@ export function FightTraceTab({
           onChange={setFightStartDistance}
           min={0}
         />
-        <NumInput label="HP" value={fishHp} onChange={setFishHp} min={0} />
+        <NumInput
+          label="Target Distance"
+          value={targetDistance}
+          onChange={setTargetDistance}
+          min={0}
+        />
         <Flex align="center" gap="1">
           <input
             id="randomize-stats"

@@ -24,9 +24,11 @@ import {
   MAX_SIM_TIME,
   type FightConfig,
 } from "../../game/FightEngine";
-import type { FishData } from "../../util/csvLoader";
+import { levelStat, type FishData, type RodData } from "../../util/csvLoader";
 import { avgZoneDistance } from "../../util/zones";
-import { NumInput, FishSelect, EngineConfigRow } from "./shared";
+import { NumInput, FishSelect, RodSelect, EngineConfigRow } from "./shared";
+
+const MAX_SWEEP_UPGRADE_LEVEL = 5;
 
 interface SweepCell {
   reel: number;
@@ -411,31 +413,50 @@ function Heatmap({
   );
 }
 
-export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
+export function ParamSweepTab({
+  fishData,
+  rodData,
+}: {
+  fishData: FishData[];
+  rodData: RodData[];
+}) {
   const [fishId, setFishId] = useState(() => {
     const stored = localStorage.getItem("debug_selectedFishId");
     if (stored && fishData.some((f) => f.id === stored)) return stored;
     return fishData[0]?.id ?? "";
   });
+  const [rodId, setRodId] = useState(() => rodData[0]?.id ?? "");
   const [fishSpeed, setFishSpeed] = useState(fishData[0]?.attack ?? 0);
   const [fishStrength, setFishStrength] = useState(fishData[0]?.defense ?? 0);
   const [fishThrash, setFishThrash] = useState(fishData[0]?.thrash ?? 0);
   const [fishBasePrice, setFishBasePrice] = useState(
     fishData[0]?.basePrice ?? 0,
   );
-  const [fishHp, setFishHp] = useState(fishData[0]?.hp ?? 0);
+  const [targetDistance, setTargetDistance] = useState(fishData[0]?.hp ?? 0);
   const [fightStartDistance, setFightStartDistance] = useState(
     avgZoneDistance(fishData[0]?.zones ?? []),
   );
-  const [lineHP, setLineHP] = useState(15);
+  const [lineHP, setLineHP] = useState(rodData[0]?.lineHpBase ?? 15);
   const [reelMin, setReelMin] = useState(
-    Math.max(1, Math.round((fishData[0]?.attack ?? 2) / 2)),
+    Math.min(rodData[0]?.attackBase ?? 1, rodData[0]?.defenseBase ?? 1),
   );
   const [reelMax, setReelMax] = useState(
-    Math.round((fishData[0]?.attack ?? 2) * 2),
+    Math.max(
+      levelStat(
+        rodData[0]?.attackBase ?? 1,
+        rodData[0]?.attackPerLevel ?? 0,
+        MAX_SWEEP_UPGRADE_LEVEL,
+      ),
+      levelStat(
+        rodData[0]?.defenseBase ?? 1,
+        rodData[0]?.defensePerLevel ?? 0,
+        MAX_SWEEP_UPGRADE_LEVEL,
+      ),
+    ),
   );
   const dragMin = reelMin;
   const dragMax = reelMax;
+  const [step, setStep] = useState(rodData[0]?.attackPerLevel ?? 1);
   const [trialsPerCell, setTrialsPerCell] = useState(100);
   const [engineCfg, setEngineCfg] = useState<FightConfig>(DEFAULT_FIGHT_CONFIG);
   const [cells, setCells] = useState<SweepCell[]>([]);
@@ -453,12 +474,25 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
       setFishStrength(fish.defense);
       setFishThrash(fish.thrash);
       setFishBasePrice(fish.basePrice);
-      setFishHp(fish.hp);
+      setTargetDistance(fish.hp);
       setFightStartDistance(avgZoneDistance(fish.zones));
-      setReelMin(Math.max(1, Math.round(fish.attack / 2)));
-      setReelMax(Math.round(fish.attack * 2));
     }
   }, [fishId, fishData]);
+
+  useEffect(() => {
+    const rod = rodData.find((r) => r.id === rodId);
+    if (rod) {
+      setLineHP(rod.lineHpBase);
+      setReelMin(Math.min(rod.attackBase, rod.defenseBase));
+      setReelMax(
+        Math.max(
+          levelStat(rod.attackBase, rod.attackPerLevel, MAX_SWEEP_UPGRADE_LEVEL),
+          levelStat(rod.defenseBase, rod.defensePerLevel, MAX_SWEEP_UPGRADE_LEVEL),
+        ),
+      );
+      setStep(rod.attackPerLevel);
+    }
+  }, [rodId, rodData]);
 
   async function runSweep() {
     cancelRef.current = false;
@@ -466,8 +500,8 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
     setCells([]);
 
     const pairs: { reel: number; drag: number }[] = [];
-    for (let reel = reelMin; reel <= reelMax; reel++)
-      for (let drag = dragMin; drag <= dragMax; drag++)
+    for (let reel = reelMin; reel <= reelMax; reel += step)
+      for (let drag = dragMin; drag <= dragMax; drag += step)
         pairs.push({ reel, drag });
 
     const acc = new Map(
@@ -487,7 +521,7 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
           drag,
           lineHP,
           fightStartDistance,
-          fishHp,
+          targetDistance,
           engineCfg,
         ),
       ]),
@@ -532,12 +566,12 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
   }
 
   const reelVals = Array.from(
-    { length: Math.max(0, reelMax - reelMin + 1) },
-    (_, i) => reelMin + i,
+    { length: Math.max(0, Math.floor((reelMax - reelMin) / step) + 1) },
+    (_, i) => reelMin + i * step,
   );
   const dragVals = Array.from(
-    { length: Math.max(0, dragMax - dragMin + 1) },
-    (_, i) => dragMin + i,
+    { length: Math.max(0, Math.floor((dragMax - dragMin) / step) + 1) },
+    (_, i) => dragMin + i * step,
   );
 
   return (
@@ -578,12 +612,19 @@ export function ParamSweepTab({ fishData }: { fishData: FishData[] }) {
           onChange={setFightStartDistance}
           min={0}
         />
-        <NumInput label="HP" value={fishHp} onChange={setFishHp} min={0} />
+        <NumInput
+          label="Target Distance"
+          value={targetDistance}
+          onChange={setTargetDistance}
+          min={0}
+        />
       </Flex>
       <Flex gap="3" wrap="wrap" align="end">
+        <RodSelect rodData={rodData} value={rodId} onChange={setRodId} />
         <NumInput label="Line HP" value={lineHP} onChange={setLineHP} min={1} />
         <NumInput label="Min" value={reelMin} onChange={setReelMin} min={1} />
         <NumInput label="Max" value={reelMax} onChange={setReelMax} min={1} />
+        <NumInput label="Step" value={step} onChange={setStep} min={1} />
         <NumInput
           label="Trials/Cell"
           value={trialsPerCell}

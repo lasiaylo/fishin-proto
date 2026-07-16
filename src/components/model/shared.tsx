@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button, Flex, Grid, Text } from "@radix-ui/themes";
-import type { FishData } from "../../util/csvLoader";
+import type { FishData, RodData } from "../../util/csvLoader";
 import type { DeltaMode, FightConfig } from "../../game/FightEngine";
 
 export const COLORS = [
@@ -288,6 +288,31 @@ export function CsvSelect({
         {(showGenerated || value === generatedValue) && (
           <option value={generatedValue}>Generated</option>
         )}
+      </select>
+    </label>
+  );
+}
+
+export function RodSelect({
+  rodData,
+  value,
+  onChange,
+}: {
+  rodData: RodData[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <Text size="1" color="gray">
+        Rod
+      </Text>
+      <select value={value} onChange={(e) => onChange(e.target.value)}>
+        {rodData.map((r) => (
+          <option key={r.id} value={r.id}>
+            {r.id}
+          </option>
+        ))}
       </select>
     </label>
   );
