@@ -13,6 +13,7 @@ import {
   parseShopGameplayRows,
 } from "../../util/csvLoader";
 import type {
+  BaitData,
   FishData,
   LocationFishEntry,
   RodData,
@@ -106,6 +107,7 @@ function loadStoredPairs(): CsvPair[] | null {
 export function EconomyTab({
   locationData,
   rodData,
+  baitData,
   generatedFishRows,
   generatedShopRows,
   onFishRowsChange,
@@ -113,6 +115,7 @@ export function EconomyTab({
 }: {
   locationData: LocationFishEntry[];
   rodData: RodData[];
+  baitData: BaitData[];
   generatedFishRows: string[][] | null;
   generatedShopRows: string[][] | null;
   onFishRowsChange: (rows: string[][]) => void;
@@ -320,7 +323,7 @@ export function EconomyTab({
           simMinutes,
           evalTrials,
           pair.upgradeStrategy,
-          undefined,
+          baitData,
           rodDataForSim,
         );
       }
