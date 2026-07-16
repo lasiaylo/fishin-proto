@@ -7,7 +7,6 @@ export const FRIEND_NPC_NAME = "big ghost";
 export const NPC_ACTIVITY_DUMMY = "watching their line";
 export const GIFT_COOLDOWN_MS = 4 * 60 * 1000;
 export const BASE_FISH_ID = "FISH_B_0";
-export const BASE_LURE_ID = "LURE_0";
 export const BASE_LURE_NAME = "Worm";
 export const BASE_BAIT_ID = "BAIT_0";
 export const BASE_BAIT_NAME = "Worm";
@@ -106,7 +105,7 @@ export function getTackleType(lureId: string): TackleType {
 }
 
 export function getTackleDirections(lureId: string): string {
-  return lureId.startsWith(BAIT_ID_PREFIX) || lureId === BASE_LURE_ID
+  return lureId.startsWith(BAIT_ID_PREFIX)
     ? "method: wait"
     : "method: retrieve";
 }

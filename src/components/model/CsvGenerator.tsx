@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Flex, Grid, Text, Table, Button, Separator } from "@radix-ui/themes";
 import { NumInput } from "./shared";
-import { loadRodData, type RodData } from "../../util/csvLoader";
+import { levelStat, loadRodData, type RodData } from "../../util/csvLoader";
+import { INITIAL_PLAYER_STATE } from "../../util/constants";
 
 export const GENERATED_FISH_CSV = "__generated_fish__";
 export const GENERATED_SHOP_CSV = "__generated_shop__";
@@ -100,11 +101,12 @@ function generateFishRows(
     defenseFn,
     priceFn,
     variance,
-    1,
-    levels,
+    0,
+    levels - 1,
     (l) => `LURE_${l}`,
     (i) => `FISH_${i}`,
     "35",
+    true,
   );
   return [...header, ...baitRows, ...lureRows];
 }
@@ -178,11 +180,11 @@ function generateShopRows(
 
   for (let i = 0; i < lureCount; i++) {
     rows.push([
-      `LURE_${i + 1}`,
+      `LURE_${i}`,
       String(Math.ceil(evalFn(lureFn, i))),
       "LURE",
       "1",
-      i >= LURE_REQ_GAP ? `LURE_${i - (LURE_REQ_GAP - 1)}` : "",
+      i >= LURE_REQ_GAP ? `LURE_${i - LURE_REQ_GAP}` : "",
     ]);
   }
 
@@ -315,6 +317,7 @@ function computeLureCostTable(
 ): {
   lureId: string;
   lurePrice: number;
+  adRequirement: number;
   fishNeeded: number;
   adUpgradeCost: number;
   adFishNeeded: number;
@@ -338,11 +341,12 @@ function computeLureCostTable(
     return fish.reduce((s, f) => s + f.price, 0) / fish.length;
   };
 
-  // Middle fish A/D (index 1 for 3-fish pools, 0 for the single no-lure fish)
-  const midAD = (lureId: string) => {
+  // Lowest fish A/D in the pool — the stat needed to catch the easiest
+  // fish available at that lure tier.
+  const minAD = (lureId: string) => {
     const fish = poolFish.get(lureId);
     if (!fish || fish.length === 0) return 0;
-    return fish[Math.floor(fish.length / 2)].ad;
+    return Math.min(...fish.map((f) => f.ad));
   };
 
   // Parse ATTACK and DEFENSE shop rows (ROD_1's, since that's the rod the
@@ -378,69 +382,59 @@ function computeLureCostTable(
   // Highest-tier fish pool a given A/D stat can actually access, so the
   // cost/fish math reflects the player's real capability rather than
   // assuming they're stuck fishing the nominal previous lure's pool.
-  const lureTierIds = ["LURE_0", ...lureShopRows.map((r) => r[0])];
+  // BAIT_0 is the floor — the pool you can fish before owning any lure.
+  const lureTierIds = ["BAIT_0", ...lureShopRows.map((r) => r[0])];
   const poolIdForStat = (stat: number) => {
-    let best = "LURE_0";
+    let best = "BAIT_0";
     for (const id of lureTierIds) {
-      if (midAD(id) <= stat) best = id;
+      if (minAD(id) <= stat) best = id;
       else break;
     }
     return best;
   };
 
-  let prevAD = Math.max(midAD("LURE_0"), startingAD);
+  let prevAD = Math.max(minAD("BAIT_0"), startingAD);
   let attackBought = 0;
   let defenseBought = 0;
 
-  const startRow = {
-    lureId: "LURE_0",
-    lurePrice: 0,
-    fishNeeded: 0,
-    adUpgradeCost: 0,
-    adFishNeeded: 0,
-    totalFishNeeded: 0,
-  };
+  return lureShopRows.map((lureRow) => {
+    const lureId = lureRow[0];
+    const lurePrice = Number(lureRow[1]);
+    // "Cost / fish" should use max(Initial Player Stats, Previous Lure
+    // Requirements) to pick the fish pool, not just the nominal previous
+    // lure — but this must not clobber prevAD, which separately tracks
+    // the real upgrade progression for the A/D-gap sizing below.
+    const effectiveAD = Math.max(startingAD, prevAD);
+    const avg = avgPrice(poolIdForStat(effectiveAD));
+    const fishNeeded = avg > 0 ? Math.ceil(lurePrice / avg) : 0;
 
-  return [
-    startRow,
-    ...lureShopRows.map((lureRow) => {
-      const lureId = lureRow[0];
-      const lurePrice = Number(lureRow[1]);
-      // "Cost / fish" should use max(Initial Player Stats, Previous Lure
-      // Requirements) to pick the fish pool, not just the nominal previous
-      // lure — but this must not clobber prevAD, which separately tracks
-      // the real upgrade progression for the A/D-gap sizing below.
-      const effectiveAD = Math.max(startingAD, prevAD);
-      const avg = avgPrice(poolIdForStat(effectiveAD));
-      const fishNeeded = avg > 0 ? Math.ceil(lurePrice / avg) : 0;
+    const targetAD = minAD(lureId);
+    const statGain = Math.max(0, targetAD - prevAD);
+    const attackLevels = levelsForGain(attackPerLevel, statGain);
+    const defenseLevels = levelsForGain(defensePerLevel, statGain);
+    const adUpgradeCost =
+      sumSlice(attackPrices, attackBought, attackLevels) +
+      sumSlice(defensePrices, defenseBought, defenseLevels);
 
-      const targetAD = midAD(lureId);
-      const statGain = Math.max(0, targetAD - prevAD);
-      const attackLevels = levelsForGain(attackPerLevel, statGain);
-      const defenseLevels = levelsForGain(defensePerLevel, statGain);
-      const adUpgradeCost =
-        sumSlice(attackPrices, attackBought, attackLevels) +
-        sumSlice(defensePrices, defenseBought, defenseLevels);
+    attackBought += attackLevels;
+    defenseBought += defenseLevels;
+    prevAD = targetAD;
 
-      attackBought += attackLevels;
-      defenseBought += defenseLevels;
-      prevAD = targetAD;
-
-      const currentAvg = avgPrice(lureId);
-      const adFishNeeded =
-        currentAvg > 0 ? Math.ceil(adUpgradeCost / currentAvg) : 0;
-      const totalFishNeeded =
-        avg > 0 ? Math.ceil((lurePrice + adUpgradeCost) / avg) : 0;
-      return {
-        lureId,
-        lurePrice,
-        fishNeeded,
-        adUpgradeCost,
-        adFishNeeded,
-        totalFishNeeded,
-      };
-    }),
-  ];
+    const currentAvg = avgPrice(lureId);
+    const adFishNeeded =
+      currentAvg > 0 ? Math.ceil(adUpgradeCost / currentAvg) : 0;
+    const totalFishNeeded =
+      avg > 0 ? Math.ceil((lurePrice + adUpgradeCost) / avg) : 0;
+    return {
+      lureId,
+      lurePrice,
+      adRequirement: targetAD,
+      fishNeeded,
+      adUpgradeCost,
+      adFishNeeded,
+      totalFishNeeded,
+    };
+  });
 }
 
 function LureCostTable({
@@ -465,6 +459,7 @@ function LureCostTable({
         <Table.Header>
           <Table.Row>
             <Table.ColumnHeaderCell>Lure</Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell>A/D Req</Table.ColumnHeaderCell>
             <Table.ColumnHeaderCell>Lure Cost</Table.ColumnHeaderCell>
             <Table.ColumnHeaderCell>A/D Cost</Table.ColumnHeaderCell>
             <Table.ColumnHeaderCell>Lure Fish</Table.ColumnHeaderCell>
@@ -477,6 +472,7 @@ function LureCostTable({
             ({
               lureId,
               lurePrice,
+              adRequirement,
               fishNeeded,
               adUpgradeCost,
               adFishNeeded,
@@ -484,6 +480,7 @@ function LureCostTable({
             }) => (
               <Table.Row key={lureId}>
                 <Table.Cell>{lureId}</Table.Cell>
+                <Table.Cell>{adRequirement}</Table.Cell>
                 <Table.Cell>{lurePrice}</Table.Cell>
                 <Table.Cell>{adUpgradeCost}</Table.Cell>
                 <Table.Cell>{fishNeeded}</Table.Cell>
@@ -1316,6 +1313,28 @@ export function getGeneratedShopRows(): string[][] {
   );
 }
 
+// The real starting A/D a fresh player has (ROD_1 at level 0), so the
+// "Starting A/D" input defaults to something grounded in the actual game
+// rather than an arbitrary guess.
+function initialPlayerAD(rodData: RodData[]): number {
+  const initialRod = INITIAL_PLAYER_STATE.ownedRods[0];
+  const data = rodData.find((r) => r.id === initialRod.id);
+  if (!data) return 0;
+  return Math.min(
+    levelStat(data.attackBase, data.attackPerLevel, initialRod.attackLevel),
+    levelStat(data.defenseBase, data.defensePerLevel, initialRod.defenseLevel),
+  );
+}
+
+function hasStoredField(key: string, field: string): boolean {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw != null && field in JSON.parse(raw);
+  } catch {
+    return false;
+  }
+}
+
 export function CsvGeneratorPanel({
   onFishRowsChange,
   onShopRowsChange,
@@ -1333,15 +1352,20 @@ export function CsvGeneratorPanel({
 
   useEffect(() => {
     loadRodData()
-      .then(setRodData)
+      .then((data) => {
+        setRodData(data);
+        if (!hasStoredField(SHARED_STORAGE_KEY, "startingAD")) {
+          setStartingAD(initialPlayerAD(data));
+        }
+      })
       .catch(() => setRodData([]));
   }, []);
   const [levels, setLevels] = useState<number>(
-    () => loadStored(SHARED_STORAGE_KEY, { levels: 3, startingAD: 10 }).levels,
+    () => loadStored(SHARED_STORAGE_KEY, { levels: 3, startingAD: 0 }).levels,
   );
   const [startingAD, setStartingAD] = useState<number>(
     () =>
-      loadStored(SHARED_STORAGE_KEY, { levels: 3, startingAD: 25 }).startingAD,
+      loadStored(SHARED_STORAGE_KEY, { levels: 3, startingAD: 0 }).startingAD,
   );
 
   function handleLevelsChange(v: number) {
