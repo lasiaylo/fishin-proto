@@ -353,12 +353,12 @@ function computeLureCostTable(
   const attackPrices = attackRow ? attackRow[1].split(" ").map(Number) : [];
   const defensePrices = defenseRow ? defenseRow[1].split(" ").map(Number) : [];
 
-  // Buying a level from the shop only advances the rod's upgrade index —
-  // the actual stat gained per level is whatever RodGameplay.csv says for
-  // that index, which is not necessarily the shop's flat ValuePerLevel.
+  // Buying a level from the shop advances the rod's upgrade index — the
+  // actual stat gained per level is whatever RodGameplay.csv's per-level
+  // increment says, which is not necessarily the shop's flat ValuePerLevel.
   const rod1 = rodData.find((r) => r.id === "ROD_1");
-  const attackStatLevels = rod1?.attackLevels ?? [];
-  const defenseStatLevels = rod1?.defenseLevels ?? [];
+  const attackPerLevel = rod1?.attackPerLevel ?? 0;
+  const defensePerLevel = rod1?.defensePerLevel ?? 0;
 
   const sumSlice = (prices: number[], from: number, count: number) => {
     let total = 0;
@@ -367,69 +367,80 @@ function computeLureCostTable(
     return total;
   };
 
-  // How many additional levels (starting from index `fromIndex`, which has
-  // already been bought) are needed for the stat to increase by `gain`.
-  const levelsForGain = (
-    statLevels: number[],
-    fromIndex: number,
-    gain: number,
-  ) => {
-    if (gain <= 0 || statLevels.length === 0) return 0;
-    const startIndex = Math.min(fromIndex, statLevels.length - 1);
-    const base = statLevels[startIndex];
-    let idx = startIndex;
-    while (idx < statLevels.length - 1 && statLevels[idx] - base < gain) idx++;
-    return idx - startIndex;
+  // How many additional levels are needed for the stat to increase by `gain`.
+  const levelsForGain = (perLevel: number, gain: number) => {
+    if (gain <= 0 || perLevel <= 0) return 0;
+    return Math.ceil(gain / perLevel);
   };
 
   const lureShopRows = body.filter((r) => r[0]?.startsWith("LURE_"));
+
+  // Highest-tier fish pool a given A/D stat can actually access, so the
+  // cost/fish math reflects the player's real capability rather than
+  // assuming they're stuck fishing the nominal previous lure's pool.
+  const lureTierIds = ["LURE_0", ...lureShopRows.map((r) => r[0])];
+  const poolIdForStat = (stat: number) => {
+    let best = "LURE_0";
+    for (const id of lureTierIds) {
+      if (midAD(id) <= stat) best = id;
+      else break;
+    }
+    return best;
+  };
 
   let prevAD = Math.max(midAD("LURE_0"), startingAD);
   let attackBought = 0;
   let defenseBought = 0;
 
-  return lureShopRows.map((lureRow) => {
-    const lureId = lureRow[0];
-    const lurePrice = Number(lureRow[1]);
-    const lureNum = parseInt(lureId.split("_")[1]);
-    const prevLureId = lureNum === 1 ? "LURE_0" : `LURE_${lureNum - 1}`;
-    const avg = avgPrice(prevLureId);
-    const fishNeeded = avg > 0 ? Math.ceil(lurePrice / avg) : 0;
+  const startRow = {
+    lureId: "LURE_0",
+    lurePrice: 0,
+    fishNeeded: 0,
+    adUpgradeCost: 0,
+    adFishNeeded: 0,
+    totalFishNeeded: 0,
+  };
 
-    const targetAD = midAD(lureId);
-    const statGain = Math.max(0, targetAD - prevAD);
-    const attackLevels = levelsForGain(
-      attackStatLevels,
-      attackBought,
-      statGain,
-    );
-    const defenseLevels = levelsForGain(
-      defenseStatLevels,
-      defenseBought,
-      statGain,
-    );
-    const adUpgradeCost =
-      sumSlice(attackPrices, attackBought, attackLevels) +
-      sumSlice(defensePrices, defenseBought, defenseLevels);
+  return [
+    startRow,
+    ...lureShopRows.map((lureRow) => {
+      const lureId = lureRow[0];
+      const lurePrice = Number(lureRow[1]);
+      // "Cost / fish" should use max(Initial Player Stats, Previous Lure
+      // Requirements) to pick the fish pool, not just the nominal previous
+      // lure — but this must not clobber prevAD, which separately tracks
+      // the real upgrade progression for the A/D-gap sizing below.
+      const effectiveAD = Math.max(startingAD, prevAD);
+      const avg = avgPrice(poolIdForStat(effectiveAD));
+      const fishNeeded = avg > 0 ? Math.ceil(lurePrice / avg) : 0;
 
-    attackBought += attackLevels;
-    defenseBought += defenseLevels;
-    prevAD = targetAD;
+      const targetAD = midAD(lureId);
+      const statGain = Math.max(0, targetAD - prevAD);
+      const attackLevels = levelsForGain(attackPerLevel, statGain);
+      const defenseLevels = levelsForGain(defensePerLevel, statGain);
+      const adUpgradeCost =
+        sumSlice(attackPrices, attackBought, attackLevels) +
+        sumSlice(defensePrices, defenseBought, defenseLevels);
 
-    const currentAvg = avgPrice(lureId);
-    const adFishNeeded =
-      currentAvg > 0 ? Math.ceil(adUpgradeCost / currentAvg) : 0;
-    const totalFishNeeded =
-      avg > 0 ? Math.ceil((lurePrice + adUpgradeCost) / avg) : 0;
-    return {
-      lureId,
-      lurePrice,
-      fishNeeded,
-      adUpgradeCost,
-      adFishNeeded,
-      totalFishNeeded,
-    };
-  });
+      attackBought += attackLevels;
+      defenseBought += defenseLevels;
+      prevAD = targetAD;
+
+      const currentAvg = avgPrice(lureId);
+      const adFishNeeded =
+        currentAvg > 0 ? Math.ceil(adUpgradeCost / currentAvg) : 0;
+      const totalFishNeeded =
+        avg > 0 ? Math.ceil((lurePrice + adUpgradeCost) / avg) : 0;
+      return {
+        lureId,
+        lurePrice,
+        fishNeeded,
+        adUpgradeCost,
+        adFishNeeded,
+        totalFishNeeded,
+      };
+    }),
+  ];
 }
 
 function LureCostTable({
@@ -1420,6 +1431,14 @@ export function CsvGeneratorPanel({
                 showPreview={showPreview}
                 levels={levels}
               />
+              {showPreview && (
+                <LureCostTable
+                  fishRows={fishRows}
+                  shopRows={shopRows}
+                  startingAD={startingAD}
+                  rodData={rodData}
+                />
+              )}
             </Flex>
             <Separator orientation="vertical" size="4" />
             <Flex direction="column" gap="3" style={{ flex: 1 }}>
@@ -1437,14 +1456,6 @@ export function CsvGeneratorPanel({
               <DreamShopGenerator showPreview={showPreview} />
             </Flex>
           </Flex>
-          {showPreview && (
-            <LureCostTable
-              fishRows={fishRows}
-              shopRows={shopRows}
-              startingAD={startingAD}
-              rodData={rodData}
-            />
-          )}
         </>
       )}
     </Flex>

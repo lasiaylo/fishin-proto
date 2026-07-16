@@ -34,9 +34,12 @@ export interface BaitData {
 
 export interface RodData {
   id: string;
-  attackLevels: number[];
-  defenseLevels: number[];
-  lineHpLevels: number[];
+  attackBase: number;
+  attackPerLevel: number;
+  defenseBase: number;
+  defensePerLevel: number;
+  lineHpBase: number;
+  lineHpPerLevel: number;
   castMax: number;
   speedMultiplier: number;
   reelMaxSpeed: number;
@@ -75,20 +78,24 @@ export async function loadRodData(
   const rows = parseCSV(await res.text());
   return rows.slice(1).map((row) => ({
     id: row[0],
-    attackLevels: row[1].split(" ").map(Number),
-    defenseLevels: row[2].split(" ").map(Number),
-    lineHpLevels: row[3].split(" ").map(Number),
-    castMax: Number(row[4]),
-    speedMultiplier: Number(row[5]),
-    reelMaxSpeed: Number(row[6]),
+    attackBase: Number(row[1]),
+    attackPerLevel: Number(row[2]),
+    defenseBase: Number(row[3]),
+    defensePerLevel: Number(row[4]),
+    lineHpBase: Number(row[5]),
+    lineHpPerLevel: Number(row[6]),
+    castMax: Number(row[7]),
+    speedMultiplier: Number(row[8]),
+    reelMaxSpeed: Number(row[9]),
   }));
 }
 
-export function levelStat(levels: number[], level: number): number {
-  if (levels.length === 0) {
-    throw new Error("levelStat: no levels defined");
-  }
-  return levels[Math.min(Math.max(level, 0), levels.length - 1)];
+export function levelStat(
+  base: number,
+  perLevel: number,
+  level: number,
+): number {
+  return base + perLevel * Math.max(level, 0);
 }
 
 function parseStatName(value: string): StatName {

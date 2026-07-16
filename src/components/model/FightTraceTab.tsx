@@ -164,11 +164,13 @@ export function FightTraceTab({
     avgZoneDistance(fishData[0]?.zones ?? []),
   );
   const [reelStr, setReelStr] = useState(
-    levelStat(rod0?.attackLevels ?? [], 0),
+    levelStat(rod0?.attackBase ?? 0, rod0?.attackPerLevel ?? 0, 0),
   );
-  const [drag, setDrag] = useState(levelStat(rod0?.defenseLevels ?? [], 0));
+  const [drag, setDrag] = useState(
+    levelStat(rod0?.defenseBase ?? 0, rod0?.defensePerLevel ?? 0, 0),
+  );
   const [lineHP, setLineHP] = useState(
-    levelStat(rod0?.lineHpLevels ?? [], 0),
+    levelStat(rod0?.lineHpBase ?? 0, rod0?.lineHpPerLevel ?? 0, 0),
   );
   const [trialCount, setTrialCount] = useState(20);
   const [randomize, setRandomize] = useState(false);

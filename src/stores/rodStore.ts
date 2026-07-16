@@ -27,9 +27,13 @@ export function getRodStats(rod: Rod): {
 } {
   const data = getRodDataById(rod.id);
   return {
-    attack: levelStat(data.attackLevels, rod.attackLevel),
-    defense: levelStat(data.defenseLevels, rod.defenseLevel),
-    lineHP: levelStat(data.lineHpLevels, rod.lineHpLevel),
+    attack: levelStat(data.attackBase, data.attackPerLevel, rod.attackLevel),
+    defense: levelStat(
+      data.defenseBase,
+      data.defensePerLevel,
+      rod.defenseLevel,
+    ),
+    lineHP: levelStat(data.lineHpBase, data.lineHpPerLevel, rod.lineHpLevel),
     castMax: data.castMax,
     speedMultiplier: data.speedMultiplier,
     reelMaxSpeed: data.reelMaxSpeed,

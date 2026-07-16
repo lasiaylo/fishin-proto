@@ -48,12 +48,14 @@ export function GraphsTab({
   onFishRowsChange: (rows: string[][]) => void;
   onShopRowsChange: (rows: string[][]) => void;
 }) {
+  const rod1 = rodData.find((r) => r.id === "ROD_1");
   const baseAttack = levelStat(
-    rodData.find((r) => r.id === "ROD_1")?.attackLevels ?? [],
+    rod1?.attackBase ?? 0,
+    rod1?.attackPerLevel ?? 0,
     0,
   );
   const [lineHP, setLineHP] = useState(() =>
-    levelStat(rodData.find((r) => r.id === "ROD_1")?.lineHpLevels ?? [], 0),
+    levelStat(rod1?.lineHpBase ?? 0, rod1?.lineHpPerLevel ?? 0, 0),
   );
   const [minStat, setMinStat] = useState(baseAttack);
   const [maxStat, setMaxStat] = useState(baseAttack + 10);

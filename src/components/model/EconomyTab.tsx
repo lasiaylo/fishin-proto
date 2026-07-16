@@ -118,9 +118,10 @@ export function EconomyTab({
   onFishRowsChange: (rows: string[][]) => void;
   onShopRowsChange: (rows: string[][]) => void;
 }) {
-  const [lineHP, setLineHP] = useState(() =>
-    levelStat(rodData.find((r) => r.id === "ROD_1")?.lineHpLevels ?? [], 0),
-  );
+  const [lineHP, setLineHP] = useState(() => {
+    const rod1 = rodData.find((r) => r.id === "ROD_1");
+    return levelStat(rod1?.lineHpBase ?? 0, rod1?.lineHpPerLevel ?? 0, 0);
+  });
   const [inventorySize, setInventorySize] = useState(
     INITIAL_PLAYER_STATE.inventorySize,
   );
@@ -307,7 +308,9 @@ export function EconomyTab({
         const data = pairData[pair.id];
         if (!data) continue;
         const rodDataForSim = rodData.map((r) =>
-          r.id === "ROD_1" ? { ...r, lineHpLevels: [lineHP] } : r,
+          r.id === "ROD_1"
+            ? { ...r, lineHpBase: lineHP, lineHpPerLevel: 0 }
+            : r,
         );
         results[pair.id] = simulateEconomy(
           data.fish,
@@ -1149,7 +1152,6 @@ export function EconomyTab({
               </EconomyChart>
             )}
 
-
             {isSinglePair && (
               <EconomyChart
                 title="Upgrade Levels"
@@ -1211,8 +1213,6 @@ export function EconomyTab({
                   ))}
               </EconomyChart>
             )}
-
-
           </ChartGrid>
         </>
       )}
