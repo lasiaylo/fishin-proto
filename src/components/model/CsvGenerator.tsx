@@ -106,7 +106,6 @@ function generateFishRows(
     (l) => `LURE_${l}`,
     (i) => `FISH_${i}`,
     "35",
-    true,
   );
   return [...header, ...baitRows, ...lureRows];
 }
@@ -400,16 +399,18 @@ function computeLureCostTable(
   return lureShopRows.map((lureRow) => {
     const lureId = lureRow[0];
     const lurePrice = Number(lureRow[1]);
-    // "Cost / fish" should use max(Initial Player Stats, Previous Lure
-    // Requirements) to pick the fish pool, not just the nominal previous
-    // lure — but this must not clobber prevAD, which separately tracks
-    // the real upgrade progression for the A/D-gap sizing below.
+    // Both the cost/fish pool pick and the A/D-gap sizing should credit
+    // the player with max(Initial Player Stats, Previous Lure
+    // Requirements) — a high Starting A/D should keep "counting" until a
+    // tier's own requirement finally exceeds it, not just for the first
+    // tier. `prevAD` itself stays the raw per-tier requirement chain so it
+    // isn't permanently inflated by a one-time comparison.
     const effectiveAD = Math.max(startingAD, prevAD);
     const avg = avgPrice(poolIdForStat(effectiveAD));
     const fishNeeded = avg > 0 ? Math.ceil(lurePrice / avg) : 0;
 
     const targetAD = minAD(lureId);
-    const statGain = Math.max(0, targetAD - prevAD);
+    const statGain = Math.max(0, targetAD - effectiveAD);
     const attackLevels = levelsForGain(attackPerLevel, statGain);
     const defenseLevels = levelsForGain(defensePerLevel, statGain);
     const adUpgradeCost =
