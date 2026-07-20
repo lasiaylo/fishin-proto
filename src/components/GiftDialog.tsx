@@ -2,7 +2,7 @@ import { Code, Dialog, Flex, Text } from "@radix-ui/themes";
 import React from "react";
 import { giftFish } from "../stores/friendStore";
 import { usePlayer } from "../stores/playerStore";
-import { RARITY_COLOR } from "../util/constants";
+import { Rarity, RARITY_COLOR } from "../util/constants";
 
 export function GiftDialog({
   npcName,
@@ -37,6 +37,11 @@ export function GiftDialog({
                 key={i}
                 size="1"
                 color={RARITY_COLOR[item.rarity]}
+                className={
+                  item.rarity === Rarity.LEGENDARY
+                    ? "rarity-legendary"
+                    : undefined
+                }
                 onClick={() => handleGift(i)}
                 style={{ cursor: "pointer" }}
               >

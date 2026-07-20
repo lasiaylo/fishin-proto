@@ -26,7 +26,12 @@ export function EventView() {
           >
             {event.msg}
             {event.colored && (
-              <Text as="span" size="1" color={event.color as "gray"}>
+              <Text
+                as="span"
+                size="1"
+                color={event.color as "gray"}
+                className={event.legendary ? "rarity-legendary" : undefined}
+              >
                 {event.colored}
               </Text>
             )}

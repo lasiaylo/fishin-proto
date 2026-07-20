@@ -117,31 +117,37 @@ export enum Rarity {
   COMMON = "COMMON",
   UNCOMMON = "UNCOMMON",
   RARE = "RARE",
+  LEGENDARY = "LEGENDARY",
 }
 
 export const RARITY_WEIGHTS: Record<Rarity, number> = {
-  [Rarity.COMMON]: 0.7,
+  [Rarity.COMMON]: 0.65,
   [Rarity.UNCOMMON]: 0.25,
-  [Rarity.RARE]: 0.05,
+  [Rarity.RARE]: 0.14,
+  [Rarity.LEGENDARY]: 0.01,
 };
 
 export const RARITY_PRICE_MULTIPLIER: Record<Rarity, number> = {
   [Rarity.COMMON]: 1.0,
-  [Rarity.UNCOMMON]: 1.5,
-  [Rarity.RARE]: 3.0,
+  [Rarity.UNCOMMON]: 1.25,
+  [Rarity.RARE]: 3,
+  [Rarity.LEGENDARY]: 15,
 };
 
 export const RARITY_STAT_MULTIPLIER: Record<Rarity, number> = {
   [Rarity.COMMON]: 1.0,
-  [Rarity.UNCOMMON]: 1.05,
-  [Rarity.RARE]: 1.1,
+  [Rarity.UNCOMMON]: 1.01,
+  [Rarity.RARE]: 1.02,
+  [Rarity.LEGENDARY]: 1.05,
 };
 
-export const RARITY_COLOR: Record<Rarity, "gray" | "blue" | "amber"> = {
-  [Rarity.COMMON]: "gray",
-  [Rarity.UNCOMMON]: "blue",
-  [Rarity.RARE]: "amber",
-};
+export const RARITY_COLOR: Record<Rarity, "gray" | "green" | "blue" | "amber"> =
+  {
+    [Rarity.COMMON]: "gray",
+    [Rarity.UNCOMMON]: "blue",
+    [Rarity.RARE]: "amber",
+    [Rarity.LEGENDARY]: "amber",
+  };
 
 // BASE_FISH_ID never rolls rarity in-game, so it's the only fish whose
 // price/stats aren't blended across the rarity distribution.
@@ -238,8 +244,15 @@ export function computeDreamPointsProgress(
 
 export function rollRarity(): Rarity {
   const r = Math.random();
-  if (r < RARITY_WEIGHTS[Rarity.RARE]) return Rarity.RARE;
-  if (r < RARITY_WEIGHTS[Rarity.RARE] + RARITY_WEIGHTS[Rarity.UNCOMMON])
+  if (r < RARITY_WEIGHTS[Rarity.LEGENDARY]) return Rarity.LEGENDARY;
+  if (r < RARITY_WEIGHTS[Rarity.LEGENDARY] + RARITY_WEIGHTS[Rarity.RARE])
+    return Rarity.RARE;
+  if (
+    r <
+    RARITY_WEIGHTS[Rarity.LEGENDARY] +
+      RARITY_WEIGHTS[Rarity.RARE] +
+      RARITY_WEIGHTS[Rarity.UNCOMMON]
+  )
     return Rarity.UNCOMMON;
   return Rarity.COMMON;
 }

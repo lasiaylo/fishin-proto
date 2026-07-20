@@ -11,6 +11,7 @@ import { pushEvent } from "../stores/eventLogStore";
 import { useSessionLog } from "../stores/sessionLogStore";
 import {
   RARITY_COLOR,
+  Rarity,
   computeDreamPoints,
   INITIAL_PLAYER_STATE,
 } from "../util/constants";
@@ -39,7 +40,12 @@ export function ActionsSection() {
         sold.forEach((fish, i) =>
           setTimeout(() => {
             const msg = EventMsg.SOLD_FISH(fish.fish.name, fish.effectivePrice);
-            pushEvent(msg[0], msg[1], RARITY_COLOR[fish.rarity]);
+            pushEvent(
+              msg[0],
+              msg[1],
+              RARITY_COLOR[fish.rarity],
+              fish.rarity === Rarity.LEGENDARY,
+            );
           }, i * 400),
         );
       }

@@ -204,6 +204,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
       if (e.key === "0") addFish(Rarity.COMMON);
       if (e.key === "-") addFish(Rarity.UNCOMMON);
       if (e.key === "=") addFish(Rarity.RARE);
+      if (e.key === "[") addFish(Rarity.LEGENDARY);
 
       if (e.key === "Enter") {
         if (gameStateRef.current !== GameState.Idle) return;

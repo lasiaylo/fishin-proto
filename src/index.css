@@ -10,15 +10,38 @@ pre {
 }
 
 @keyframes float-fade {
-  0% { opacity: 1; ; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 .sale-popup {
   position: absolute;
-  top:13px;
+  top: 13px;
   left: 6px;
-  animation: float-fade 3.0s ease-in forwards;
+  animation: float-fade 3s ease-in forwards;
   pointer-events: none;
   white-space: nowrap;
+}
+
+@keyframes legendary-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.rarity-legendary {
+  background: linear-gradient(90deg, #f4f4f4 0%, #6b708e 50%, #f4f4f4 100%);
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: legendary-shimmer 4s linear infinite;
 }

@@ -8,6 +8,7 @@ export interface LogEvent {
   msg: string;
   colored?: string;
   color?: string;
+  legendary?: boolean;
 }
 
 interface EventLogState {
@@ -22,9 +23,17 @@ export const useEventLog = create(
   })),
 );
 
-export function pushEvent(msg: string, colored?: string, color?: string) {
+export function pushEvent(
+  msg: string,
+  colored?: string,
+  color?: string,
+  legendary?: boolean,
+) {
   useEventLog.setState((state) => ({
-    events: [{ id: state.nextId, msg, colored, color }, ...state.events].slice(0, MAX_EVENTS),
+    events: [
+      { id: state.nextId, msg, colored, color, legendary },
+      ...state.events,
+    ].slice(0, MAX_EVENTS),
     nextId: state.nextId + 1,
   }));
 }

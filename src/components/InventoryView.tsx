@@ -10,6 +10,7 @@ import {
   CURRENCY_SYMBOL,
   DREAM_POINT_SYMBOL,
   LOCK_SYMBOL,
+  Rarity,
   RARITY_COLOR,
 } from "../util/constants";
 import { StatName } from "../util/csvLoader";
@@ -88,12 +89,19 @@ export function InventoryView() {
               key={i}
               size="1"
               color={item ? RARITY_COLOR[item.rarity] : "gray"}
+              className={
+                item?.rarity === Rarity.LEGENDARY
+                  ? "rarity-legendary"
+                  : undefined
+              }
               onClick={item ? () => toggleFishLock(i) : undefined}
               onMouseEnter={item ? () => setHoveredIndex(i) : undefined}
               onMouseLeave={item ? () => setHoveredIndex(null) : undefined}
               style={item ? { cursor: "pointer" } : undefined}
             >
-              {item ? `${showLock ? `${LOCK_SYMBOL} ` : ""}${item.fish.name}` : "—"}
+              {item
+                ? `${showLock ? `${LOCK_SYMBOL} ` : ""}${item.fish.name}`
+                : "—"}
             </Code>
           );
         })}

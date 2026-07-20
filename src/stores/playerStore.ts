@@ -227,6 +227,7 @@ export function addFishToInventory(fish: FishData, effectivePrice: number) {
     msg[0],
     msg[1],
     fish.rarity ? RARITY_COLOR[fish.rarity] : undefined,
+    fish.rarity === Rarity.LEGENDARY,
   );
   incrementTotalFishCaught();
 }
