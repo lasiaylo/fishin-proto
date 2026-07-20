@@ -39,7 +39,7 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   initialBiteAtkMult: 2,
   deltaMode: "EaseInEaseOut",
   easeScale: 2,
-  easeMidpoint: 0.4,
+  easeMidpoint: 0.45,
   easeSlope: 0.5,
 };
 
