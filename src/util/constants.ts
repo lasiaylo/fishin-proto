@@ -12,7 +12,7 @@ export const BASE_BAIT_ID = "BAIT_0";
 export const BASE_BAIT_NAME = "Worm";
 export const BAIT_ID_PREFIX = "BAIT_";
 export const BAIT_MAX_STACK = 10;
-export const BAIT_START_COUNT = 5;
+export const BAIT_START_COUNT = 10;
 
 // ==========================================================================
 // PLAYER
