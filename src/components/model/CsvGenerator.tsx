@@ -118,6 +118,25 @@ function generateFishRows(
   return [...header, ...baitRows, ...lureRows];
 }
 
+// LocationGameplay's PERCENT is the relative chance each fish in the pool
+// is the one that appears, so it must be renormalized within the pool
+// rather than treated as an absolute probability. Rarity's price
+// multiplier is then blended in on top of that.
+function expectedPoolPrice(
+  fish: { id: string; price: number }[],
+  locationPercents: Map<string, number>,
+): number {
+  if (fish.length === 0) return 0;
+  const totalPercent = fish.reduce(
+    (s, f) => s + (locationPercents.get(f.id) ?? 1),
+    0,
+  );
+  return fish.reduce((s, f) => {
+    const weight = (locationPercents.get(f.id) ?? 1) / totalPercent;
+    return s + weight * f.price * rarityExpectedPriceMultiplier(f.id);
+  }, 0);
+}
+
 function aggregateByTackle(
   rows: string[][],
   prefix: string,
@@ -125,39 +144,26 @@ function aggregateByTackle(
 ): string[][] {
   const groups = new Map<
     string,
-    { ids: string[]; atk: number[]; def: number[]; price: number[] }
+    { id: string; atk: number; def: number; price: number }[]
   >();
   for (const r of rows) {
     const tackleId = r[5];
     if (!tackleId?.startsWith(prefix)) continue;
-    if (!groups.has(tackleId))
-      groups.set(tackleId, { ids: [], atk: [], def: [], price: [] });
-    const g = groups.get(tackleId)!;
-    g.ids.push(r[0]);
-    g.atk.push(Number(r[1]));
-    g.def.push(Number(r[2]));
-    g.price.push(Number(r[4]));
+    if (!groups.has(tackleId)) groups.set(tackleId, []);
+    groups.get(tackleId)!.push({
+      id: r[0],
+      atk: Number(r[1]),
+      def: Number(r[2]),
+      price: Number(r[4]),
+    });
   }
-  return Array.from(groups.entries()).map(([id, g]) => {
-    // LocationGameplay's PERCENT is the relative chance each fish in the
-    // pool is the one that appears, so it must be renormalized within the
-    // pool rather than treated as an absolute probability.
-    const totalPercent = g.ids.reduce(
-      (s, fid) => s + (locationPercents.get(fid) ?? 1),
-      0,
-    );
-    const expectedPrice = g.ids.reduce((s, fid, i) => {
-      const weight = (locationPercents.get(fid) ?? 1) / totalPercent;
-      return s + weight * g.price[i] * rarityExpectedPriceMultiplier(fid);
-    }, 0);
-    return [
-      id,
-      String(Math.min(...g.atk)),
-      String(Math.min(...g.def)),
-      String(Math.ceil(g.price.reduce((s, p) => s + p, 0) / g.price.length)),
-      String(Math.ceil(expectedPrice)),
-    ];
-  });
+  return Array.from(groups.entries()).map(([id, fish]) => [
+    id.slice(prefix.length),
+    String(Math.min(...fish.map((f) => f.atk))),
+    String(Math.min(...fish.map((f) => f.def))),
+    String(Math.ceil(fish.reduce((s, f) => s + f.price, 0) / fish.length)),
+    String(Math.ceil(expectedPoolPrice(fish, locationPercents))),
+  ]);
 }
 
 function priceList(fn: FunctionConfig, count: number, mult = 1): string {
@@ -360,6 +366,7 @@ function computeLureCostTable(
   shopRows: string[][],
   startingAD: number,
   rodData: RodData[],
+  locationPercents: Map<string, number>,
 ): {
   lureId: string;
   lurePrice: number;
@@ -372,19 +379,23 @@ function computeLureCostTable(
   if (fishRows.length < 2 || shopRows.length < 2) return [];
 
   // Group fish by RequiredTackle, preserving insertion order (min, mid, max)
-  const poolFish = new Map<string, { ad: number; price: number }[]>();
+  const poolFish = new Map<
+    string,
+    { id: string; ad: number; price: number }[]
+  >();
   for (const row of fishRows.slice(1)) {
     const requiredTackle = row[5] ?? "";
+    const id = row[0];
     const ad = Number(row[1]);
     const price = Number(row[4]);
     if (!poolFish.has(requiredTackle)) poolFish.set(requiredTackle, []);
-    poolFish.get(requiredTackle)!.push({ ad, price });
+    poolFish.get(requiredTackle)!.push({ id, ad, price });
   }
 
-  const avgPrice = (lureId: string) => {
+  const epPrice = (lureId: string) => {
     const fish = poolFish.get(lureId);
     if (!fish || fish.length === 0) return 0;
-    return fish.reduce((s, f) => s + f.price, 0) / fish.length;
+    return expectedPoolPrice(fish, locationPercents);
   };
 
   // Lowest fish A/D in the pool — the stat needed to catch the easiest
@@ -425,20 +436,6 @@ function computeLureCostTable(
 
   const lureShopRows = body.filter((r) => r[0]?.startsWith("LURE_"));
 
-  // Highest-tier fish pool a given A/D stat can actually access, so the
-  // cost/fish math reflects the player's real capability rather than
-  // assuming they're stuck fishing the nominal previous lure's pool.
-  // BAIT_0 is the floor — the pool you can fish before owning any lure.
-  const lureTierIds = ["BAIT_0", ...lureShopRows.map((r) => r[0])];
-  const poolIdForStat = (stat: number) => {
-    let best = "BAIT_0";
-    for (const id of lureTierIds) {
-      if (minAD(id) <= stat) best = id;
-      else break;
-    }
-    return best;
-  };
-
   let prevAD = Math.max(minAD("BAIT_0"), startingAD);
   let attackBought = 0;
   let defenseBought = 0;
@@ -453,8 +450,9 @@ function computeLureCostTable(
     // tier. `prevAD` itself stays the raw per-tier requirement chain so it
     // isn't permanently inflated by a one-time comparison.
     const effectiveAD = Math.max(startingAD, prevAD);
-    const avg = avgPrice(poolIdForStat(effectiveAD));
-    const fishNeeded = avg > 0 ? Math.ceil(lurePrice / avg) : 0;
+    const ep = epPrice(lureId);
+
+    const fishNeeded = ep > 0 ? Math.ceil(lurePrice / ep) : 0;
 
     const targetAD = minAD(lureId);
     const statGain = Math.max(0, targetAD - effectiveAD);
@@ -468,11 +466,9 @@ function computeLureCostTable(
     defenseBought += defenseLevels;
     prevAD = targetAD;
 
-    const currentAvg = avgPrice(lureId);
-    const adFishNeeded =
-      currentAvg > 0 ? Math.ceil(adUpgradeCost / currentAvg) : 0;
+    const adFishNeeded = ep > 0 ? Math.ceil(adUpgradeCost / ep) : 0;
     const totalFishNeeded =
-      avg > 0 ? Math.ceil((lurePrice + adUpgradeCost) / avg) : 0;
+      ep > 0 ? Math.ceil((lurePrice + adUpgradeCost) / ep) : 0;
     return {
       lureId,
       lurePrice,
@@ -490,13 +486,21 @@ function LureCostTable({
   shopRows,
   startingAD,
   rodData,
+  locationPercents,
 }: {
   fishRows: string[][];
   shopRows: string[][];
   startingAD: number;
   rodData: RodData[];
+  locationPercents: Map<string, number>;
 }) {
-  const data = computeLureCostTable(fishRows, shopRows, startingAD, rodData);
+  const data = computeLureCostTable(
+    fishRows,
+    shopRows,
+    startingAD,
+    rodData,
+    locationPercents,
+  );
   if (data.length === 0) return null;
   return (
     <Flex direction="column" gap="2" maxWidth={"500px"}>
@@ -605,23 +609,15 @@ function FishGenerator({
   onChange,
   showPreview,
   levels,
+  locationPercents,
 }: {
   onChange?: (rows: string[][]) => void;
   showPreview: boolean;
   levels: number;
+  locationPercents: Map<string, number>;
 }) {
   const stored = loadStored(FISH_STORAGE_KEY, FISH_DEFAULTS);
   const initialRef = useRef(stored);
-  const [locationPercents, setLocationPercents] = useState<Map<string, number>>(
-    new Map(),
-  );
-  useEffect(() => {
-    loadLocationGameplayData()
-      .then((data) =>
-        setLocationPercents(new Map(data.map((e) => [e.fishId, e.percent]))),
-      )
-      .catch(() => setLocationPercents(new Map()));
-  }, []);
   const [attackFn, setAttackFn] = useState<FunctionConfig>(
     () => stored.attackFn,
   );
@@ -762,7 +758,7 @@ function FishGenerator({
             </Text>
             <PreviewTable
               rows={[
-                ["ID", "ATK", "DEF", "BasePrice", "Expected Price"],
+                ["ID", "ATK", "DEF", "BP", "EP"],
                 ...aggregateByTackle(rows.slice(1), "BAIT_", locationPercents),
               ]}
             />
@@ -773,7 +769,7 @@ function FishGenerator({
             </Text>
             <PreviewTable
               rows={[
-                ["ID", "ATK", "DEF", "BasePrice", "Expected Price"],
+                ["ID", "ATK", "DEF", "BP", "EP"],
                 ...aggregateByTackle(rows.slice(1), "LURE_", locationPercents),
               ]}
             />
@@ -1354,6 +1350,9 @@ export function CsvGeneratorPanel({
   const [fishRows, setFishRows] = useState<string[][]>([]);
   const [shopRows, setShopRows] = useState<string[][]>([]);
   const [rodData, setRodData] = useState<RodData[]>([]);
+  const [locationPercents, setLocationPercents] = useState<Map<string, number>>(
+    new Map(),
+  );
 
   useEffect(() => {
     loadRodData()
@@ -1364,6 +1363,11 @@ export function CsvGeneratorPanel({
         }
       })
       .catch(() => setRodData([]));
+    loadLocationGameplayData()
+      .then((data) =>
+        setLocationPercents(new Map(data.map((e) => [e.fishId, e.percent]))),
+      )
+      .catch(() => setLocationPercents(new Map()));
   }, []);
   const [levels, setLevels] = useState<number>(
     () => loadStored(SHARED_STORAGE_KEY, { levels: 3, startingAD: 0 }).levels,
@@ -1459,6 +1463,7 @@ export function CsvGeneratorPanel({
                 }}
                 showPreview={showPreview}
                 levels={levels}
+                locationPercents={locationPercents}
               />
               {showPreview && (
                 <LureCostTable
@@ -1466,6 +1471,7 @@ export function CsvGeneratorPanel({
                   shopRows={shopRows}
                   startingAD={startingAD}
                   rodData={rodData}
+                  locationPercents={locationPercents}
                 />
               )}
             </Flex>
