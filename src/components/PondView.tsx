@@ -155,8 +155,9 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (slotIndex !== 0) return;
-      const digit = parseInt(e.key);
-      if (digit >= 1 && digit <= 7) {
+      const digitMatch = /^Digit([1-7])$/.exec(e.code);
+      if (digitMatch) {
+        const digit = parseInt(digitMatch[1]);
         const lureId = `LURE_${digit}`;
         const locationId =
           castLocationRef.current || Object.keys(useLocation.getState())[0];
@@ -164,6 +165,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
           locationId,
           [Zone.CLOSE, Zone.MID, Zone.FAR],
           lureId,
+          e.shiftKey ? Rarity.UNCOMMON : undefined,
         );
         if (fish) {
           luringDistanceRef.current = avgZoneDistance(fish.zones);
@@ -334,7 +336,6 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     cancelAnimationFrame(luringRafRef.current);
     hookXpRef.current =
       (castDistanceRef.current - luringDistanceRef.current) * XP_PER_DISTANCE;
-    console.log(luringDistanceRef.current);
     setGameState(GameState.Fighting);
 
     const { rodSlotAssignments: assignments, ownedRods: rods } =
@@ -347,6 +348,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     lineHpRef.current = lineHP;
 
     const fish = caughtFishRef.current!;
+    console.log("FIght", fish);
 
     fightRef.current = new FightEngine(
       fish.attack,

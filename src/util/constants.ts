@@ -90,7 +90,7 @@ export const ZONE_RANGES: Record<Zone, [number, number]> = {
 export const BITE_CHECK_INTERVAL = 1;
 export const TARGET_BITE_CHANCE = 0.4;
 export const BITE_CHANCE_INCREMENT = 0.1;
-export const LURE_BITE_CHANCE_PER_LEVEL = 0.1;
+export const LURE_BITE_CHANCE_PER_LEVEL = 0.0;
 
 // ==========================================================================
 // TACKLE
@@ -133,8 +133,8 @@ export const RARITY_PRICE_MULTIPLIER: Record<Rarity, number> = {
 
 export const RARITY_STAT_MULTIPLIER: Record<Rarity, number> = {
   [Rarity.COMMON]: 1.0,
-  [Rarity.UNCOMMON]: 1.1,
-  [Rarity.RARE]: 1.3,
+  [Rarity.UNCOMMON]: 1.05,
+  [Rarity.RARE]: 1.1,
 };
 
 export const RARITY_COLOR: Record<Rarity, "gray" | "blue" | "amber"> = {

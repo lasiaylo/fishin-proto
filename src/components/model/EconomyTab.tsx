@@ -620,6 +620,7 @@ export function EconomyTab({
         upgrade:
           r.upgradesBought.length > 0 ? parseFloat(r.rate.toFixed(4)) : null,
         lureLevel: r.lureLevels[r.lureId] ?? 0,
+        lureId: r.lureId,
       }))
     : [];
   const singlePairRoundData = isSinglePair
@@ -632,6 +633,7 @@ export function EconomyTab({
             ? parseFloat(r.netIncome.toFixed(4))
             : null,
         lureLevel: r.lureLevels[r.lureId] ?? 0,
+        lureId: r.lureId,
       }))
     : [];
 
@@ -770,7 +772,9 @@ export function EconomyTab({
               data={isSinglePair ? singlePairRateData : []}
               tooltipLabelFormatter={(v, payload) => {
                 const level = payload?.[0]?.payload?.lureLevel ?? 0;
-                return `${(v / 60).toFixed(2)} min · Lure Lvl ${level}`;
+                const id = payload?.[0]?.payload?.lureId ?? "";
+                const lureName = id ? (lureNameMap[id] ?? id) : "none";
+                return `${(v / 60).toFixed(2)} min · ${lureName} Lvl ${level}`;
               }}
               {...chartProps}
               header={
@@ -890,7 +894,9 @@ export function EconomyTab({
               syncId="economy-round"
               tooltipLabelFormatter={(v, payload) => {
                 const level = payload?.[0]?.payload?.lureLevel ?? 0;
-                return `Round ${v} · Lure Lvl ${level}`;
+                const id = payload?.[0]?.payload?.lureId ?? "";
+                const lureName = id ? (lureNameMap[id] ?? id) : "none";
+                return `Round ${v} · ${lureName} Lvl ${level}`;
               }}
               header={
                 isSinglePair

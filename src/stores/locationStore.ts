@@ -5,7 +5,7 @@ import {
   loadLocationGameplayData,
 } from "../util/csvLoader";
 import { randomizeFishStats, useFish } from "./fishStore";
-import { Zone } from "../util/constants";
+import { Rarity, Zone } from "../util/constants";
 
 export interface LocationEntry {
   name: string;
@@ -57,6 +57,7 @@ export function pickFishForZone(
   locationId: string,
   zones: Zone[],
   lureId = "",
+  forcedRarity?: Rarity,
 ): FishData | null {
   const location = useLocation.getState()[locationId];
   if (!location) return null;
@@ -73,5 +74,5 @@ export function pickFishForZone(
   });
 
   if (candidates.length === 0) return null;
-  return randomizeFishStats(weightedPick(candidates));
+  return randomizeFishStats(weightedPick(candidates), forcedRarity);
 }

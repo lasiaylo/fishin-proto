@@ -187,20 +187,20 @@ export function EngineConfigRow({
             />
             <NumInput
               label="Dist Mult Min"
-              value={config.distanceMultRange[0]}
+              value={config.deltaMultRange[0]}
               onChange={(v) =>
                 onChange({
-                  distanceMultRange: [v, config.distanceMultRange[1]],
+                  deltaMultRange: [v, config.deltaMultRange[1]],
                 })
               }
               step={0.05}
             />
             <NumInput
               label="Dist Mult Max"
-              value={config.distanceMultRange[1]}
+              value={config.deltaMultRange[1]}
               onChange={(v) =>
                 onChange({
-                  distanceMultRange: [config.distanceMultRange[0], v],
+                  deltaMultRange: [config.deltaMultRange[0], v],
                 })
               }
               step={0.05}

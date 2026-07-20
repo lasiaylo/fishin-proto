@@ -15,7 +15,7 @@ export interface FightConfig {
   baseSpeed: number;
   minSpeed: number;
   minStruggleDistance: number;
-  distanceMultRange: [number, number];
+  deltaMultRange: [number, number];
   critChance: number;
   critMult: number;
   initialBiteAtkMult: number;
@@ -33,13 +33,13 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   minStruggleDistance: 10,
   baseSpeed: 12,
   minSpeed: 4,
-  distanceMultRange: [0.9, 1.1],
+  deltaMultRange: [0.95, 1.05],
   critChance: 0.125,
-  critMult: 1.5,
+  critMult: 2,
   initialBiteAtkMult: 2,
   deltaMode: "EaseInEaseOut",
   easeScale: 2,
-  easeMidpoint: 0.45,
+  easeMidpoint: 0.4,
   easeSlope: 0.5,
 };
 
@@ -113,7 +113,6 @@ export class FightEngine {
     config?: Partial<FightConfig>,
     playerSpeedMultiplier: number = 1,
   ) {
-    console.log("ATK", playerAtk, playerDef);
     this.fishAtk = fishAttack;
     this.fishDef = fishDefense;
     this.fishThrash = fishThrash;
@@ -142,8 +141,8 @@ export class FightEngine {
     this.critCheckElapsed = 0;
     this.phase = phase;
     this.distanceMult = randomRange(
-      this.cfg.distanceMultRange[0],
-      this.cfg.distanceMultRange[1],
+      this.cfg.deltaMultRange[0],
+      this.cfg.deltaMultRange[1],
     );
 
     if (phase === Phase.STRUGGLE && !this.pullDone) {
