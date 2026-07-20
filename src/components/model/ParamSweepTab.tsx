@@ -5,7 +5,7 @@ import React, {
   useRef,
   type CSSProperties,
 } from "react";
-import { Flex, Text, Button, Table } from "@radix-ui/themes";
+import { Flex, Text, Button } from "@radix-ui/themes";
 import {
   LineChart,
   Line,
@@ -58,56 +58,6 @@ function avgTimeToColor(t: number): string {
 
 function remainingHPToColor(pct: number): string {
   return `hsl(${pct * 1.2}, 70%, 35%)`;
-}
-
-function SweepSummaryTable({
-  cells,
-  fishAtk,
-}: {
-  cells: SweepCell[];
-  fishAtk: number;
-}) {
-  const breakpoints = [
-    { label: "½×", ad: Math.max(1, Math.round(fishAtk * 0.5)) },
-    { label: "¾×", ad: Math.max(1, Math.round(fishAtk * 0.75)) },
-    { label: "1×", ad: fishAtk },
-    { label: "1¼×", ad: Math.round(fishAtk * 1.25) },
-    { label: "2×", ad: Math.round(fishAtk * 2) },
-  ];
-
-  return (
-    <Table.Root variant="surface" size="1">
-      <Table.Header>
-        <Table.Row>
-          <Table.ColumnHeaderCell>A/D</Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell>Win %</Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell>Fight Time</Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell>Remaining HP %</Table.ColumnHeaderCell>
-        </Table.Row>
-      </Table.Header>
-      <Table.Body>
-        {breakpoints.map(({ label, ad }) => {
-          const cell = cells.find((c) => c.reel === ad && c.drag === ad);
-          return (
-            <Table.Row key={label}>
-              <Table.Cell>
-                {label} ({ad})
-              </Table.Cell>
-              <Table.Cell>
-                {cell ? `${cell.winPct.toFixed(1)}%` : "—"}
-              </Table.Cell>
-              <Table.Cell>
-                {cell ? `${cell.avgTime.toFixed(1)}s` : "—"}
-              </Table.Cell>
-              <Table.Cell>
-                {cell ? `${cell.avgRemainingHP.toFixed(1)}%` : "—"}
-              </Table.Cell>
-            </Table.Row>
-          );
-        })}
-      </Table.Body>
-    </Table.Root>
-  );
 }
 
 function DeltaLineChart({
@@ -717,12 +667,6 @@ export function ParamSweepTab({
           </Button>
         )}
       </Flex>
-
-      {cells.length > 0 && (
-        <div style={{ width: "50%" }}>
-          <SweepSummaryTable cells={cells} fishAtk={fishSpeed} />
-        </div>
-      )}
 
       {cells.length > 0 && (
         <Flex gap="6" wrap="wrap">

@@ -1042,17 +1042,6 @@ function ShopGenerator({
 
         <Flex direction="column" gap="2">
           <Text size="1" weight="bold">
-            LURE
-          </Text>
-          <FunctionSelect
-            label="Price curve"
-            value={lureFn}
-            onChange={setLureFn}
-          />
-        </Flex>
-
-        <Flex direction="column" gap="2">
-          <Text size="1" weight="bold">
             RODS
           </Text>
           <Flex gap="3" wrap="wrap" align="end">
@@ -1098,6 +1087,17 @@ function ShopGenerator({
               onChange={setRodHolderFn}
             />
           )}
+        </Flex>
+
+        <Flex direction="column" gap="2">
+          <Text size="1" weight="bold">
+            LURE
+          </Text>
+          <FunctionSelect
+            label="Price curve"
+            value={lureFn}
+            onChange={setLureFn}
+          />
         </Flex>
 
         <Flex direction="column" gap="2">
