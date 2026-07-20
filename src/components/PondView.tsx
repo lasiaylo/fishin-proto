@@ -4,8 +4,8 @@ import { Flex, Progress, Select, Separator, Text } from "@radix-ui/themes";
 import { useShallow } from "zustand/react/shallow";
 import { DelayButton } from "./DelayButton";
 import { FishData, StatName } from "../util/csvLoader";
-import { getBiteChance, getZones } from "../util/zones";
-import { randomizeFishStats, useFish } from "../stores/fishStore";
+import { avgZoneDistance, getBiteChance, getZones } from "../util/zones";
+import { useFish } from "../stores/fishStore";
 import { pickFishForZone, useLocation } from "../stores/locationStore";
 import {
   addFishToInventory,
@@ -43,6 +43,7 @@ import {
   XP_LOSS,
   XP_PER_DISTANCE,
   XP_WIN,
+  Zone,
 } from "../util/constants";
 import { ReelView } from "./ReelView";
 
@@ -137,6 +138,11 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
   const castDistanceRef = useRef(0);
   const waitCountdownRef = useRef<number | null>(null);
   const hookXpRef = useRef(0);
+  const gameStateRef = useRef<GameState>(GameState.Idle);
+
+  useEffect(() => {
+    gameStateRef.current = gameState;
+  }, [gameState]);
 
   useEffect(() => {
     return () => {
@@ -151,10 +157,19 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
       if (slotIndex !== 0) return;
       const digit = parseInt(e.key);
       if (digit >= 1 && digit <= 7) {
-        const fish = useFish.getState().allFish[digit - 1];
+        const lureId = `LURE_${digit}`;
+        const locationId =
+          castLocationRef.current || Object.keys(useLocation.getState())[0];
+        const fish = pickFishForZone(
+          locationId,
+          [Zone.CLOSE, Zone.MID, Zone.FAR],
+          lureId,
+        );
         if (fish) {
-          luringDistanceRef.current = fish.hp / 2;
-          caughtFishRef.current = randomizeFishStats(fish);
+          luringDistanceRef.current = avgZoneDistance(fish.zones);
+          castDistanceRef.current = luringDistanceRef.current;
+          caughtFishRef.current = fish;
+          castLocationRef.current = locationId;
           startFight();
         }
       }
@@ -168,6 +183,32 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
       if (e.key === "0") addFish(Rarity.COMMON);
       if (e.key === "-") addFish(Rarity.UNCOMMON);
       if (e.key === "=") addFish(Rarity.RARE);
+
+      if (e.key === "Enter") {
+        if (gameStateRef.current !== GameState.Idle) return;
+        const { rodSlotItems: items, baitInventory: bait } =
+          usePlayer.getState();
+        const item = items[slotIndex] ?? null;
+        if (item === null) return;
+        if (getTackleType(item) === TackleType.BAIT && (bait[item] ?? 0) === 0)
+          return;
+
+        const locationId =
+          castLocationRef.current || Object.keys(useLocation.getState())[0];
+        const fish = pickFishForZone(
+          locationId,
+          [Zone.CLOSE, Zone.MID, Zone.FAR],
+          item,
+        );
+        if (fish) {
+          luringDistanceRef.current = fish.hp / 2;
+          castDistanceRef.current = luringDistanceRef.current;
+          caughtFishRef.current = fish;
+          castLocationRef.current = locationId;
+          pushEvent(EventMsg.BITING);
+          startFight();
+        }
+      }
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
@@ -293,6 +334,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     cancelAnimationFrame(luringRafRef.current);
     hookXpRef.current =
       (castDistanceRef.current - luringDistanceRef.current) * XP_PER_DISTANCE;
+    console.log(luringDistanceRef.current);
     setGameState(GameState.Fighting);
 
     const { rodSlotAssignments: assignments, ownedRods: rods } =

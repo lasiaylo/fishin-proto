@@ -318,6 +318,31 @@ export function RodSelect({
   );
 }
 
+export function LureSelect({
+  lureIds,
+  value,
+  onChange,
+}: {
+  lureIds: string[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <Text size="1" color="gray">
+        Lure
+      </Text>
+      <select value={value} onChange={(e) => onChange(e.target.value)}>
+        {lureIds.map((id) => (
+          <option key={id} value={id}>
+            {id}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 export function FishSelect({
   fishData,
   value,

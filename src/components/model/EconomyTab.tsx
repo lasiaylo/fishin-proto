@@ -504,6 +504,14 @@ export function EconomyTab({
   const activeBaitIds = [
     ...new Set(primaryRounds.map((r) => r.baitId).filter(Boolean)),
   ];
+  // When the primary rod itself fishes a bait tackle, EconomyModel mirrors
+  // that id into both r.lureId and r.baitId (see baitId's definition) so
+  // bait-region highlighting still fires — but that means the same id can
+  // land in both activeLureIds and activeBaitIds. Only the legend needs
+  // deduping; the color map/regions below still key off the full list.
+  const legendOnlyBaitIds = activeBaitIds.filter(
+    (id) => !activeLureIds.includes(id),
+  );
   const baitColorMap = Object.fromEntries(
     activeBaitIds.map((id, i) => [id, BAIT_COLORS[i % BAIT_COLORS.length]]),
   );
@@ -784,7 +792,7 @@ export function EconomyTab({
                           </Text>
                         </Flex>
                       )),
-                      ...activeBaitIds.map((id) => (
+                      ...legendOnlyBaitIds.map((id) => (
                         <Flex key={`bait-${id}`} align="center" gap="1">
                           <div
                             style={{
@@ -903,7 +911,7 @@ export function EconomyTab({
                           </Text>
                         </Flex>
                       )),
-                      ...activeBaitIds.map((id) => (
+                      ...legendOnlyBaitIds.map((id) => (
                         <Flex key={`bait-${id}`} align="center" gap="1">
                           <div
                             style={{

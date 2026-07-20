@@ -117,6 +117,7 @@ export class FightEngine {
     config?: Partial<FightConfig>,
     playerSpeedMultiplier: number = 1,
   ) {
+    console.log("ATK", playerAtk, playerDef);
     this.fishAtk = fishAttack;
     this.fishDef = fishDefense;
     this.fishThrash = fishThrash;

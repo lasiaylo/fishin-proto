@@ -26,9 +26,19 @@ import {
 } from "../../game/FightEngine";
 import { levelStat, type FishData, type RodData } from "../../util/csvLoader";
 import { avgZoneDistance } from "../../util/zones";
-import { NumInput, FishSelect, RodSelect, EngineConfigRow } from "./shared";
+import {
+  NumInput,
+  FishSelect,
+  LureSelect,
+  RodSelect,
+  EngineConfigRow,
+} from "./shared";
 
 const MAX_SWEEP_UPGRADE_LEVEL = 5;
+
+function avg(nums: number[]): number {
+  return nums.reduce((s, n) => s + n, 0) / nums.length;
+}
 
 interface SweepCell {
   reel: number;
@@ -389,7 +399,8 @@ function Heatmap({
                     boxSizing: "border-box",
                     border: r === d ? "2px solid #888" : "1px solid #2a2a2a",
                     outline:
-                      r === fishAD && d === fishAD
+                      (r === fishAD && d === fishAD) ||
+                      (r - 1 === fishAD && d - 1 === fishAD)
                         ? "2px solid #fff"
                         : undefined,
                     borderRadius: 3,
@@ -420,10 +431,22 @@ export function ParamSweepTab({
   fishData: FishData[];
   rodData: RodData[];
 }) {
+  const [selectMode, setSelectMode] = useState<"fish" | "lure">(() =>
+    localStorage.getItem("debug_selectMode") === "lure" ? "lure" : "fish",
+  );
   const [fishId, setFishId] = useState(() => {
     const stored = localStorage.getItem("debug_selectedFishId");
     if (stored && fishData.some((f) => f.id === stored)) return stored;
     return fishData[0]?.id ?? "";
+  });
+  const lureIds = Array.from(
+    new Set(fishData.map((f) => f.requiredTackle).filter(Boolean)),
+  );
+  const [lureId, setLureId] = useState(() => {
+    const stored = localStorage.getItem("debug_selectedLureId");
+    if (stored && fishData.some((f) => f.requiredTackle === stored))
+      return stored;
+    return fishData[0]?.requiredTackle ?? "";
   });
   const [rodId, setRodId] = useState(() => rodData[0]?.id ?? "");
   const [fishSpeed, setFishSpeed] = useState(fishData[0]?.attack ?? 0);
@@ -464,20 +487,43 @@ export function ParamSweepTab({
   const cancelRef = useRef(false);
 
   useEffect(() => {
+    localStorage.setItem("debug_selectMode", selectMode);
+  }, [selectMode]);
+
+  useEffect(() => {
     localStorage.setItem("debug_selectedFishId", fishId);
   }, [fishId]);
 
   useEffect(() => {
-    const fish = fishData.find((f) => f.id === fishId);
-    if (fish) {
+    localStorage.setItem("debug_selectedLureId", lureId);
+  }, [lureId]);
+
+  useEffect(() => {
+    if (selectMode === "fish") {
+      const fish = fishData.find((f) => f.id === fishId);
+      if (!fish) return;
       setFishSpeed(fish.attack);
       setFishStrength(fish.defense);
       setFishThrash(fish.thrash);
       setFishBasePrice(fish.basePrice);
       setTargetDistance(fish.hp);
       setFightStartDistance(avgZoneDistance(fish.zones));
+      return;
     }
-  }, [fishId, fishData]);
+    // Lure mode: aggregate the whole catchable pool the same way the CSV
+    // generator's preview tables do — min ATK/DEF (the stat needed to
+    // catch the easiest fish in the pool), everything else averaged.
+    const pool = fishData.filter((f) => f.requiredTackle === lureId);
+    if (pool.length === 0) return;
+    setFishSpeed(Math.min(...pool.map((f) => f.attack)));
+    setFishStrength(Math.min(...pool.map((f) => f.defense)));
+    setFishThrash(avg(pool.map((f) => f.thrash)));
+    setFishBasePrice(avg(pool.map((f) => f.basePrice)));
+    setTargetDistance(avg(pool.map((f) => f.hp)));
+    setFightStartDistance(
+      avgZoneDistance([...new Set(pool.flatMap((f) => f.zones))]),
+    );
+  }, [selectMode, fishId, lureId, fishData]);
 
   useEffect(() => {
     const rod = rodData.find((r) => r.id === rodId);
@@ -486,8 +532,16 @@ export function ParamSweepTab({
       setReelMin(Math.min(rod.attackBase, rod.defenseBase));
       setReelMax(
         Math.max(
-          levelStat(rod.attackBase, rod.attackPerLevel, MAX_SWEEP_UPGRADE_LEVEL),
-          levelStat(rod.defenseBase, rod.defensePerLevel, MAX_SWEEP_UPGRADE_LEVEL),
+          levelStat(
+            rod.attackBase,
+            rod.attackPerLevel,
+            MAX_SWEEP_UPGRADE_LEVEL,
+          ),
+          levelStat(
+            rod.defenseBase,
+            rod.defensePerLevel,
+            MAX_SWEEP_UPGRADE_LEVEL,
+          ),
         ),
       );
       setStep(rod.attackPerLevel);
@@ -581,7 +635,23 @@ export function ParamSweepTab({
         onChange={(patch) => setEngineCfg((c) => ({ ...c, ...patch }))}
       />
       <Flex gap="3" wrap="wrap" align="end">
-        <FishSelect fishData={fishData} value={fishId} onChange={setFishId} />
+        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <Text size="1" color="gray">
+            Select By
+          </Text>
+          <select
+            value={selectMode}
+            onChange={(e) => setSelectMode(e.target.value as "fish" | "lure")}
+          >
+            <option value="fish">Fish</option>
+            <option value="lure">Lure</option>
+          </select>
+        </label>
+        {selectMode === "fish" ? (
+          <FishSelect fishData={fishData} value={fishId} onChange={setFishId} />
+        ) : (
+          <LureSelect lureIds={lureIds} value={lureId} onChange={setLureId} />
+        )}
         <NumInput
           label="Attack"
           value={fishSpeed}
