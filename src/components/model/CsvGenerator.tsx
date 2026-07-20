@@ -1,8 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Flex, Grid, Text, Table, Button, Separator } from "@radix-ui/themes";
 import { NumInput } from "./shared";
-import { levelStat, loadRodData, type RodData } from "../../util/csvLoader";
-import { INITIAL_PLAYER_STATE } from "../../util/constants";
+import {
+  levelStat,
+  loadRodData,
+  loadLocationGameplayData,
+  type RodData,
+} from "../../util/csvLoader";
+import {
+  INITIAL_PLAYER_STATE,
+  rarityExpectedPriceMultiplier,
+} from "../../util/constants";
 
 export const GENERATED_FISH_CSV = "__generated_fish__";
 export const GENERATED_SHOP_CSV = "__generated_shop__";
@@ -110,6 +118,48 @@ function generateFishRows(
   return [...header, ...baitRows, ...lureRows];
 }
 
+function aggregateByTackle(
+  rows: string[][],
+  prefix: string,
+  locationPercents: Map<string, number>,
+): string[][] {
+  const groups = new Map<
+    string,
+    { ids: string[]; atk: number[]; def: number[]; price: number[] }
+  >();
+  for (const r of rows) {
+    const tackleId = r[5];
+    if (!tackleId?.startsWith(prefix)) continue;
+    if (!groups.has(tackleId))
+      groups.set(tackleId, { ids: [], atk: [], def: [], price: [] });
+    const g = groups.get(tackleId)!;
+    g.ids.push(r[0]);
+    g.atk.push(Number(r[1]));
+    g.def.push(Number(r[2]));
+    g.price.push(Number(r[4]));
+  }
+  return Array.from(groups.entries()).map(([id, g]) => {
+    // LocationGameplay's PERCENT is the relative chance each fish in the
+    // pool is the one that appears, so it must be renormalized within the
+    // pool rather than treated as an absolute probability.
+    const totalPercent = g.ids.reduce(
+      (s, fid) => s + (locationPercents.get(fid) ?? 1),
+      0,
+    );
+    const expectedPrice = g.ids.reduce((s, fid, i) => {
+      const weight = (locationPercents.get(fid) ?? 1) / totalPercent;
+      return s + weight * g.price[i] * rarityExpectedPriceMultiplier(fid);
+    }, 0);
+    return [
+      id,
+      String(Math.min(...g.atk)),
+      String(Math.min(...g.def)),
+      String(Math.ceil(g.price.reduce((s, p) => s + p, 0) / g.price.length)),
+      String(Math.ceil(expectedPrice)),
+    ];
+  });
+}
+
 function priceList(fn: FunctionConfig, count: number, mult = 1): string {
   const scaledFn = { ...fn, startValue: fn.startValue * mult };
   return Array.from({ length: count }, (_, i) =>
@@ -119,13 +169,10 @@ function priceList(fn: FunctionConfig, count: number, mult = 1): string {
 
 function generateShopRows(
   attackFn: FunctionConfig,
-  attackVPL: number,
   attackCount: number,
   defenseFn: FunctionConfig,
-  defenseVPL: number,
   defenseCount: number,
   lineHpFn: FunctionConfig,
-  lineHpVPL: number,
   lineHpCount: number,
   lureFn: FunctionConfig,
   lureCount: number,
@@ -158,21 +205,21 @@ function generateShopRows(
       `${rodId}_ATTACK`,
       priceList(attackFn, attackCount, priceMult),
       "ROD_ATTACK",
-      String(attackVPL),
+      "1",
       r > 1 ? rodId : "",
     ]);
     rows.push([
       `${rodId}_DEFENSE`,
       priceList(defenseFn, defenseCount, priceMult),
       "ROD_DEFENSE",
-      String(defenseVPL),
+      "1",
       r > 1 ? rodId : "",
     ]);
     rows.push([
       `${rodId}_LINE_HP`,
       priceList(lineHpFn, lineHpCount, priceMult),
       "ROD_LINE_HP",
-      String(lineHpVPL),
+      "1",
       r > 1 ? rodId : "",
     ]);
   }
@@ -565,6 +612,16 @@ function FishGenerator({
 }) {
   const stored = loadStored(FISH_STORAGE_KEY, FISH_DEFAULTS);
   const initialRef = useRef(stored);
+  const [locationPercents, setLocationPercents] = useState<Map<string, number>>(
+    new Map(),
+  );
+  useEffect(() => {
+    loadLocationGameplayData()
+      .then((data) =>
+        setLocationPercents(new Map(data.map((e) => [e.fishId, e.percent]))),
+      )
+      .catch(() => setLocationPercents(new Map()));
+  }, []);
   const [attackFn, setAttackFn] = useState<FunctionConfig>(
     () => stored.attackFn,
   );
@@ -705,12 +762,8 @@ function FishGenerator({
             </Text>
             <PreviewTable
               rows={[
-                ["ID", "ATK", "DEF", "BasePrice"],
-                ...rows
-                  .slice(1)
-                  .filter((r) => r[5]?.startsWith("BAIT_"))
-                  .filter((_, i) => i % 2 === 0)
-                  .map((r) => [r[0], r[1], r[2], r[4]]),
+                ["ID", "ATK", "DEF", "BasePrice", "Expected Price"],
+                ...aggregateByTackle(rows.slice(1), "BAIT_", locationPercents),
               ]}
             />
           </Flex>
@@ -720,12 +773,8 @@ function FishGenerator({
             </Text>
             <PreviewTable
               rows={[
-                ["ID", "ATK", "DEF", "BasePrice"],
-                ...rows
-                  .slice(1)
-                  .filter((r) => r[5]?.startsWith("LURE_"))
-                  .filter((_, i) => i % 2 === 0)
-                  .map((r) => [r[0], r[1], r[2], r[4]]),
+                ["ID", "ATK", "DEF", "BasePrice", "Expected Price"],
+                ...aggregateByTackle(rows.slice(1), "LURE_", locationPercents),
               ]}
             />
           </Flex>
@@ -753,13 +802,10 @@ function FishGenerator({
 
 const SHOP_DEFAULTS: {
   attackFn: FunctionConfig;
-  attackVPL: number;
   attackCount: number;
   defenseFn: FunctionConfig;
-  defenseVPL: number;
   defenseCount: number;
   lineHpFn: FunctionConfig;
-  lineHpVPL: number;
   lineHpCount: number;
   lureFn: FunctionConfig;
   baitFn: FunctionConfig;
@@ -776,7 +822,6 @@ const SHOP_DEFAULTS: {
     scaleFactor: 4,
     growthRate: 0.8,
   },
-  attackVPL: 1,
   attackCount: 10,
   defenseFn: {
     type: "LINEAR",
@@ -784,7 +829,6 @@ const SHOP_DEFAULTS: {
     scaleFactor: 4,
     growthRate: 0.8,
   },
-  defenseVPL: 1,
   defenseCount: 10,
   lineHpFn: {
     type: "LINEAR",
@@ -792,7 +836,6 @@ const SHOP_DEFAULTS: {
     scaleFactor: 4,
     growthRate: 0.8,
   },
-  lineHpVPL: 1,
   lineHpCount: 10,
   lureFn: { type: "LINEAR", startValue: 10, scaleFactor: 4, growthRate: 0.8 },
   baitFn: { type: "LINEAR", startValue: 5, scaleFactor: 5, growthRate: 0.8 },
@@ -828,19 +871,16 @@ function ShopGenerator({
   const [attackFn, setAttackFn] = useState<FunctionConfig>(
     () => stored.attackFn,
   );
-  const [attackVPL, setAttackVPL] = useState(() => stored.attackVPL);
   const [attackCount, setAttackCount] = useState(() => stored.attackCount);
 
   const [defenseFn, setDefenseFn] = useState<FunctionConfig>(
     () => stored.defenseFn,
   );
-  const [defenseVPL, setDefenseVPL] = useState(() => stored.defenseVPL);
   const [defenseCount, setDefenseCount] = useState(() => stored.defenseCount);
 
   const [lineHpFn, setLineHpFn] = useState<FunctionConfig>(
     () => stored.lineHpFn,
   );
-  const [lineHpVPL, setLineHpVPL] = useState(() => stored.lineHpVPL);
   const [lineHpCount, setLineHpCount] = useState(() => stored.lineHpCount);
 
   const [lureFn, setLureFn] = useState<FunctionConfig>(() => stored.lureFn);
@@ -862,13 +902,10 @@ function ShopGenerator({
 
   const rows = generateShopRows(
     attackFn,
-    attackVPL,
     attackCount,
     defenseFn,
-    defenseVPL,
     defenseCount,
     lineHpFn,
-    lineHpVPL,
     lineHpCount,
     lureFn,
     lureCount,
@@ -886,13 +923,10 @@ function ShopGenerator({
       SHOP_STORAGE_KEY,
       JSON.stringify({
         attackFn,
-        attackVPL,
         attackCount,
         defenseFn,
-        defenseVPL,
         defenseCount,
         lineHpFn,
-        lineHpVPL,
         lineHpCount,
         lureFn,
         baitFn,
@@ -908,13 +942,10 @@ function ShopGenerator({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     attackFn,
-    attackVPL,
     attackCount,
     defenseFn,
-    defenseVPL,
     defenseCount,
     lineHpFn,
-    lineHpVPL,
     lineHpCount,
     lureFn,
     lureCount,
@@ -929,13 +960,10 @@ function ShopGenerator({
 
   function undo() {
     setAttackFn(initialRef.current.attackFn);
-    setAttackVPL(initialRef.current.attackVPL);
     setAttackCount(initialRef.current.attackCount);
     setDefenseFn(initialRef.current.defenseFn);
-    setDefenseVPL(initialRef.current.defenseVPL);
     setDefenseCount(initialRef.current.defenseCount);
     setLineHpFn(initialRef.current.lineHpFn);
-    setLineHpVPL(initialRef.current.lineHpVPL);
     setLineHpCount(initialRef.current.lineHpCount);
     setLureFn(initialRef.current.lureFn);
     setBaitFn(initialRef.current.baitFn);
@@ -970,12 +998,6 @@ function ShopGenerator({
           />
           <Flex gap="3" wrap="wrap" align="end">
             <NumInput
-              label="ValuePerLevel"
-              value={attackVPL}
-              onChange={setAttackVPL}
-              min={1}
-            />
-            <NumInput
               label="Upgrades"
               value={attackCount}
               onChange={setAttackCount}
@@ -995,12 +1017,6 @@ function ShopGenerator({
           />
           <Flex gap="3" wrap="wrap" align="end">
             <NumInput
-              label="ValuePerLevel"
-              value={defenseVPL}
-              onChange={setDefenseVPL}
-              min={1}
-            />
-            <NumInput
               label="Upgrades"
               value={defenseCount}
               onChange={setDefenseCount}
@@ -1019,12 +1035,6 @@ function ShopGenerator({
             onChange={setLineHpFn}
           />
           <Flex gap="3" wrap="wrap" align="end">
-            <NumInput
-              label="ValuePerLevel"
-              value={lineHpVPL}
-              onChange={setLineHpVPL}
-              min={1}
-            />
             <NumInput
               label="Upgrades"
               value={lineHpCount}
@@ -1125,9 +1135,9 @@ function ShopGenerator({
         style={{ width: "fit-content" }}
         onClick={() => {
           const comment = [
-            `# ROD_ATTACK price curve: ${fnConfigStr(attackFn)} | ValuePerLevel=${attackVPL} | Upgrades=${attackCount}`,
-            `# ROD_DEFENSE price curve: ${fnConfigStr(defenseFn)} | ValuePerLevel=${defenseVPL} | Upgrades=${defenseCount}`,
-            `# ROD_LINE_HP price curve: ${fnConfigStr(lineHpFn)} | ValuePerLevel=${lineHpVPL} | Upgrades=${lineHpCount}`,
+            `# ROD_ATTACK price curve: ${fnConfigStr(attackFn)} | Upgrades=${attackCount}`,
+            `# ROD_DEFENSE price curve: ${fnConfigStr(defenseFn)} | Upgrades=${defenseCount}`,
+            `# ROD_LINE_HP price curve: ${fnConfigStr(lineHpFn)} | Upgrades=${lineHpCount}`,
             `# LURE price curve: ${fnConfigStr(lureFn)} | Lures=${lureCount}`,
             `# BAIT price curve: ${fnConfigStr(baitFn)} | Tiers=${baitCount}`,
             `# ROD_HOLDER price curve: ${fnConfigStr(rodHolderFn)} | Levels=${rodHolderLevels}`,
@@ -1275,13 +1285,10 @@ export function getGeneratedShopRows(): string[][] {
   });
   const {
     attackFn,
-    attackVPL,
     attackCount,
     defenseFn,
-    defenseVPL,
     defenseCount,
     lineHpFn,
-    lineHpVPL,
     lineHpCount,
     lureFn,
     baitFn,
@@ -1294,13 +1301,10 @@ export function getGeneratedShopRows(): string[][] {
   } = loadStored(SHOP_STORAGE_KEY, SHOP_DEFAULTS);
   return generateShopRows(
     attackFn,
-    attackVPL,
     attackCount,
     defenseFn,
-    defenseVPL,
     defenseCount,
     lineHpFn,
-    lineHpVPL,
     lineHpCount,
     lureFn,
     levels,

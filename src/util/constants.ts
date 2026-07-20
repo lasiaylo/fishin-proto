@@ -143,6 +143,24 @@ export const RARITY_COLOR: Record<Rarity, "gray" | "blue" | "amber"> = {
   [Rarity.RARE]: "amber",
 };
 
+// BASE_FISH_ID never rolls rarity in-game, so it's the only fish whose
+// price/stats aren't blended across the rarity distribution.
+export function fishRarities(fishId: string): Rarity[] {
+  return fishId === BASE_FISH_ID
+    ? [Rarity.COMMON]
+    : (Object.values(Rarity) as Rarity[]);
+}
+
+export function rarityExpectedPriceMultiplier(fishId: string): number {
+  const rarities = fishRarities(fishId);
+  const totalWeight = rarities.reduce((s, r) => s + RARITY_WEIGHTS[r], 0);
+  return rarities.reduce(
+    (s, r) =>
+      s + (RARITY_WEIGHTS[r] / totalWeight) * RARITY_PRICE_MULTIPLIER[r],
+    0,
+  );
+}
+
 // ==========================================================================
 // FUNCTIONS
 // ==========================================================================

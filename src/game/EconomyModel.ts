@@ -23,7 +23,7 @@ import {
   INITIAL_PLAYER_STATE,
   LURE_BITE_CHANCE_PER_LEVEL,
   TackleType,
-  Rarity,
+  fishRarities,
   RARITY_PRICE_MULTIPLIER,
   RARITY_STAT_MULTIPLIER,
   RARITY_WEIGHTS,
@@ -33,7 +33,6 @@ import {
   XP_WIN,
   Zone,
   ZONE_RANGES,
-  BASE_FISH_ID,
 } from "../util/constants";
 import { PlayerStats } from "../stores/playerStore";
 
@@ -94,10 +93,7 @@ const trialsCache = new Map<
 function expandFishByRarity(
   fish: FishData,
 ): Array<{ fish: FishData; weight: number }> {
-  const rarities =
-    fish.id === BASE_FISH_ID
-      ? [Rarity.COMMON]
-      : (Object.values(Rarity) as Rarity[]);
+  const rarities = fishRarities(fish.id);
   const totalWeight = rarities.reduce((s, r) => s + RARITY_WEIGHTS[r], 0);
   return rarities.map((rarity) => ({
     fish: {
