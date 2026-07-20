@@ -157,14 +157,6 @@ export function EngineConfigRow({
               }
               min={0}
             />
-            <NumInput
-              label="Start Struggle Weight"
-              value={config.startStruggleWeight}
-              onChange={(v) => onChange({ startStruggleWeight: v })}
-              min={0}
-              max={1}
-              step={0.05}
-            />
           </Flex>
           <Flex gap="3" wrap="wrap" align="end">
             <NumInput

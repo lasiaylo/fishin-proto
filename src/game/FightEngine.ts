@@ -14,10 +14,8 @@ export interface FightConfig {
   initialFightRange: [number, number];
   baseSpeed: number;
   minSpeed: number;
-  startStruggleWeight: number;
   minStruggleDistance: number;
   distanceMultRange: [number, number];
-  thrashMultRange: [number, number];
   critChance: number;
   critMult: number;
   initialBiteAtkMult: number;
@@ -31,16 +29,14 @@ export const DEFAULT_FIGHT_CONFIG: FightConfig = {
   restTimeRange: [3, 4],
   fightTimeRange: [1, 3],
   initialFightRange: [2, 4],
-  startStruggleWeight: 0.5,
   gracePercent: 0.2,
   minStruggleDistance: 10,
   baseSpeed: 12,
   minSpeed: 4,
   distanceMultRange: [0.9, 1.1],
-  thrashMultRange: [0.95, 1.05],
   critChance: 0.125,
   critMult: 1.5,
-  initialBiteAtkMult: 1.5,
+  initialBiteAtkMult: 2,
   deltaMode: "EaseInEaseOut",
   easeScale: 2,
   easeMidpoint: 0.3,
