@@ -152,28 +152,34 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     };
   }, [slotIndex]);
 
+  function startDebugLureFight(lureId: string, forcedRarity?: Rarity) {
+    const locationId =
+      castLocationRef.current || Object.keys(useLocation.getState())[0];
+    const fish = pickFishForZone(
+      locationId,
+      [Zone.CLOSE, Zone.MID, Zone.FAR],
+      lureId,
+      forcedRarity,
+    );
+    if (fish) {
+      luringDistanceRef.current = avgZoneDistance(fish.zones);
+      castDistanceRef.current = luringDistanceRef.current;
+      caughtFishRef.current = fish;
+      castLocationRef.current = locationId;
+      startFight();
+    }
+  }
+
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (slotIndex !== 0) return;
       const digitMatch = /^Digit([1-7])$/.exec(e.code);
       if (digitMatch) {
         const digit = parseInt(digitMatch[1]);
-        const lureId = `LURE_${digit}`;
-        const locationId =
-          castLocationRef.current || Object.keys(useLocation.getState())[0];
-        const fish = pickFishForZone(
-          locationId,
-          [Zone.CLOSE, Zone.MID, Zone.FAR],
-          lureId,
+        startDebugLureFight(
+          `LURE_${digit}`,
           e.shiftKey ? Rarity.UNCOMMON : undefined,
         );
-        if (fish) {
-          luringDistanceRef.current = avgZoneDistance(fish.zones);
-          castDistanceRef.current = luringDistanceRef.current;
-          caughtFishRef.current = fish;
-          castLocationRef.current = locationId;
-          startFight();
-        }
       }
 
       const qwertyIndex = [
@@ -186,22 +192,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
         "KeyU",
       ].indexOf(e.code);
       if (qwertyIndex !== -1) {
-        const lureId = `LURE_${qwertyIndex + 1}`;
-        const locationId =
-          castLocationRef.current || Object.keys(useLocation.getState())[0];
-        const fish = pickFishForZone(
-          locationId,
-          [Zone.CLOSE, Zone.MID, Zone.FAR],
-          lureId,
-          Rarity.RARE,
-        );
-        if (fish) {
-          luringDistanceRef.current = avgZoneDistance(fish.zones);
-          castDistanceRef.current = luringDistanceRef.current;
-          caughtFishRef.current = fish;
-          castLocationRef.current = locationId;
-          startFight();
-        }
+        startDebugLureFight(`LURE_${qwertyIndex + 1}`, Rarity.RARE);
       }
 
       function addFish(rarity: Rarity) {
