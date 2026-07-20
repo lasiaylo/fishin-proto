@@ -176,6 +176,34 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
         }
       }
 
+      const qwertyIndex = [
+        "KeyQ",
+        "KeyW",
+        "KeyE",
+        "KeyR",
+        "KeyT",
+        "KeyY",
+        "KeyU",
+      ].indexOf(e.code);
+      if (qwertyIndex !== -1) {
+        const lureId = `LURE_${qwertyIndex + 1}`;
+        const locationId =
+          castLocationRef.current || Object.keys(useLocation.getState())[0];
+        const fish = pickFishForZone(
+          locationId,
+          [Zone.CLOSE, Zone.MID, Zone.FAR],
+          lureId,
+          Rarity.RARE,
+        );
+        if (fish) {
+          luringDistanceRef.current = avgZoneDistance(fish.zones);
+          castDistanceRef.current = luringDistanceRef.current;
+          caughtFishRef.current = fish;
+          castLocationRef.current = locationId;
+          startFight();
+        }
+      }
+
       function addFish(rarity: Rarity) {
         const fish = useFish.getState().allFish[0];
         fish.rarity = rarity;
