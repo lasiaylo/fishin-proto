@@ -130,8 +130,8 @@ export const RARITY_WEIGHTS: Record<Rarity, number> = {
 export const RARITY_PRICE_MULTIPLIER: Record<Rarity, number> = {
   [Rarity.COMMON]: 1.0,
   [Rarity.UNCOMMON]: 1.25,
-  [Rarity.RARE]: 3,
-  [Rarity.LEGENDARY]: 15,
+  [Rarity.RARE]: 2.5,
+  [Rarity.LEGENDARY]: 10,
 };
 
 export const RARITY_STAT_MULTIPLIER: Record<Rarity, number> = {

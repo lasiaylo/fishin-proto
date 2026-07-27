@@ -437,6 +437,7 @@ function computeLureCostTable(
   const lureShopRows = body.filter((r) => r[0]?.startsWith("LURE_"));
 
   let prevAD = Math.max(minAD("BAIT_0"), startingAD);
+  let prevLureId = "BAIT_0";
   let attackBought = 0;
   let defenseBought = 0;
 
@@ -450,7 +451,10 @@ function computeLureCostTable(
     // tier. `prevAD` itself stays the raw per-tier requirement chain so it
     // isn't permanently inflated by a one-time comparison.
     const effectiveAD = Math.max(startingAD, prevAD);
-    const ep = epPrice(lureId);
+    // Fish/A-D costs are funded by whatever's still equipped while saving
+    // up — the player doesn't have `lureId` yet — so price against the
+    // previous tier's EP, not this row's own.
+    const ep = epPrice(prevLureId);
 
     const fishNeeded = ep > 0 ? Math.ceil(lurePrice / ep) : 0;
 
@@ -465,6 +469,7 @@ function computeLureCostTable(
     attackBought += attackLevels;
     defenseBought += defenseLevels;
     prevAD = targetAD;
+    prevLureId = lureId;
 
     const adFishNeeded = ep > 0 ? Math.ceil(adUpgradeCost / ep) : 0;
     const totalFishNeeded =
