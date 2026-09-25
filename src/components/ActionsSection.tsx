@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Flex, Tabs, Text } from "@radix-ui/themes";
+import { Flex, Tabs } from "@radix-ui/themes";
 import { PondView } from "./PondView";
 import { FieldsView } from "./FieldsView";
+import { SkyView } from "./SkyView";
 
 export function ActionsSection() {
   const [tab, setTab] = useState("pond");
@@ -24,9 +25,7 @@ export function ActionsSection() {
         </Tabs.Content>
         <Tabs.Content value="sky">
           <Flex className={"fade-in"}>
-            <Text size="1" color="gray">
-              coming soon
-            </Text>
+            <SkyView />
           </Flex>
         </Tabs.Content>
         <Tabs.List>

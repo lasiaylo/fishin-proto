@@ -10,6 +10,12 @@ export const EventMsg = {
   CAUGHT: (name: string) => ["caught a ", `${name}`],
   SOLD_FISH: (name: string, price: number) => ["sold ", `${name} +${price}`],
 
+  OBSERVED_BIRDS: (birdCount: number, payout: number) => [
+    "observed ",
+    `${birdCount} birds +${payout}`,
+  ],
+  OBSERVED_NOTHING: "not a bird in sight",
+
   STORY_DUMMY: "you feel something stir in the water...",
 
   NPC_LOGIN: (name: string) => `a ${name} comes by`,

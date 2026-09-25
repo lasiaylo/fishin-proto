@@ -67,6 +67,16 @@ export const FIELDS_WIND_COOLDOWN_MS = 5000;
 export const FIELDS_WIND_REWARD = 10;
 
 // ==========================================================================
+// BIRDS (sky)
+// ==========================================================================
+export const BIRD_COUNT = 10;
+export const BIRD_CYCLE_MAX_MS = 30000;
+export const BIRD_CYCLE_MIN_MS = 10000;
+export const BIRD_STAGGER_MS = 3000;
+export const OBSERVE_COOLDOWN_MS = 30000;
+export const FEATHER_BONUS_PER_BIRD = 0.2;
+
+// ==========================================================================
 // CAST TIMINGS
 // ==========================================================================
 export const RESULT_DURATION = 500;
