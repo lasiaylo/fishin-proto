@@ -57,7 +57,7 @@ export interface EconomyRound {
   wallet: number; // after income, before upgrades
   rate: number; // net $/sec (netIncome / roundTime)
   lureId: string; // "" = no lure
-  baitId: string; // "" = no bait rod active; otherwise the tackle used by secondary rods
+  baitId: string; // "" unless the (single) active rod itself is using bait-type tackle
   rodCount: number;
   fishCatchTimes: Record<string, number>; // fishId → avgFightTime (all fish in chosen lure pool)
   fishEarnings: Record<string, number>; // fishId → avgEarnings considering win rate
@@ -189,7 +189,6 @@ function evalLure(
     avgFightTime: number;
     avgEarningsPerFight: number;
   } | null;
-  bestBaitId: string | null;
   catchTimes: Record<string, number>;
   earnings: Record<string, number>;
   lureRates: Record<string, number>;
@@ -205,8 +204,6 @@ function evalLure(
   const incomeMultiplier = 1 + player.incomeBoostPercent / 100;
   let bestRate;
   let best = null;
-  let bestBaitRate: number | undefined;
-  let bestBaitId: string | null = null;
   const catchTimes: Record<string, number> = {};
   const earnings: Record<string, number> = {};
   const lureRates: Record<string, number> = {};
@@ -272,18 +269,10 @@ function evalLure(
       bestRate = rate;
       best = { lureId, avgFightTime, avgEarningsPerFight };
     }
-
-    if (getTackleType(lureId) === TackleType.BAIT) {
-      if (bestBaitRate === undefined || rate >= bestBaitRate) {
-        bestBaitRate = rate;
-        bestBaitId = lureId;
-      }
-    }
   }
 
   return {
     best,
-    bestBaitId: bestBaitId,
     catchTimes,
     earnings,
     lureRates,
@@ -491,10 +480,7 @@ function applyUpgrade(
   ownedLures: Set<string>,
   levels: Record<string, number>,
   rods: EconRod[],
-  rodCountRef: { value: number },
   baitStock: Record<string, number>,
-  benchedRods: EconRod[],
-  openSlotsRef: { value: number },
 ): void {
   if (upgrade.stat !== StatName.BAIT) {
     levels[upgrade.id] = (levels[upgrade.id] ?? 0) + 1;
@@ -511,53 +497,21 @@ function applyUpgrade(
       baitStock[upgrade.id] =
         (baitStock[upgrade.id] ?? 0) + upgrade.valuePerLevel;
       break;
-    case StatName.ROD: {
-      const newRod = {
-        id: upgrade.id,
-        attackLevel: 0,
-        defenseLevel: 0,
-        lineHpLevel: 0,
-      };
-      if (openSlotsRef.value > 0) {
-        openSlotsRef.value--;
-        rodCountRef.value++;
-        rods.push(newRod);
-      } else {
-        benchedRods.push(newRod);
-      }
-      break;
-    }
-    case StatName.ROD_SLOT: {
-      const benched = benchedRods.shift();
-      if (benched) {
-        rodCountRef.value++;
-        rods.push(benched);
-      } else {
-        openSlotsRef.value++;
-      }
-      break;
-    }
     case StatName.ROD_ATTACK: {
       const rodId = upgrade.id.replace("_ATTACK", "");
-      const rod =
-        rods.find((r) => r.id === rodId) ??
-        benchedRods.find((r) => r.id === rodId);
+      const rod = rods.find((r) => r.id === rodId);
       if (rod) rod.attackLevel += 1;
       break;
     }
     case StatName.ROD_DEFENSE: {
       const rodId = upgrade.id.replace("_DEFENSE", "");
-      const rod =
-        rods.find((r) => r.id === rodId) ??
-        benchedRods.find((r) => r.id === rodId);
+      const rod = rods.find((r) => r.id === rodId);
       if (rod) rod.defenseLevel += 1;
       break;
     }
     case StatName.ROD_LINE_HP: {
       const rodId = upgrade.id.replace("_LINE_HP", "");
-      const rod =
-        rods.find((r) => r.id === rodId) ??
-        benchedRods.find((r) => r.id === rodId);
+      const rod = rods.find((r) => r.id === rodId);
       if (rod) rod.lineHpLevel += 1;
       break;
     }
@@ -706,14 +660,10 @@ export function simulateEconomy(
       lineHpLevel: initialRod.lineHpLevel,
     },
   ];
-  const rodCountRef = { value: 1 };
-  const benchedRods: EconRod[] = [];
-  const openSlotsRef = { value: 0 };
 
   for (let round = 1; round <= MAX_ROUNDS; round++) {
     const {
       best,
-      bestBaitId,
       catchTimes: fishCatchTimes,
       earnings: fishEarnings,
       lureRates,
@@ -770,72 +720,11 @@ export function simulateEconomy(
       baitStock[lureId] = (baitStock[lureId] ?? 0) - lureFightsPerRound;
     }
 
-    // Bait rods (rods[1+]) earn additional income in parallel during roundTime.
-    // Each bait rod uses the best BAIT lure and its own atk/def for fights.
-    let baitRodIncome = 0;
-    let baitRodBaitCost = 0;
-    const baitRods = rods.slice(1);
-    const incomeMultiplier = 1 + player.incomeBoostPercent / 100;
-    if (baitRods.length > 0 && bestBaitId !== null) {
-      const baitPool = fishByTackle.get(bestBaitId) ?? [];
-
-      for (const baitRod of baitRods) {
-        const baitRodStats = econRodStats(baitRod, rodData);
-        const baitOverhead = perCastOverhead(
-          baitRodStats.castMax,
-          bestBaitId,
-          fishByTackle,
-          0,
-          baitDataMap,
-          baitRodStats.reelMaxSpeed,
-        );
-        let baitTotalEarnings = 0;
-        let baitTotalFightTime = 0;
-        let baitTotalWinRate = 0;
-
-        for (const fish of baitPool) {
-          const fishWeight = fishWeights.get(fish.id) ?? 1 / baitPool.length;
-          for (const {
-            fish: variant,
-            weight: rarityWeight,
-          } of expandFishByRarity(fish)) {
-            const combinedWeight = fishWeight * rarityWeight;
-            const { winCount, avgFightTime: baitFightTime } = runTrials(
-              variant,
-              baitRodStats.attack,
-              baitRodStats.defense,
-              baitRodStats.lineHP,
-              evalTrials,
-              baitRodStats.speedMultiplier,
-            );
-            const avgEarnings =
-              (variant.basePrice * incomeMultiplier * winCount) / evalTrials;
-            baitTotalEarnings += avgEarnings * combinedWeight;
-            baitTotalFightTime += baitFightTime * combinedWeight;
-            baitTotalWinRate += (winCount / evalTrials) * combinedWeight;
-          }
-        }
-
-        if (baitTotalFightTime > 0 && baitTotalWinRate > 0) {
-          // BAIT: pBite=1
-          const baitCatchTime =
-            (1 / baitTotalWinRate) * (baitOverhead + baitTotalFightTime);
-          const baitRate = baitTotalEarnings / baitCatchTime;
-          baitRodIncome += roundTime * baitRate;
-          const baitRodFights = roundTime / baitCatchTime;
-          baitStock[bestBaitId!] =
-            (baitStock[bestBaitId!] ?? 0) - baitRodFights;
-          baitRodBaitCost +=
-            baitRodFights * (baitCostPerFight[bestBaitId!] ?? 0);
-        }
-      }
-    }
-
-    const income = lureIncome + baitRodIncome;
+    const income = lureIncome;
     const lureBaitCost = isBait
       ? lureFightsPerRound * (baitCostPerFight[lureId] ?? 0)
       : 0;
-    const netIncome = income - lureBaitCost - baitRodBaitCost;
+    const netIncome = income - lureBaitCost;
 
     wallet += income;
     cumulativeTime += roundTime;
@@ -859,17 +748,7 @@ export function simulateEconomy(
     while (nextDreamUpgrade !== null) {
       const { upgrade, price } = nextDreamUpgrade;
       dreamPoints -= price;
-      applyUpgrade(
-        upgrade,
-        player,
-        ownedLures,
-        dreamLevels,
-        rods,
-        rodCountRef,
-        baitStock,
-        benchedRods,
-        openSlotsRef,
-      );
+      applyUpgrade(upgrade, player, ownedLures, dreamLevels, rods, baitStock);
       dreamUpgradesBought.push(
         `${upgrade.id} L${dreamLevels[upgrade.id] ?? 1}`,
       );
@@ -923,17 +802,7 @@ export function simulateEconomy(
     while (nextUpgrade !== null) {
       const { upgrade, price } = nextUpgrade;
       wallet -= price;
-      applyUpgrade(
-        upgrade,
-        player,
-        ownedLures,
-        levels,
-        rods,
-        rodCountRef,
-        baitStock,
-        benchedRods,
-        openSlotsRef,
-      );
+      applyUpgrade(upgrade, player, ownedLures, levels, rods, baitStock);
       upgradesBought.push(`${upgrade.id} L${levels[upgrade.id] ?? 1}`);
       if (upgrade.stat === StatName.LURE) boughtLure = true;
       nextUpgrade = pickUpgrade(wallet);
@@ -954,7 +823,7 @@ export function simulateEconomy(
       wallet: walletSnapshot,
       rate: netIncome / roundTime,
       lureId,
-      baitId: isBait ? lureId : baitRods.length > 0 ? (bestBaitId ?? "") : "",
+      baitId: isBait ? lureId : "",
       rodCount: rods.length,
       fishCatchTimes,
       fishEarnings,

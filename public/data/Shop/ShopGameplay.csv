@@ -3,7 +3,6 @@
 # ROD_LINE_HP price curve: LINEAR startValue=50 scaleFactor=50 | ValuePerLevel=1 | Upgrades=3
 # LURE price curve: POLYNOMIAL startValue=15 scaleFactor=20 growthRate=1.15 | Lures=5
 # BAIT price curve: LINEAR startValue=1 scaleFactor=5 | Tiers=2
-# ROD_HOLDER price curve: LINEAR startValue=40 scaleFactor=40 | Levels=1
 # Rod price multiplier: 2
 ID,Price,Stat,ValuePerLevel,Requirement
 ROD_1_ATTACK,20 30 45 68 102,ROD_ATTACK,1,
@@ -20,4 +19,3 @@ LURE_3,86,LURE,1,LURE_0
 LURE_4,114,LURE,1,LURE_1
 BAIT_0,1,BAIT,1
 BAIT_1,6,BAIT,1
-ROD_HOLDER,40,ROD_SLOT,1,ROD_2

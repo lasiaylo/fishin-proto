@@ -5,7 +5,6 @@ import {
   addBait,
   addLure,
   addRod,
-  setRodSlotCount,
   setRodLevel,
   setStat,
   removeLure,
@@ -36,15 +35,11 @@ function applyStatEffect(upgrade: UpgradeEntry, level: number, delta: number) {
     case StatName.INCOME:
       setStat(
         "incomeBoostPercent",
-        INITIAL_PLAYER_STATE.incomeBoostPercent +
-          level * upgrade.valuePerLevel,
+        INITIAL_PLAYER_STATE.incomeBoostPercent + level * upgrade.valuePerLevel,
       );
       break;
     case StatName.ROD:
       if (delta > 0) addRod(upgrade.id);
-      break;
-    case StatName.ROD_SLOT:
-      setRodSlotCount(1 + level * upgrade.valuePerLevel);
       break;
     case StatName.ROD_ATTACK: {
       const rodId = upgrade.id.replace("_ATTACK", "");

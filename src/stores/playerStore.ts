@@ -116,22 +116,6 @@ export function addRod(id: string) {
   });
 }
 
-export function setRodSlotCount(count: number) {
-  usePlayer.setState((s) => {
-    if (s.rodSlotAssignments.length === count) return s;
-    return {
-      rodSlotAssignments: Array.from(
-        { length: count },
-        (_, i) => s.rodSlotAssignments[i] ?? null,
-      ),
-      rodSlotItems: Array.from(
-        { length: count },
-        (_, i) => s.rodSlotItems[i] ?? null,
-      ),
-    };
-  });
-}
-
 export function assignRodToSlot(slotIdx: number, rodId: string | null) {
   usePlayer.setState((s) => {
     const arr = [...s.rodSlotAssignments];
@@ -187,11 +171,9 @@ usePlayer.subscribe(
   },
 );
 
-// Must run before shop/dream-shop init: those establish the slot count via
-// setRodSlotCount, which preserves whatever is already at each index — so
-// restoring first means the upgrade-driven resize naturally keeps these
-// assignments (truncating/padding as needed) instead of them being
-// overwritten before restore gets a chance to read them back.
+// There is only ever one rod slot now, so a debug save from before that was
+// true must not be able to bring a second one back — truncate to length 1
+// regardless of what was persisted.
 export function restorePersistedRodSlots() {
   if (!useDebugSettings.getState().persistRodSlots) return;
   const raw = localStorage.getItem(ROD_SLOT_STORAGE_KEY);
@@ -199,8 +181,8 @@ export function restorePersistedRodSlots() {
   try {
     const { assignments, items }: PersistedRodSlots = JSON.parse(raw);
     usePlayer.setState({
-      rodSlotAssignments: assignments,
-      rodSlotItems: items,
+      rodSlotAssignments: assignments.slice(0, 1),
+      rodSlotItems: items.slice(0, 1),
     });
   } catch {
     // malformed persisted data, ignore
