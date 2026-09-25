@@ -47,7 +47,7 @@ export function DelayButton({
         disabled={disabled}
         onClick={startDelay}
         style={{
-          background: `linear-gradient(90deg, white ${chargePercent}%, transparent ${chargePercent}%)`,
+          background: `linear-gradient(90deg, #232225 ${chargePercent}%, transparent ${chargePercent}%)`,
           height: "auto",
         }}
       >

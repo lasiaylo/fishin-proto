@@ -52,7 +52,7 @@ export function ChargeButton({
         onPointerCancel={releaseCharge}
         onPointerLeave={releaseCharge}
         style={{
-          background: `linear-gradient(90deg, white ${chargePercent}%, transparent ${chargePercent}%)`,
+          background: `linear-gradient(90deg, #232225 ${chargePercent}%, transparent ${chargePercent}%)`,
           height: "auto",
         }}
       >
