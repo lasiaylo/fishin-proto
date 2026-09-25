@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Flex, Tabs, Text } from "@radix-ui/themes";
 import { PondView } from "./PondView";
+import { FieldsView } from "./FieldsView";
 
 export function ActionsSection() {
   const [tab, setTab] = useState("pond");
@@ -10,9 +11,7 @@ export function ActionsSection() {
       <Tabs.Root value={tab} onValueChange={setTab}>
         <Tabs.Content value="fields">
           <Flex className={"fade-in"}>
-            <Text size="1" color="gray">
-              coming soon
-            </Text>
+            <FieldsView />
           </Flex>
         </Tabs.Content>
         {/* forceMount keeps PondView (and its cast/lure/fight rAF loop)

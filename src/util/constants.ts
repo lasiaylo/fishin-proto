@@ -61,6 +61,12 @@ export const DREAM_POINT_MONEY_THRESHOLDS = Array(10)
   .map((n, i) => Math.ceil(n * DREAM_MONEY_GROWTH ** i));
 
 // ==========================================================================
+// FIELDS
+// ==========================================================================
+export const FIELDS_WIND_COOLDOWN_MS = 5000;
+export const FIELDS_WIND_REWARD = 10;
+
+// ==========================================================================
 // CAST TIMINGS
 // ==========================================================================
 export const RESULT_DURATION = 500;
