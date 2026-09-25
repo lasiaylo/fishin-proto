@@ -5,8 +5,13 @@ import { useEffect, useState } from "react";
 import { EventView } from "./components/EventView.tsx";
 import { ChatroomView } from "./components/ChatroomView.tsx";
 import { ActionsSection } from "./components/ActionsSection";
+import { ShopView } from "./components/ShopView.tsx";
 import { Debug } from "./components/debug";
-import { initShop, initShopFromRows } from "./stores/shopStore";
+import {
+  initShop,
+  initShopFromRows,
+  useShopUnlocked,
+} from "./stores/shopStore";
 import { initDreamShop } from "./stores/dreamShopStore";
 import { initFish, initFishFromData } from "./stores/fishStore";
 import { restorePersistedRodSlots } from "./stores/playerStore";
@@ -33,6 +38,7 @@ function App() {
   const [showDebug, setShowDebug] = useState(
     () => localStorage.getItem("debug_panel_open") === "true",
   );
+  const shopUnlocked = useShopUnlocked();
 
   useEffect(() => {
     clearEvents();
@@ -95,7 +101,14 @@ function App() {
           <ChatroomView />
         </Flex>
         <ActionsSection />
-        <InventoryView />
+        <Flex direction="column" gap="4">
+          {shopUnlocked && (
+            <Flex className={"fade-in"}>
+              <ShopView />
+            </Flex>
+          )}
+          <InventoryView />
+        </Flex>
       </Flex>
       {showDebug && (
         <div

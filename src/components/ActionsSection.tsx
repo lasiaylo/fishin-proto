@@ -1,85 +1,40 @@
 import React, { useState } from "react";
-import { Flex, Tabs } from "@radix-ui/themes";
-import { ShopView } from "./ShopView";
+import { Flex, Tabs, Text } from "@radix-ui/themes";
 import { PondView } from "./PondView";
-import { DreamShopView } from "./DreamShopView";
-import { sellAllFish, usePlayer } from "../stores/playerStore";
-import { useDreamStore } from "../stores/dreamStore";
-import { useShop } from "../stores/shopStore";
-import { useMetrics } from "../stores/metricsStore";
-import { pushEvent } from "../stores/eventLogStore";
-import { useSessionLog } from "../stores/sessionLogStore";
-import {
-  RARITY_COLOR,
-  Rarity,
-  computeDreamPoints,
-  INITIAL_PLAYER_STATE,
-} from "../util/constants";
-import { EventMsg } from "../util/eventMessages";
 
 export function ActionsSection() {
   const [tab, setTab] = useState("pond");
-  const cumulativeMoneyEarned = useDreamStore((s) => s.cumulativeMoneyEarned);
-  const dreamUnlocked = computeDreamPoints(cumulativeMoneyEarned) >= 1;
-  const totalFishCaught = useMetrics((s) => s.totalFishCaught);
-  const hasShopUpgrades = useShop((s) => s.upgrades.some((u) => u.level > 0));
-  const shopUnlocked =
-    totalFishCaught >= INITIAL_PLAYER_STATE.inventorySize || hasShopUpgrades;
-
-  function handleTabChange(value: string) {
-    if (value === "shop") {
-      const { inventory, wallet, inventorySize, incomeBoostPercent } =
-        usePlayer.getState();
-      const sold = inventory.filter((fish) => !fish.locked);
-      if (sold.length > 0) {
-        useSessionLog.getState().finalizeRound(wallet, {
-          inventorySize,
-          incomeBoostPercent,
-        });
-        sellAllFish();
-        sold.forEach((fish, i) =>
-          setTimeout(() => {
-            const msg = EventMsg.SOLD_FISH(fish.fish.name, fish.effectivePrice);
-            pushEvent(
-              msg[0],
-              msg[1],
-              RARITY_COLOR[fish.rarity],
-              fish.rarity === Rarity.LEGENDARY,
-            );
-          }, i * 400),
-        );
-      }
-    }
-    setTab(value);
-  }
 
   return (
     <Flex flexGrow="1" direction="column" maxWidth={"500px"}>
-      <Tabs.Root value={tab} onValueChange={handleTabChange}>
-        <Tabs.List>
-          <Tabs.Trigger value="pond">pond</Tabs.Trigger>
-          {shopUnlocked && <Tabs.Trigger value="shop">shop</Tabs.Trigger>}
-          {dreamUnlocked && <Tabs.Trigger value="dream">dream</Tabs.Trigger>}
-        </Tabs.List>
-        <Tabs.Content value="pond">
+      <Tabs.Root value={tab} onValueChange={setTab}>
+        <Tabs.Content value="fields">
+          <Flex className={"fade-in"}>
+            <Text size="1" color="gray">
+              coming soon
+            </Text>
+          </Flex>
+        </Tabs.Content>
+        {/* forceMount keeps PondView (and its cast/lure/fight rAF loop)
+            mounted while fields/sky is the active tab, so a line in the
+            water doesn't freeze or reset just because it's off screen. */}
+        <Tabs.Content value="pond" forceMount>
           <Flex className={"fade-in"}>
             <PondView />
           </Flex>
         </Tabs.Content>
-        {shopUnlocked && (
-          <Tabs.Content value="shop">
-            <Flex className={"fade-in"}>
-              <ShopView />
-            </Flex>
-          </Tabs.Content>
-        )}
-        {dreamUnlocked && (
-          <Tabs.Content value="dream">
-            <Flex className={"fade-in"}>
-              <DreamShopView />
-            </Flex>
-          </Tabs.Content>
-        )}
+        <Tabs.Content value="sky">
+          <Flex className={"fade-in"}>
+            <Text size="1" color="gray">
+              coming soon
+            </Text>
+          </Flex>
+        </Tabs.Content>
+        <Tabs.List>
+          <Tabs.Trigger value="fields">fields</Tabs.Trigger>
+          <Tabs.Trigger value="pond">pond</Tabs.Trigger>
+          <Tabs.Trigger value="sky">sky</Tabs.Trigger>
+        </Tabs.List>
       </Tabs.Root>
     </Flex>
   );

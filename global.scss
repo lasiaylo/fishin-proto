@@ -44,6 +44,14 @@ li {
   animation: fadeIn 1s;
 }
 
+// Radix's Tabs.Content doesn't hide inactive panes itself when forceMount is
+// set (that's what forceMount is for — it leaves visibility to the
+// consumer), so a forceMounted, off-screen tab needs this to actually be
+// invisible instead of stacking on top of whichever tab is selected.
+.rt-TabsContent[data-state="inactive"] {
+  display: none;
+}
+
 .change-content {
   background: none;
   border: none;

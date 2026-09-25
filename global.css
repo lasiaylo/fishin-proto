@@ -42,6 +42,10 @@ li {
   animation: fadeIn 1s;
 }
 
+.rt-TabsContent[data-state="inactive"] {
+  display: none;
+}
+
 .change-content {
   background: none;
   border: none;
