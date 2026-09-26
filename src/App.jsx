@@ -1,6 +1,6 @@
 import "@radix-ui/themes/styles.css";
 import "../global.css";
-import { Flex, Theme } from "@radix-ui/themes";
+import { Box, Flex, Theme } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
 import { EventView } from "./components/EventView.tsx";
 import { ChatroomView } from "./components/ChatroomView.tsx";
@@ -90,17 +90,16 @@ function App() {
     <Theme appearance={"dark"} accentColor={"gray"} grayColor={"mauve"}>
       <Flex
         direction="row"
-        minHeight="100vh"
+        height="500px"
         px="5"
         py="5"
-        gap="5"
-        style={{ justifyContent: "center" }}
+        justify="between"
+        position="relative"
       >
         <Flex direction="column" gap="4">
           <EventView />
           <ChatroomView />
         </Flex>
-        <ActionsSection />
         <Flex direction="column" gap="4">
           {shopUnlocked && (
             <Flex className={"fade-in"}>
@@ -109,6 +108,9 @@ function App() {
           )}
           <InventoryView />
         </Flex>
+        <Box position="absolute" bottom="5" left="5">
+          <ActionsSection />
+        </Box>
       </Flex>
       {showDebug && (
         <div
