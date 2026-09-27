@@ -90,7 +90,7 @@ function App() {
     <Theme appearance={"dark"} accentColor={"gray"} grayColor={"mauve"}>
       <Flex
         direction="row"
-        height="500px"
+        height="600px"
         px="5"
         py="5"
         justify="between"
