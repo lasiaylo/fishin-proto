@@ -45,7 +45,7 @@ import {
   XP_WIN,
   Zone,
 } from "../util/constants";
-import { ReelView } from "./ReelView";
+import { ReelBars, ReelButton } from "./ReelView";
 
 enum GameState {
   Idle = "idle",
@@ -493,6 +493,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     invCount >= inventorySize || (isWaitType && baitCount === 0);
 
   let controls: React.ReactNode;
+  let bars: React.ReactNode = null;
   if (gameState === GameState.Idle) {
     if (assignment === null || selectedItem === null) {
       controls = null;
@@ -504,28 +505,25 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
       );
     } else {
       controls = (
-        <Flex flexGrow={"1"}>
-          <DelayButton
-            onComplete={() => handleCastRelease(100)}
-            delayMs={CAST_CHARGE_DURATION}
-            width={100}
-            disabled={castDisabled}
-          >
-            cast
-          </DelayButton>
-        </Flex>
+        <DelayButton
+          onComplete={() => handleCastRelease(100)}
+          delayMs={CAST_CHARGE_DURATION}
+          width={100}
+          disabled={castDisabled}
+        >
+          cast
+        </DelayButton>
       );
     }
   } else if (gameState === GameState.CastAnimation) {
-    controls = <ReelView distance={castProgress} lineHp={lineHpRef.current} />;
+    controls = <ReelButton />;
+    bars = <ReelBars distance={castProgress} lineHp={lineHpRef.current} />;
   } else if (
     gameState === GameState.Luring ||
     gameState === GameState.Baiting
   ) {
     controls = (
-      <ReelView
-        distance={luringDistance}
-        lineHp={lineHpRef.current}
+      <ReelButton
         onReelStart={() => {
           isReelingRef.current = true;
         }}
@@ -534,19 +532,24 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
         }}
       />
     );
+    bars = <ReelBars distance={luringDistance} lineHp={lineHpRef.current} />;
   } else if (gameState === GameState.Fighting && fightState !== null) {
     controls = (
-      <ReelView
-        distance={fightState.distance}
-        fightState={fightState}
-        lineHp={lineHpRef.current}
-        fading={fading}
+      <ReelButton
         onReelStart={() => {
           reelRef.current = true;
         }}
         onReelEnd={() => {
           reelRef.current = false;
         }}
+      />
+    );
+    bars = (
+      <ReelBars
+        distance={fightState.distance}
+        fightState={fightState}
+        lineHp={lineHpRef.current}
+        fading={fading}
       />
     );
   }
@@ -558,7 +561,11 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
   const lureProgress = lureXpProgress(lureXpVal, lureLevel);
 
   return (
-    <Flex direction="column" gap="2" minHeight={"150px"}>
+    // Two columns, both bottom-anchored: selects + directions + cast/reel
+    // button on the left, stat bars on the right. Keeping the bars out of the
+    // left column means the button never moves and the selects always sit
+    // directly above it, however many bars are showing.
+    <Flex align="end" gap="5" minHeight={"150px"}>
       <Flex direction="column" gap="4">
         <Flex gap="2">
           <Flex minWidth="120px" direction="column" gap="1">
@@ -668,11 +675,9 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
             </Text>
           </Flex>
         )}
-
-        <Flex flexGrow={"1"} height={"100px"}>
-          {controls}
-        </Flex>
+        <Flex>{controls}</Flex>
       </Flex>
+      {bars}
     </Flex>
   );
 }

@@ -13,6 +13,8 @@ export const BASE_BAIT_NAME = "Worm";
 export const BAIT_ID_PREFIX = "BAIT_";
 export const BAIT_MAX_STACK = 10;
 export const BAIT_START_COUNT = 10;
+// Charge/cooldown fill on action buttons; matches the soft <Code> background.
+export const BUTTON_FILL_COLOR = "var(--accent-a5)";
 
 // ==========================================================================
 // PLAYER

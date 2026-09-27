@@ -1,5 +1,6 @@
 import React, { ReactNode, useRef, useState } from "react";
 import { Box, Button, Text } from "@radix-ui/themes";
+import { BUTTON_FILL_COLOR } from "../util/constants";
 import gsap from "gsap";
 
 interface ChargeButtonProps {
@@ -52,7 +53,7 @@ export function ChargeButton({
         onPointerCancel={releaseCharge}
         onPointerLeave={releaseCharge}
         style={{
-          background: `linear-gradient(90deg, #232225 ${chargePercent}%, transparent ${chargePercent}%)`,
+          background: `linear-gradient(90deg, ${BUTTON_FILL_COLOR} ${chargePercent}%, transparent ${chargePercent}%)`,
           height: "auto",
         }}
       >

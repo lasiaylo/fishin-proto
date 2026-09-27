@@ -90,7 +90,7 @@ function App() {
     <Theme appearance={"dark"} accentColor={"gray"} grayColor={"mauve"}>
       <Flex
         direction="row"
-        height="600px"
+        height="650px"
         px="5"
         py="5"
         justify="between"
@@ -100,7 +100,7 @@ function App() {
           <EventView />
           <ChatroomView />
         </Flex>
-        <Flex direction="column" gap="4">
+        <Flex direction="row" gap="4" align="start">
           {shopUnlocked && (
             <Flex className={"fade-in"}>
               <ShopView />

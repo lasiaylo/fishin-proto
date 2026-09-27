@@ -47,7 +47,7 @@ export function SkyView() {
   }
 
   return (
-    <Flex direction="column" gap="4" minHeight={"150px"}>
+    <Flex direction="column" justify="end" gap="4" p="3" minHeight={"150px"}>
       <Flex gap="1" wrap="wrap" maxWidth="200px">
         {landed.map((isLanded, i) => (
           <Bird key={i} landed={isLanded} />

@@ -2,6 +2,24 @@
   --default-font-family: "Libre Baskerville", serif;
   --font-weight-regular: 400;
   --default-font-style: normal;
+  --app-background-gradient: linear-gradient(
+    to bottom,
+    #8ca09e 0%,
+    #899a9d 25%,
+    #919593 50%,
+    #a09282 70%,
+    #ae8e70 100%
+  );
+}
+
+.radix-themes:where([data-is-root-theme="true"]) {
+  min-height: 100vh;
+  background: var(--app-background-gradient) fixed;
+}
+
+.background-fade {
+  background: var(--app-background-gradient) fixed;
+  mask-image: linear-gradient(to bottom, transparent, black);
 }
 
 @keyframes fadeIn {

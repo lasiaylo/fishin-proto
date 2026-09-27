@@ -1,5 +1,6 @@
 import React, { ReactNode, useEffect, useRef, useState } from "react";
 import { Box, Button, Text } from "@radix-ui/themes";
+import { BUTTON_FILL_COLOR } from "../util/constants";
 
 interface CooldownButtonProps {
   children: ReactNode;
@@ -56,7 +57,7 @@ export function CooldownButton({
         disabled={!ready}
         onClick={onFire}
         style={{
-          background: `linear-gradient(90deg, #232225 ${fillPercent}%, transparent ${fillPercent}%)`,
+          background: `linear-gradient(90deg, ${BUTTON_FILL_COLOR} ${fillPercent}%, transparent ${fillPercent}%)`,
           height: "auto",
         }}
       >

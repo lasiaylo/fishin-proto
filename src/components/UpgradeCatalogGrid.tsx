@@ -92,7 +92,7 @@ export function UpgradeCatalogGrid({
                       {subcategory}
                     </Text>
                   )}
-                  <Grid columns="3" gapY="3" gapX="8">
+                  <Grid columns="3" gapY="3" gapX="3">
                     {subGroup.map((upgrade) => {
                       const price = getPrice(upgrade);
                       const isBait = upgrade.stat === StatName.BAIT;
@@ -103,10 +103,7 @@ export function UpgradeCatalogGrid({
                         isBait && (baitCount ?? 0) >= BAIT_MAX_STACK;
                       const maxed = isMaxed(upgrade);
                       const disabled =
-                        maxed ||
-                        baitFull ||
-                        price === null ||
-                        currency < price;
+                        maxed || baitFull || price === null || currency < price;
 
                       return (
                         <MyButton

@@ -39,16 +39,11 @@ export function EventView() {
         ))}
       </Flex>
       <Box
-        className={"wahoo"}
+        className={"background-fade"}
         position={"absolute"}
         bottom={"0"}
         width={"100%"}
         height={"60%"}
-        style={{
-          background:
-            "linear-gradient(to bottom, transparent, var(--color-background))",
-          // "red",
-        }}
       />
     </Flex>
   );

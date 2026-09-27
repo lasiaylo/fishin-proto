@@ -8,7 +8,7 @@ export function ActionsSection() {
   const [tab, setTab] = useState("pond");
 
   return (
-    <Flex flexGrow="1" direction="column" maxWidth={"500px"}>
+    <Flex flexGrow="1" direction="column" width="50vw">
       <Tabs.Root value={tab} onValueChange={setTab}>
         <Tabs.Content value="fields">
           <Flex className={"fade-in"}>

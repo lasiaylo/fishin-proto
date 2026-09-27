@@ -18,7 +18,7 @@ export function StatBar({
 }) {
   const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
   return (
-    <Flex direction="column" gap="1">
+    <Flex direction="column" gap="1" maxWidth="250px">
       <Flex justify="between">
         <Text size="1" color="gray">
           {label}
