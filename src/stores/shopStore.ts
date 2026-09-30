@@ -6,7 +6,7 @@ import {
 import { deductMoney, getWallet } from "./playerStore";
 import { createUpgradeStore } from "./upgradeStoreFactory";
 import { useMetrics } from "./metricsStore";
-import { INITIAL_PLAYER_STATE } from "../util/constants";
+import { SHOP_UNLOCK_FISH_CAUGHT } from "../util/constants";
 
 const {
   useUpgradeStore: useShop,
@@ -50,7 +50,5 @@ export async function initShopFromRows(rows: string[][]) {
 export function useShopUnlocked(): boolean {
   const totalFishCaught = useMetrics((s) => s.totalFishCaught);
   const hasShopUpgrades = useShop((s) => s.upgrades.some((u) => u.level > 0));
-  return (
-    totalFishCaught >= INITIAL_PLAYER_STATE.inventorySize || hasShopUpgrades
-  );
+  return totalFishCaught >= SHOP_UNLOCK_FISH_CAUGHT || hasShopUpgrades;
 }

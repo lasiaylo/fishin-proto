@@ -107,7 +107,15 @@ export const useSessionLog = create<SessionLogState>((set, get) => ({
   lureStats: {},
   completedRounds: [],
 
-  logFishResult(fish, won, duration, finalTension, lineHP, lureId, effectivePrice) {
+  logFishResult(
+    fish,
+    won,
+    duration,
+    finalTension,
+    lineHP,
+    lureId,
+    effectivePrice,
+  ) {
     set((s) => {
       const fishStats = { ...s.fishStats };
       const lureStats = { ...s.lureStats };
@@ -132,7 +140,10 @@ export const useSessionLog = create<SessionLogState>((set, get) => ({
           remainingHP,
         );
         return {
-          catches: [...s.catches, { fish, effectivePrice, duration, remainingHP, lureId }],
+          catches: [
+            ...s.catches,
+            { fish, effectivePrice, duration, remainingHP, lureId },
+          ],
           fishStats,
           lureStats,
         };
@@ -207,7 +218,8 @@ export const useSessionLog = create<SessionLogState>((set, get) => ({
 
     const boughtLure = s.pendingLureBought;
 
-    const { ownedRods, rodSlotAssignments, rodSlotItems } = usePlayer.getState();
+    const { ownedRods, rodSlotAssignments, rodSlotItems } =
+      usePlayer.getState();
     const slotRods = rodSlotAssignments.map((rodId) =>
       rodId ? ownedRods.find((r) => r.id === rodId) : undefined,
     );
@@ -246,11 +258,13 @@ export const useSessionLog = create<SessionLogState>((set, get) => ({
         Object.entries(useLureXp.getState().lures).map(([id, e]) => [id, e.xp]),
       ),
       lureLevels: Object.fromEntries(
-        Object.entries(useLureXp.getState().lures).map(([id, e]) => [id, computeLureLevel(e.xp)]),
+        Object.entries(useLureXp.getState().lures).map(([id, e]) => [
+          id,
+          computeLureLevel(e.xp),
+        ]),
       ),
       cumulativeMoneyEarned,
       dreamPoints,
-      dreamUpgradesBought: [],
     };
 
     set({

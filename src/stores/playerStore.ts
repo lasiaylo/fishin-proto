@@ -1,30 +1,18 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import { FishData } from "../util/csvLoader";
 import {
   BAIT_MAX_STACK,
   getTackleType,
   INITIAL_PLAYER_STATE,
-  Rarity,
-  RARITY_COLOR,
   Rod,
   TackleType,
 } from "../util/constants";
-import { incrementTotalFishCaught } from "./metricsStore";
-import { EventMsg } from "../util/eventMessages";
-import { pushEvent } from "./eventLogStore";
 import { useDebugSettings } from "./debugSettingsStore";
 
 export interface PlayerStats {
-  inventorySize: number;
+  // Catches per session-log round (a shop checkpoint in the economy model).
+  fishPerRound: number;
   incomeBoostPercent: number;
-}
-
-export interface InventoryFish {
-  fish: FishData;
-  effectivePrice: number;
-  rarity: Rarity;
-  locked: boolean;
 }
 
 export interface PlayerState extends PlayerStats {
@@ -34,7 +22,6 @@ export interface PlayerState extends PlayerStats {
   ownedRods: Rod[];
   rodSlotAssignments: (string | null)[];
   rodSlotItems: (string | null)[];
-  inventory: InventoryFish[];
 }
 
 export const usePlayer = create(
@@ -187,62 +174,4 @@ export function restorePersistedRodSlots() {
   } catch {
     // malformed persisted data, ignore
   }
-}
-
-export function addFishToInventory(fish: FishData, effectivePrice: number) {
-  usePlayer.setState((s) => {
-    if (s.inventory.length >= s.inventorySize) return s;
-    return {
-      inventory: [
-        ...s.inventory,
-        {
-          fish,
-          effectivePrice,
-          rarity: fish.rarity ?? Rarity.COMMON,
-          locked: false,
-        },
-      ],
-    };
-  });
-  const msg = EventMsg.CAUGHT(fish.name);
-  pushEvent(
-    msg[0],
-    msg[1],
-    fish.rarity ? RARITY_COLOR[fish.rarity] : undefined,
-    fish.rarity === Rarity.LEGENDARY,
-  );
-  incrementTotalFishCaught();
-}
-
-export function toggleFishLock(index: number) {
-  usePlayer.setState((s) => {
-    const item = s.inventory[index];
-    if (!item) return s;
-    const inventory = [...s.inventory];
-    inventory[index] = { ...item, locked: !item.locked };
-    return { inventory };
-  });
-}
-
-export function removeFishFromInventory(
-  index: number,
-): InventoryFish | undefined {
-  const { inventory } = usePlayer.getState();
-  const item = inventory[index];
-  if (!item) return undefined;
-  usePlayer.setState({
-    inventory: inventory.filter((_, i) => i !== index),
-  });
-  return item;
-}
-
-export function sellAllFish() {
-  const { inventory } = usePlayer.getState();
-  const total = inventory
-    .filter((f) => !f.locked)
-    .reduce((sum, f) => sum + f.effectivePrice, 0);
-  usePlayer.setState((s) => ({
-    inventory: s.inventory.filter((f) => f.locked),
-    wallet: s.wallet + total,
-  }));
 }

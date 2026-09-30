@@ -8,13 +8,13 @@ import { avgZoneDistance, getBiteChance, getZones } from "../util/zones";
 import { useFish } from "../stores/fishStore";
 import { pickFishForZone, useLocation } from "../stores/locationStore";
 import {
-  addFishToInventory,
   assignRodToSlot,
   consumeBait,
   setSlotItem,
   usePlayer,
 } from "../stores/playerStore";
 import { pushEvent } from "../stores/eventLogStore";
+import { spawnPondFish } from "../stores/pondFishStore";
 import { EventMsg } from "../util/eventMessages";
 import { incrementTotalCasts } from "../stores/metricsStore";
 import { FightEngine, FightState, Outcome } from "../game/FightEngine";
@@ -62,8 +62,6 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     rodSlotItems,
     baitInventory,
     ownedLures,
-    invCount,
-    inventorySize,
   } = usePlayer(
     useShallow((s) => ({
       ownedRods: s.ownedRods,
@@ -71,8 +69,6 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
       rodSlotItems: s.rodSlotItems,
       baitInventory: s.baitInventory,
       ownedLures: s.ownedLures,
-      invCount: s.inventory.length,
-      inventorySize: s.inventorySize,
     })),
   );
   const shopUpgrades = useShop((s) => s.upgrades);
@@ -199,7 +195,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
         const fish = useFish.getState().allFish[0];
         fish.rarity = rarity;
         const effectivePrice = Math.round(fish.basePrice);
-        addFishToInventory(fish, effectivePrice);
+        spawnPondFish(fish, effectivePrice);
       }
       if (e.key === "0") addFish(Rarity.COMMON);
       if (e.key === "-") addFish(Rarity.UNCOMMON);
@@ -438,7 +434,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     }
 
     if (result === Outcome.WIN) {
-      addFishToInventory(fish, effectivePrice);
+      spawnPondFish(fish, effectivePrice);
     } else {
       pushEvent(EventMsg.ESCAPED);
     }
@@ -489,8 +485,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
 
   const baitCount =
     selectedItem !== null ? (baitInventory[selectedItem] ?? 0) : 0;
-  const castDisabled =
-    invCount >= inventorySize || (isWaitType && baitCount === 0);
+  const castDisabled = isWaitType && baitCount === 0;
 
   let controls: React.ReactNode;
   let bars: React.ReactNode = null;
@@ -684,22 +679,15 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
 
 export function PondView() {
   const rodCount = usePlayer((s) => s.rodSlotAssignments.length);
-  const isCoolerFull = usePlayer((s) => s.inventory.length >= s.inventorySize);
 
   return (
     <Flex className="fade-in" width="100%" direction="column" gap="4" p="3">
-      {isCoolerFull ? (
-        <Text size="1" className="fade-in">
-          the cooler is full
-        </Text>
-      ) : (
-        Array.from({ length: rodCount }).map((_, i) => (
-          <React.Fragment key={i}>
-            {i > 0 && <Separator size="4" />}
-            <RodRow slotIndex={i} />
-          </React.Fragment>
-        ))
-      )}
+      {Array.from({ length: rodCount }).map((_, i) => (
+        <React.Fragment key={i}>
+          {i > 0 && <Separator size="4" />}
+          <RodRow slotIndex={i} />
+        </React.Fragment>
+      ))}
     </Flex>
   );
 }

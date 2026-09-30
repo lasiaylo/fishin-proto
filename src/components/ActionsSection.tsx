@@ -1,15 +1,19 @@
-import React, { useState } from "react";
+import React from "react";
 import { Flex, Tabs } from "@radix-ui/themes";
 import { PondView } from "./PondView";
 import { FieldsView } from "./FieldsView";
 import { SkyView } from "./SkyView";
+import { ActionTab, setActiveTab, useActiveTab } from "../stores/tabStore";
 
 export function ActionsSection() {
-  const [tab, setTab] = useState("pond");
+  const tab = useActiveTab((s) => s.tab);
 
   return (
     <Flex flexGrow="1" direction="column" width="50vw">
-      <Tabs.Root value={tab} onValueChange={setTab}>
+      <Tabs.Root
+        value={tab}
+        onValueChange={(t) => setActiveTab(t as ActionTab)}
+      >
         <Tabs.Content value="fields">
           <Flex className={"fade-in"}>
             <FieldsView />

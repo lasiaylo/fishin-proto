@@ -5,7 +5,7 @@ import { BAIT_MAX_STACK } from "../util/constants";
 import { StatName } from "../util/csvLoader";
 import { UpgradeEntry } from "../stores/upgradeStoreFactory";
 
-const CATEGORY_ORDER = ["bait", "lures", "rods", "misc"];
+const CATEGORY_ORDER = ["bait", "lures", "rods", "wind", "misc"];
 
 function LevelPips({ level, maxLevel }: { level: number; maxLevel: number }) {
   if (maxLevel <= 1) return null;
@@ -33,6 +33,7 @@ export function UpgradeCatalogGrid({
   isMaxed,
   onBuy,
   baitInventory = {},
+  allUpgrades = upgrades,
 }: {
   upgrades: UpgradeEntry[];
   currency: number;
@@ -41,8 +42,11 @@ export function UpgradeCatalogGrid({
   isMaxed: (upgrade: UpgradeEntry) => boolean;
   onBuy: (id: string) => void;
   baitInventory?: Record<string, number>;
+  // Lookup pool for requirements, when `upgrades` is a filtered subset
+  // (e.g. one tab's items) whose requirements may live outside it.
+  allUpgrades?: UpgradeEntry[];
 }) {
-  const upgradeById = new Map(upgrades.map((u) => [u.id, u]));
+  const upgradeById = new Map(allUpgrades.map((u) => [u.id, u]));
   const meetsRequirements = (u: UpgradeEntry) =>
     u.requirements.length === 0 ||
     u.requirements.every((id) => {

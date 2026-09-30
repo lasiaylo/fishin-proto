@@ -10,7 +10,12 @@ import {
   removeLure,
 } from "./playerStore";
 import { useSessionLog } from "./sessionLogStore";
-import { INITIAL_PLAYER_STATE } from "../util/constants";
+import { setWindCooldownMs, setWindParticleCount } from "./fieldsStore";
+import {
+  FIELDS_WIND_COOLDOWN_MS,
+  FIELDS_WIND_PARTICLE_COUNT,
+  INITIAL_PLAYER_STATE,
+} from "../util/constants";
 
 export interface UpgradeEntry extends ShopUpgradeData {
   level: number;
@@ -56,6 +61,16 @@ function applyStatEffect(upgrade: UpgradeEntry, level: number, delta: number) {
       setRodLevel(rodId, "lineHpLevel", level);
       break;
     }
+    case StatName.WIND_PARTICLES:
+      setWindParticleCount(
+        FIELDS_WIND_PARTICLE_COUNT + level * upgrade.valuePerLevel,
+      );
+      break;
+    case StatName.WIND_COOLDOWN:
+      setWindCooldownMs(
+        FIELDS_WIND_COOLDOWN_MS - level * upgrade.valuePerLevel,
+      );
+      break;
   }
 }
 

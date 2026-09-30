@@ -78,15 +78,76 @@ pre {
     particle-fade var(--fade-ms) ease-in var(--fade-delay) forwards;
 }
 
-/* A collected particle flying to the currency display. Position and opacity
-   are set from JS each frame, so it sits at the viewport origin and is
-   translated. */
-.grass-particle-flyer {
+/* Something collected flying to the currency display (grass particles, pond
+   fish). Position and opacity are set from JS each frame, so it sits at the
+   viewport origin and is translated; its content is centered on that point. */
+.wallet-flyer {
   position: fixed;
-  left: -3px;
-  top: -3px;
+  left: 0;
+  top: 0;
   pointer-events: none;
   z-index: 10;
+}
+
+.wallet-flyer > * {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+/* A caught fish blown out of the pond, floating until hovered. Drift (shared
+   with the wind particles) lives on the outer element, which is zero-size so
+   its content centers on the spot without a transform; bob lives on the
+   body so their transforms don't fight. */
+.pond-fish {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 0;
+  height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  animation: particle-drift 0.5s ease-out both;
+}
+
+.pond-fish > .pond-fish-body {
+  /* Widens the hover target around small sprites. */
+  padding: 12px;
+  animation: particle-bob 2.5s ease-in-out 1.2s infinite alternate;
+}
+
+/* Registered so the legendary outline can animate between colors. */
+@property --outline {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+/* Rarity outline: one drop-shadow per side traces the sprite's shape. The
+   offsets are scaled by zoom, so 1px is one sprite pixel. */
+.pond-fish-sprite {
+  display: block;
+  zoom: 2;
+  image-rendering: pixelated;
+  filter: drop-shadow(1px 0 0 var(--outline))
+    drop-shadow(-1px 0 0 var(--outline)) drop-shadow(0 1px 0 var(--outline))
+    drop-shadow(0 -1px 0 var(--outline));
+}
+
+/* Same colors as the .rarity-legendary text shimmer. */
+@keyframes legendary-outline {
+  0%,
+  100% {
+    --outline: #f4f4f4;
+  }
+  50% {
+    --outline: #6b708e;
+  }
+}
+
+.pond-fish-sprite.pond-fish-legendary {
+  animation: legendary-outline 4s linear infinite;
 }
 
 .sale-popup {

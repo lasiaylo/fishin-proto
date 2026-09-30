@@ -1,4 +1,4 @@
-ID, Name, Description, Category, Subcategory
+ID, Name, Description, Category, Subcategory, Tab
 ROD_1_ATTACK, reel, reel in fish faster, rods, lil guppy
 ROD_1_DEFENSE, drag, prevent fish from taking the line out as quickly, rods, lil guppy
 ROD_1_LINE_HP, line, strengthen your line so it can take more strain before snapping, rods, lil guppy
@@ -13,3 +13,5 @@ BAIT_0, bread, , bait,
 BAIT_1, worm, ,  bait,
 BAIT_2, boilie ball, ,  bait,
 ROD_HOLDER, rod holder, allows for using multiple rods at the same time, misc,
+WIND_PARTICLES, gust, each wind scatters more seeds, wind, , fields
+WIND_COOLDOWN, breeze, the wind picks back up sooner, wind, , fields

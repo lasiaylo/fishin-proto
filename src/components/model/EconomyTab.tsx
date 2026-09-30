@@ -125,8 +125,8 @@ export function EconomyTab({
     const rod1 = rodData.find((r) => r.id === "ROD_1");
     return levelStat(rod1?.lineHpBase ?? 0, rod1?.lineHpPerLevel ?? 0, 0);
   });
-  const [inventorySize, setInventorySize] = useState(
-    INITIAL_PLAYER_STATE.inventorySize,
+  const [fishPerRound, setFishPerRound] = useState(
+    INITIAL_PLAYER_STATE.fishPerRound,
   );
   const [simMinutes, setSimMinutes] = useState(10);
   const [evalTrials, setEvalTrials] = useState(100);
@@ -319,7 +319,7 @@ export function EconomyTab({
           data.fish,
           data.shop,
           locationData,
-          { inventorySize, incomeBoostPercent: 0 },
+          { fishPerRound, incomeBoostPercent: 0 },
           simMinutes,
           evalTrials,
           pair.upgradeStrategy,
@@ -701,9 +701,9 @@ export function EconomyTab({
       <Flex gap="3" wrap="wrap" align="end">
         <NumInput label="Line HP" value={lineHP} onChange={setLineHP} min={1} />
         <NumInput
-          label="Inventory"
-          value={inventorySize}
-          onChange={setInventorySize}
+          label="Fish / round"
+          value={fishPerRound}
+          onChange={setFishPerRound}
           min={1}
         />
         <NumInput

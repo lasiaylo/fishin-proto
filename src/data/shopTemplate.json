@@ -1,0 +1,109 @@
+{
+  "shop": {
+    "title": "Shop",
+    "output": "ShopGameplay.csv",
+    "rods": {
+      "count": 1,
+      "priceMultiplier": 1,
+      "purchaseCurve": {
+        "type": "LINEAR",
+        "startValue": 50,
+        "scaleFactor": 50
+      }
+    },
+    "items": [
+      {
+        "label": "ATTACK",
+        "id": "ROD_{rod}_ATTACK",
+        "stat": "ROD_ATTACK",
+        "kind": "levels",
+        "perRod": true,
+        "count": 10,
+        "curve": {
+          "type": "LINEAR",
+          "startValue": 20,
+          "scaleFactor": 4
+        }
+      },
+      {
+        "label": "DEFENSE",
+        "id": "ROD_{rod}_DEFENSE",
+        "stat": "ROD_DEFENSE",
+        "kind": "levels",
+        "perRod": true,
+        "count": 10,
+        "curve": {
+          "type": "LINEAR",
+          "startValue": 20,
+          "scaleFactor": 4
+        }
+      },
+      {
+        "label": "LINE HP",
+        "id": "ROD_{rod}_LINE_HP",
+        "stat": "ROD_LINE_HP",
+        "kind": "levels",
+        "perRod": true,
+        "count": 10,
+        "curve": {
+          "type": "LINEAR",
+          "startValue": 20,
+          "scaleFactor": 4
+        }
+      },
+      {
+        "label": "LURE",
+        "id": "LURE_{i}",
+        "stat": "LURE",
+        "kind": "series",
+        "count": "levels",
+        "requiresPrevious": 3,
+        "curve": {
+          "type": "LINEAR",
+          "startValue": 10,
+          "scaleFactor": 4
+        }
+      },
+      {
+        "label": "BAIT",
+        "id": "BAIT_{i}",
+        "stat": "BAIT",
+        "kind": "series",
+        "count": 1,
+        "curve": {
+          "type": "LINEAR",
+          "startValue": 5,
+          "scaleFactor": 5
+        }
+      },
+      {
+        "label": "WIND PARTICLES",
+        "id": "WIND_PARTICLES",
+        "stat": "WIND_PARTICLES",
+        "kind": "levels",
+        "count": 5,
+        "valuePerLevel": 20,
+        "editValue": true,
+        "curve": {
+          "type": "EXPONENTIAL",
+          "startValue": 10,
+          "growthRate": 2
+        }
+      },
+      {
+        "label": "WIND COOLDOWN",
+        "id": "WIND_COOLDOWN",
+        "stat": "WIND_COOLDOWN",
+        "kind": "levels",
+        "count": 4,
+        "valuePerLevel": 750,
+        "editValue": true,
+        "curve": {
+          "type": "EXPONENTIAL",
+          "startValue": 15,
+          "growthRate": 2
+        }
+      }
+    ]
+  }
+}

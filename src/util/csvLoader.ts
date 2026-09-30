@@ -23,6 +23,8 @@ export enum StatName {
   ROD_LINE_HP = "ROD_LINE_HP",
   ROD_SLOT = "ROD_SLOT",
   INCOME = "INCOME",
+  WIND_PARTICLES = "WIND_PARTICLES",
+  WIND_COOLDOWN = "WIND_COOLDOWN",
 }
 
 export interface BaitData {
@@ -131,6 +133,8 @@ export interface LocationFishEntry {
   percent: number;
 }
 
+const DEFAULT_SHOP_TAB = "pond";
+
 export interface ShopUpgradeData {
   id: string;
   name: string;
@@ -141,6 +145,8 @@ export interface ShopUpgradeData {
   stat: StatName;
   valuePerLevel: number;
   requirements: string[];
+  // Which action tab's shop lists this item: "fields" | "pond" | "sky".
+  tab: string;
 }
 
 function parseCSV(text: string): string[][] {
@@ -195,22 +201,10 @@ export async function loadLocationGameplayData(): Promise<LocationFishEntry[]> {
   }));
 }
 
-export interface ShopCsvLocation {
-  folder?: string;
-  displayFile?: string;
-}
-
-const DEFAULT_SHOP_LOCATION: Required<ShopCsvLocation> = {
-  folder: "Shop",
-  displayFile: "ShopDisplay.csv",
-};
-
 export async function loadShopGameplayData(
   shopFile = "ShopGameplay.csv",
-  location: ShopCsvLocation = {},
 ): Promise<ShopUpgradeData[]> {
-  const { folder } = { ...DEFAULT_SHOP_LOCATION, ...location };
-  const res = await fetch(`/data/${folder}/${shopFile}`);
+  const res = await fetch(`/data/Shop/${shopFile}`);
   const rows = parseCSV(await res.text());
   return rows.slice(1).map((row) => ({
     id: row[0],
@@ -222,6 +216,7 @@ export async function loadShopGameplayData(
     stat: parseStatName(row[2]),
     valuePerLevel: Number(row[3]),
     requirements: row[4] ? row[4].split(" ").filter(Boolean) : [],
+    tab: DEFAULT_SHOP_TAB,
   }));
 }
 
@@ -273,6 +268,7 @@ interface ShopDisplayEntry {
   description: string;
   category: string;
   subcategory: string;
+  tab: string;
 }
 
 function parseShopDisplayRow(row: string[]): ShopDisplayEntry {
@@ -281,6 +277,7 @@ function parseShopDisplayRow(row: string[]): ShopDisplayEntry {
     description: row[2],
     category: row[3] ?? "",
     subcategory: row[4] ?? "",
+    tab: row[5] || DEFAULT_SHOP_TAB,
   };
 }
 
@@ -311,18 +308,17 @@ export function parseShopGameplayRows(
       stat,
       valuePerLevel: Number(row[3]),
       requirements: row[4] ? row[4].split(" ").filter(Boolean) : [],
+      tab: display?.tab ?? DEFAULT_SHOP_TAB,
     };
   });
 }
 
 export async function loadShopData(
   shopFile = "ShopGameplay.csv",
-  location: ShopCsvLocation = {},
 ): Promise<ShopUpgradeData[]> {
-  const { folder, displayFile } = { ...DEFAULT_SHOP_LOCATION, ...location };
   const [gameplayRes, displayRes] = await Promise.all([
-    fetch(`/data/${folder}/${shopFile}`),
-    fetch(`/data/${displayFile}`),
+    fetch(`/data/Shop/${shopFile}`),
+    fetch("/data/ShopDisplay.csv"),
   ]);
   const [gameplayRows, displayRows] = [
     parseCSV(await gameplayRes.text()),
@@ -345,6 +341,7 @@ export async function loadShopData(
       stat: parseStatName(row[2]),
       valuePerLevel: Number(row[3]),
       requirements: row[4] ? row[4].split(" ").filter(Boolean) : [],
+      tab: display?.tab ?? DEFAULT_SHOP_TAB,
     };
   });
 }

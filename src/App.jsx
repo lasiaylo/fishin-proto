@@ -12,7 +12,6 @@ import {
   initShopFromRows,
   useShopUnlocked,
 } from "./stores/shopStore";
-import { initDreamShop } from "./stores/dreamShopStore";
 import { initFish, initFishFromData } from "./stores/fishStore";
 import { restorePersistedRodSlots } from "./stores/playerStore";
 import { initLocations } from "./stores/locationStore";
@@ -32,7 +31,8 @@ import {
   getGeneratedShopRows,
 } from "./components/model/CsvGenerator";
 import { loadFishDisplayMap, parseFishGameplayRows } from "./util/csvLoader";
-import { InventoryView } from "./components/InventoryView.tsx";
+import { TackleBoxView } from "./components/TackleBoxView.tsx";
+import { PondFishView } from "./components/PondFishView.tsx";
 import { CurrencyView } from "./components/CurrencyView.tsx";
 import { GrassView } from "./components/GrassView.tsx";
 
@@ -44,7 +44,7 @@ function App() {
 
   useEffect(() => {
     clearEvents();
-    // Must run before shop/dream-shop init below: those establish rod slot
+    // Must run before shop init below: it establishes rod slot
     // count via setRodSlotCount, which preserves whatever's already at each
     // index, so restoring first means the upgrade-driven resize keeps these
     // assignments instead of them being overwritten before restore runs.
@@ -64,7 +64,6 @@ function App() {
     } else {
       initShop(shopCSV);
     }
-    initDreamShop();
     initLocations();
     initBaitData();
     initRodData();
@@ -108,10 +107,20 @@ function App() {
               <ShopView />
             </Flex>
           )}
-          <InventoryView />
+          <TackleBoxView />
         </Flex>
         <Box position="absolute" top="45px" left="237px">
           <GrassView />
+        </Box>
+        <Box position="absolute" top="167px" left="422px">
+          <img
+            src="/pond.jpg"
+            alt=""
+            width={332}
+            height={332}
+            style={{ display: "block", objectFit: "cover" }}
+          />
+          <PondFishView />
         </Box>
         <Box
           position="absolute"

@@ -2,10 +2,8 @@ import { PlayerState } from "../stores/playerStore";
 
 export const CURRENCY_SYMBOL = "࿔";
 export const DREAM_POINT_SYMBOL = "✦";
-export const LOCK_SYMBOL = "🔒";
 export const FRIEND_NPC_NAME = "big ghost";
 export const NPC_ACTIVITY_DUMMY = "watching their line";
-export const GIFT_COOLDOWN_MS = 4 * 60 * 1000;
 export const BASE_FISH_ID = "FISH_B_0";
 export const BASE_LURE_NAME = "Worm";
 export const BASE_BAIT_ID = "BAIT_0";
@@ -13,6 +11,7 @@ export const BASE_BAIT_NAME = "Worm";
 export const BAIT_ID_PREFIX = "BAIT_";
 export const BAIT_MAX_STACK = 10;
 export const BAIT_START_COUNT = 10;
+export const SHOP_UNLOCK_FISH_CAUGHT = 4;
 // Charge/cooldown fill on action buttons; matches the soft <Code> background.
 export const BUTTON_FILL_COLOR = "var(--accent-a5)";
 
@@ -31,14 +30,28 @@ export interface Rod {
 
 export const INITIAL_PLAYER_STATE: PlayerState = {
   wallet: 0,
-  inventorySize: 4,
+  fishPerRound: 4,
   incomeBoostPercent: 0,
   ownedLures: new Set<string>(),
   baitInventory: { [BASE_BAIT_ID]: BAIT_START_COUNT },
   ownedRods: [{ id: "ROD_1", attackLevel: 0, defenseLevel: 0, lineHpLevel: 0 }],
   rodSlotAssignments: [null],
   rodSlotItems: [null],
-  inventory: [],
+};
+
+// Sprite shown for a caught fish floating on the pond, by fish ID. Fish
+// without an entry show as a rarity-colored name tag instead.
+export const FISH_SPRITES: Record<string, string> = {
+  FISH_0: "/sprites/walleye.png",
+  FISH_1: "/sprites/bluegill.png",
+  FISH_2: "/sprites/sm_bass.png",
+  FISH_3: "/sprites/catfish.png",
+  FISH_4: "/sprites/lm_bass.png",
+  FISH_B_0: "/sprites/minnow.png",
+  FISH_B_1: "/sprites/shad.png",
+  FISH_B_3: "/sprites/trout.png",
+  FISH_B_4: "/sprites/trout.png",
+  FISH_B_5: "/sprites/crappie.png",
 };
 
 // ==========================================================================

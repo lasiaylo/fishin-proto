@@ -20,12 +20,19 @@ export interface GrassParticle {
 interface FieldsState {
   readyAt: number;
   particles: GrassParticle[];
+  // Upgradable via the fields shop; start at the base constants.
+  particleCount: number;
+  cooldownMs: number;
 }
 
 export const useFields = create<FieldsState>(() => ({
   readyAt: 0,
   particles: [],
+  particleCount: FIELDS_WIND_PARTICLE_COUNT,
+  cooldownMs: FIELDS_WIND_COOLDOWN_MS,
 }));
+
+const MIN_WIND_COOLDOWN_MS = 500;
 
 const GRASS_WIDTH = 147;
 const GRASS_TOP = 150;
@@ -58,17 +65,23 @@ export function canWind(): boolean {
 
 export function wind() {
   if (!canWind()) return;
-  const spawned = Array.from(
-    { length: FIELDS_WIND_PARTICLE_COUNT },
-    spawnParticle,
-  );
+  const { particleCount, cooldownMs } = useFields.getState();
+  const spawned = Array.from({ length: particleCount }, spawnParticle);
   useFields.setState((s) => ({
-    readyAt: Date.now() + FIELDS_WIND_COOLDOWN_MS,
+    readyAt: Date.now() + cooldownMs,
     particles: [...s.particles, ...spawned],
   }));
   for (const p of spawned) {
     setTimeout(() => removeParticle(p.id), FIELDS_PARTICLE_LIFETIME_MS);
   }
+}
+
+export function setWindParticleCount(count: number) {
+  useFields.setState({ particleCount: Math.max(0, Math.round(count)) });
+}
+
+export function setWindCooldownMs(ms: number) {
+  useFields.setState({ cooldownMs: Math.max(MIN_WIND_COOLDOWN_MS, ms) });
 }
 
 export function removeParticle(id: number) {

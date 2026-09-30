@@ -11,13 +11,12 @@ import {
   INITIAL_PLAYER_STATE,
   rarityExpectedPriceMultiplier,
 } from "../../util/constants";
+import shopTemplateJson from "../../data/shopTemplate.json";
 
 export const GENERATED_FISH_CSV = "__generated_fish__";
 export const GENERATED_SHOP_CSV = "__generated_shop__";
-const LURE_REQ_GAP = 3;
 
 const FISH_STORAGE_KEY = "csvgen_fish";
-const SHOP_STORAGE_KEY = "csvgen_shop";
 const SHARED_STORAGE_KEY = "csvgen_shared";
 
 function loadStored<T>(key: string, fallback: T): T {
@@ -173,98 +172,262 @@ function priceList(fn: FunctionConfig, count: number, mult = 1): string {
   ).join(" ");
 }
 
-function generateShopRows(
-  attackFn: FunctionConfig,
-  attackCount: number,
-  defenseFn: FunctionConfig,
-  defenseCount: number,
-  lineHpFn: FunctionConfig,
-  lineHpCount: number,
-  lureFn: FunctionConfig,
-  lureCount: number,
-  baitFn: FunctionConfig,
-  baitCount: number,
-  rodCount: number,
-  rodPurchaseFn: FunctionConfig,
-  rodPriceMultiplier: number,
+// ── Shop template ──────────────────────────────────────────────────────────
+// The shop generator is driven by src/data/shopTemplate.json: each shop lists
+// its items and their default price curves, and the UI/rows are built from
+// that. Adding a shop item means adding a template entry, not touching this
+// file.
+
+interface CurveTemplate {
+  type: FnType;
+  startValue: number;
+  scaleFactor?: number;
+  growthRate?: number;
+}
+
+interface ShopTemplateItem {
+  // Card title in the generator UI.
+  label: string;
+  // Row ID. May contain {rod} (perRod items) and {i} (series items).
+  id: string;
+  stat: string;
+  // "levels": one row whose price list has `count` levels.
+  // "series": `count` rows ({i} = 0…count−1), each priced at curve(i).
+  kind: "levels" | "series";
+  // "levels" means the shared Levels setting (one lure per fish tier).
+  count: number | "levels";
+  valuePerLevel?: number;
+  // Show a ValuePerLevel input for this item.
+  editValue?: boolean;
+  // Repeat for ROD_1…ROD_n; start price scales by priceMultiplier^(rod−1),
+  // and rows for rod 2+ require ROD_{rod}.
+  perRod?: boolean;
+  // Series only: row i requires row i−n.
+  requiresPrevious?: number;
+  curve: CurveTemplate;
+}
+
+interface ShopTemplate {
+  title: string;
+  output: string;
+  // Rods are the one built-in concept: count/multiplier drive perRod items,
+  // and ROD_n purchase rows (n ≥ 2) are priced at purchaseCurve(n−2).
+  rods?: {
+    count: number;
+    priceMultiplier: number;
+    purchaseCurve: CurveTemplate;
+  };
+  items: ShopTemplateItem[];
+}
+
+export type ShopKey = keyof typeof shopTemplateJson;
+const SHOP_TEMPLATES = shopTemplateJson as Record<ShopKey, ShopTemplate>;
+
+interface ItemSettings {
+  curve: FunctionConfig;
+  count: number;
+  valuePerLevel: number;
+}
+
+interface RodSettings {
+  count: number;
+  priceMultiplier: number;
+  purchaseCurve: FunctionConfig;
+}
+
+interface ShopSettings {
+  rods: RodSettings;
+  // Keyed by template item id.
+  items: Record<string, ItemSettings>;
+}
+
+function curveFromTemplate(c: CurveTemplate): FunctionConfig {
+  return {
+    type: c.type,
+    startValue: c.startValue,
+    scaleFactor: c.scaleFactor ?? 4,
+    growthRate: c.growthRate ?? 0.8,
+  };
+}
+
+function templateSettings(template: ShopTemplate): ShopSettings {
+  const rods = template.rods;
+  return {
+    rods: {
+      count: rods?.count ?? 1,
+      priceMultiplier: rods?.priceMultiplier ?? 1,
+      purchaseCurve: curveFromTemplate(
+        rods?.purchaseCurve ?? { type: "LINEAR", startValue: 0 },
+      ),
+    },
+    items: Object.fromEntries(
+      template.items.map((item) => [
+        item.id,
+        {
+          curve: curveFromTemplate(item.curve),
+          count: typeof item.count === "number" ? item.count : 0,
+          valuePerLevel: item.valuePerLevel ?? 1,
+        },
+      ]),
+    ),
+  };
+}
+
+function substituteId(id: string, vars: Record<string, number>): string {
+  return id.replace(/\{(\w+)\}/g, (match, key) =>
+    key in vars ? String(vars[key]) : match,
+  );
+}
+
+function templateItemRows(
+  item: ShopTemplateItem,
+  settings: ItemSettings,
+  levels: number,
+  vars: Record<string, number>,
+  priceMult: number,
+  rodRequirement: string,
+): string[][] {
+  const count = item.count === "levels" ? levels : settings.count;
+  const vpl = String(settings.valuePerLevel);
+  if (item.kind === "levels") {
+    if (count <= 0) return [];
+    return [
+      [
+        substituteId(item.id, vars),
+        priceList(settings.curve, count, priceMult),
+        item.stat,
+        vpl,
+        rodRequirement,
+      ],
+    ];
+  }
+  const curve = {
+    ...settings.curve,
+    startValue: settings.curve.startValue * priceMult,
+  };
+  const gap = item.requiresPrevious ?? 0;
+  return Array.from({ length: count }, (_, i) => {
+    const previous =
+      gap > 0 && i >= gap ? substituteId(item.id, { ...vars, i: i - gap }) : "";
+    return [
+      substituteId(item.id, { ...vars, i }),
+      String(Math.ceil(evalFn(curve, i))),
+      item.stat,
+      vpl,
+      [rodRequirement, previous].filter(Boolean).join(" "),
+    ];
+  });
+}
+
+// Rows come out per rod (its purchase row, then its perRod items in template
+// order), followed by the remaining items in template order.
+function generateRowsFromTemplate(
+  template: ShopTemplate,
+  settings: ShopSettings,
+  levels: number,
 ): string[][] {
   const rows: string[][] = [
     ["ID", "Price", "Stat", "ValuePerLevel", "Requirement"],
   ];
+  const itemSettings = (item: ShopTemplateItem) =>
+    settings.items[item.id] ?? templateSettings(template).items[item.id];
+  const rodItems = template.items.filter((item) => item.perRod);
+  const otherItems = template.items.filter((item) => !item.perRod);
 
+  const { rods } = settings;
+  const rodCount = rodItems.length > 0 || template.rods ? rods.count : 0;
   for (let r = 1; r <= rodCount; r++) {
     const rodId = `ROD_${r}`;
-    const prevRodId = r > 1 ? `ROD_${r - 1}` : "";
-    const priceMult = Math.pow(rodPriceMultiplier, r - 1);
     if (r > 1) {
       rows.push([
         rodId,
-        String(Math.ceil(evalFn(rodPurchaseFn, r - 2))),
+        String(Math.ceil(evalFn(rods.purchaseCurve, r - 2))),
         "ROD",
         "1",
-        prevRodId,
+        `ROD_${r - 1}`,
       ]);
     }
-    rows.push([
-      `${rodId}_ATTACK`,
-      priceList(attackFn, attackCount, priceMult),
-      "ROD_ATTACK",
-      "1",
-      r > 1 ? rodId : "",
-    ]);
-    rows.push([
-      `${rodId}_DEFENSE`,
-      priceList(defenseFn, defenseCount, priceMult),
-      "ROD_DEFENSE",
-      "1",
-      r > 1 ? rodId : "",
-    ]);
-    rows.push([
-      `${rodId}_LINE_HP`,
-      priceList(lineHpFn, lineHpCount, priceMult),
-      "ROD_LINE_HP",
-      "1",
-      r > 1 ? rodId : "",
-    ]);
+    const priceMult = Math.pow(rods.priceMultiplier, r - 1);
+    for (const item of rodItems) {
+      rows.push(
+        ...templateItemRows(
+          item,
+          itemSettings(item),
+          levels,
+          { rod: r },
+          priceMult,
+          r > 1 ? rodId : "",
+        ),
+      );
+    }
   }
 
-  for (let i = 0; i < lureCount; i++) {
-    rows.push([
-      `LURE_${i}`,
-      String(Math.ceil(evalFn(lureFn, i))),
-      "LURE",
-      "1",
-      i >= LURE_REQ_GAP ? `LURE_${i - LURE_REQ_GAP}` : "",
-    ]);
-  }
-
-  for (let i = 0; i < baitCount; i++) {
-    rows.push([`BAIT_${i}`, String(Math.ceil(evalFn(baitFn, i))), "BAIT", "1"]);
+  for (const item of otherItems) {
+    rows.push(...templateItemRows(item, itemSettings(item), levels, {}, 1, ""));
   }
 
   return rows;
 }
 
-function generateDreamShopRows(
-  incomeFn: FunctionConfig,
-  incomeVPL: number,
-  incomeCount: number,
-): string[][] {
-  const rows: string[][] = [
-    ["ID", "Price", "Stat", "ValuePerLevel", "Requirement"],
-  ];
+function shopStorageKey(shopKey: ShopKey): string {
+  return `csvgen_${shopKey}_v2`;
+}
 
-  if (incomeCount > 0) {
-    rows.push([
-      "DREAM_INCOME",
-      priceList(incomeFn, incomeCount),
-      "INCOME",
-      String(incomeVPL),
-      "",
-    ]);
-  }
+// One-time carry-over of settings saved by the pre-template generator, so
+// existing tuning survives the switch. Safe to delete once nobody has the old
+// csvgen_shop key around.
+function legacyShopSettings(shopKey: ShopKey): Partial<ShopSettings> | null {
+  try {
+    if (shopKey === "shop") {
+      const raw = localStorage.getItem("csvgen_shop");
+      if (!raw) return null;
+      const old = JSON.parse(raw);
+      const items: Record<string, Partial<ItemSettings>> = {
+        "ROD_{rod}_ATTACK": { curve: old.attackFn, count: old.attackCount },
+        "ROD_{rod}_DEFENSE": { curve: old.defenseFn, count: old.defenseCount },
+        "ROD_{rod}_LINE_HP": { curve: old.lineHpFn, count: old.lineHpCount },
+        "LURE_{i}": { curve: old.lureFn },
+        "BAIT_{i}": { curve: old.baitFn, count: old.baitCount },
+      };
+      return {
+        rods: {
+          count: old.rodCount,
+          priceMultiplier: old.rodPriceMultiplier,
+          purchaseCurve: old.rodPurchaseFn,
+        },
+        items: items as Record<string, ItemSettings>,
+      };
+    }
+  } catch {}
+  return null;
+}
 
-  return rows;
+function withoutUndefined<T extends object>(obj: T | undefined): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(obj ?? {}).filter(([, v]) => v !== undefined),
+  ) as Partial<T>;
+}
+
+// Saved settings layered over the template's defaults. Items missing from the
+// saved settings (e.g. newly added to the template) get their defaults.
+function loadShopSettings(shopKey: ShopKey): ShopSettings {
+  const defaults = templateSettings(SHOP_TEMPLATES[shopKey]);
+  let saved: Partial<ShopSettings> | null = null;
+  try {
+    const raw = localStorage.getItem(shopStorageKey(shopKey));
+    if (raw) saved = JSON.parse(raw);
+  } catch {}
+  saved ??= legacyShopSettings(shopKey);
+  if (!saved) return defaults;
+  return {
+    rods: { ...defaults.rods, ...withoutUndefined(saved.rods) },
+    items: Object.fromEntries(
+      Object.entries(defaults.items).map(([id, d]) => [
+        id,
+        { ...d, ...withoutUndefined(saved.items?.[id]) },
+      ]),
+    ),
+  };
 }
 
 function fnConfigStr(cfg: FunctionConfig): string {
@@ -789,284 +952,152 @@ function FishGenerator({
   );
 }
 
-const SHOP_DEFAULTS: {
-  attackFn: FunctionConfig;
-  attackCount: number;
-  defenseFn: FunctionConfig;
-  defenseCount: number;
-  lineHpFn: FunctionConfig;
-  lineHpCount: number;
-  lureFn: FunctionConfig;
-  baitFn: FunctionConfig;
-  baitCount: number;
-  rodCount: number;
-  rodPurchaseFn: FunctionConfig;
-  rodPriceMultiplier: number;
-} = {
-  attackFn: {
-    type: "LINEAR",
-    startValue: 20,
-    scaleFactor: 4,
-    growthRate: 0.8,
-  },
-  attackCount: 10,
-  defenseFn: {
-    type: "LINEAR",
-    startValue: 20,
-    scaleFactor: 4,
-    growthRate: 0.8,
-  },
-  defenseCount: 10,
-  lineHpFn: {
-    type: "LINEAR",
-    startValue: 20,
-    scaleFactor: 4,
-    growthRate: 0.8,
-  },
-  lineHpCount: 10,
-  lureFn: { type: "LINEAR", startValue: 10, scaleFactor: 4, growthRate: 0.8 },
-  baitFn: { type: "LINEAR", startValue: 5, scaleFactor: 5, growthRate: 0.8 },
-  baitCount: 1,
-  rodCount: 1,
-  rodPurchaseFn: {
-    type: "LINEAR",
-    startValue: 50,
-    scaleFactor: 50,
-    growthRate: 0.8,
-  },
-  rodPriceMultiplier: 1,
-};
-
-function ShopGenerator({
+function TemplateShopGenerator({
+  shopKey,
+  levels,
   onChange,
   showPreview,
-  lureCount,
 }: {
+  shopKey: ShopKey;
+  levels: number;
   onChange?: (rows: string[][]) => void;
   showPreview: boolean;
-  lureCount: number;
 }) {
-  const stored = loadStored(SHOP_STORAGE_KEY, SHOP_DEFAULTS);
-  const initialRef = useRef(stored);
-  const [attackFn, setAttackFn] = useState<FunctionConfig>(
-    () => stored.attackFn,
+  const template = SHOP_TEMPLATES[shopKey];
+  const [settings, setSettings] = useState<ShopSettings>(() =>
+    loadShopSettings(shopKey),
   );
-  const [attackCount, setAttackCount] = useState(() => stored.attackCount);
+  const initialRef = useRef(settings);
 
-  const [defenseFn, setDefenseFn] = useState<FunctionConfig>(
-    () => stored.defenseFn,
-  );
-  const [defenseCount, setDefenseCount] = useState(() => stored.defenseCount);
-
-  const [lineHpFn, setLineHpFn] = useState<FunctionConfig>(
-    () => stored.lineHpFn,
-  );
-  const [lineHpCount, setLineHpCount] = useState(() => stored.lineHpCount);
-
-  const [lureFn, setLureFn] = useState<FunctionConfig>(() => stored.lureFn);
-  const [baitFn, setBaitFn] = useState<FunctionConfig>(() => stored.baitFn);
-  const [baitCount, setBaitCount] = useState(() => stored.baitCount);
-  const [rodCount, setRodCount] = useState(() => stored.rodCount);
-  const [rodPurchaseFn, setRodPurchaseFn] = useState<FunctionConfig>(
-    () => stored.rodPurchaseFn,
-  );
-  const [rodPriceMultiplier, setRodPriceMultiplier] = useState(
-    () => stored.rodPriceMultiplier,
-  );
-
-  const rows = generateShopRows(
-    attackFn,
-    attackCount,
-    defenseFn,
-    defenseCount,
-    lineHpFn,
-    lineHpCount,
-    lureFn,
-    lureCount,
-    baitFn,
-    baitCount,
-    rodCount,
-    rodPurchaseFn,
-    rodPriceMultiplier,
-  );
+  const rows = generateRowsFromTemplate(template, settings, levels);
 
   useEffect(() => {
-    localStorage.setItem(
-      SHOP_STORAGE_KEY,
-      JSON.stringify({
-        attackFn,
-        attackCount,
-        defenseFn,
-        defenseCount,
-        lineHpFn,
-        lineHpCount,
-        lureFn,
-        baitFn,
-        baitCount,
-        rodCount,
-        rodPurchaseFn,
-        rodPriceMultiplier,
-      }),
-    );
+    localStorage.setItem(shopStorageKey(shopKey), JSON.stringify(settings));
     onChange?.(rows);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    attackFn,
-    attackCount,
-    defenseFn,
-    defenseCount,
-    lineHpFn,
-    lineHpCount,
-    lureFn,
-    lureCount,
-    baitFn,
-    baitCount,
-    rodCount,
-    rodPurchaseFn,
-    rodPriceMultiplier,
-  ]);
+  }, [settings, levels]);
 
-  function undo() {
-    setAttackFn(initialRef.current.attackFn);
-    setAttackCount(initialRef.current.attackCount);
-    setDefenseFn(initialRef.current.defenseFn);
-    setDefenseCount(initialRef.current.defenseCount);
-    setLineHpFn(initialRef.current.lineHpFn);
-    setLineHpCount(initialRef.current.lineHpCount);
-    setLureFn(initialRef.current.lureFn);
-    setBaitFn(initialRef.current.baitFn);
-    setBaitCount(initialRef.current.baitCount);
-    setRodCount(initialRef.current.rodCount);
-    setRodPurchaseFn(initialRef.current.rodPurchaseFn);
-    setRodPriceMultiplier(initialRef.current.rodPriceMultiplier);
+  function setRods(patch: Partial<RodSettings>) {
+    setSettings((s) => ({ ...s, rods: { ...s.rods, ...patch } }));
+  }
+
+  function setItem(id: string, patch: Partial<ItemSettings>) {
+    setSettings((s) => ({
+      ...s,
+      items: { ...s.items, [id]: { ...s.items[id], ...patch } },
+    }));
+  }
+
+  function downloadComment(): string {
+    const lines = template.items.map((item) => {
+      const { curve, count, valuePerLevel } = settings.items[item.id];
+      const countStr =
+        item.count === "levels" ? `count=${levels} (levels)` : `count=${count}`;
+      const vplStr = item.editValue ? ` | valuePerLevel=${valuePerLevel}` : "";
+      return `# ${item.id} price curve: ${fnConfigStr(curve)} | ${countStr}${vplStr}`;
+    });
+    if (template.rods) {
+      const { count, priceMultiplier, purchaseCurve } = settings.rods;
+      lines.push(
+        `# Rods: count=${count} | priceMultiplier=${priceMultiplier} | purchase curve: ${fnConfigStr(purchaseCurve)}`,
+      );
+    }
+    return lines.join("\n");
   }
 
   return (
     <Flex direction="column" gap="3">
       <Flex align="center" gap="3">
         <Text size="2" weight="bold">
-          Shop
+          {template.title}
         </Text>
-        <Button size="1" variant="ghost" color="gray" onClick={undo}>
+        <Button
+          size="1"
+          variant="ghost"
+          color="gray"
+          onClick={() => setSettings(initialRef.current)}
+        >
           Undo
+        </Button>
+        <Button
+          size="1"
+          variant="ghost"
+          color="gray"
+          onClick={() => setSettings(templateSettings(template))}
+        >
+          Reset to template
         </Button>
       </Flex>
 
       <Grid columns="2" gap="4">
-        <Flex direction="column" gap="2">
-          <Text size="1" weight="bold">
-            ATTACK
-          </Text>
-          <FunctionSelect
-            label="Price curve"
-            value={attackFn}
-            onChange={setAttackFn}
-          />
-          <Flex gap="3" wrap="wrap" align="end">
-            <NumInput
-              label="Upgrades"
-              value={attackCount}
-              onChange={setAttackCount}
-              min={1}
-            />
-          </Flex>
-        </Flex>
+        {template.items.map((item) => {
+          const itemSettings = settings.items[item.id];
+          return (
+            <Flex key={item.id} direction="column" gap="2">
+              <Text size="1" weight="bold">
+                {item.label}
+              </Text>
+              <FunctionSelect
+                label="Price curve"
+                value={itemSettings.curve}
+                onChange={(curve) => setItem(item.id, { curve })}
+              />
+              {(item.count !== "levels" || item.editValue) && (
+                <Flex gap="3" wrap="wrap" align="end">
+                  {item.count !== "levels" && (
+                    <NumInput
+                      label={item.kind === "series" ? "Tiers" : "Upgrades"}
+                      value={itemSettings.count}
+                      onChange={(count) => setItem(item.id, { count })}
+                      min={0}
+                    />
+                  )}
+                  {item.editValue && (
+                    <NumInput
+                      label="Value per level"
+                      value={itemSettings.valuePerLevel}
+                      onChange={(valuePerLevel) =>
+                        setItem(item.id, { valuePerLevel })
+                      }
+                      min={-99999}
+                      max={99999}
+                    />
+                  )}
+                </Flex>
+              )}
+            </Flex>
+          );
+        })}
 
-        <Flex direction="column" gap="2">
-          <Text size="1" weight="bold">
-            DEFENSE
-          </Text>
-          <FunctionSelect
-            label="Price curve"
-            value={defenseFn}
-            onChange={setDefenseFn}
-          />
-          <Flex gap="3" wrap="wrap" align="end">
-            <NumInput
-              label="Upgrades"
-              value={defenseCount}
-              onChange={setDefenseCount}
-              min={1}
-            />
+        {template.rods && (
+          <Flex direction="column" gap="2">
+            <Text size="1" weight="bold">
+              RODS
+            </Text>
+            <Flex gap="3" wrap="wrap" align="end">
+              <NumInput
+                label="Rod count"
+                value={settings.rods.count}
+                onChange={(count) => setRods({ count })}
+                min={1}
+              />
+              <NumInput
+                label="Price multiplier"
+                value={settings.rods.priceMultiplier}
+                onChange={(priceMultiplier) => setRods({ priceMultiplier })}
+                min={0.1}
+                step={0.1}
+              />
+            </Flex>
+            {settings.rods.count > 1 && (
+              <FunctionSelect
+                label="Rod purchase price curve (ROD_2+)"
+                value={settings.rods.purchaseCurve}
+                onChange={(purchaseCurve) => setRods({ purchaseCurve })}
+              />
+            )}
           </Flex>
-        </Flex>
-
-        <Flex direction="column" gap="2">
-          <Text size="1" weight="bold">
-            LINE HP
-          </Text>
-          <FunctionSelect
-            label="Price curve"
-            value={lineHpFn}
-            onChange={setLineHpFn}
-          />
-          <Flex gap="3" wrap="wrap" align="end">
-            <NumInput
-              label="Upgrades"
-              value={lineHpCount}
-              onChange={setLineHpCount}
-              min={1}
-            />
-          </Flex>
-        </Flex>
-
-        <Flex direction="column" gap="2">
-          <Text size="1" weight="bold">
-            RODS
-          </Text>
-          <Flex gap="3" wrap="wrap" align="end">
-            <NumInput
-              label="Rod count"
-              value={rodCount}
-              onChange={setRodCount}
-              min={1}
-            />
-            <NumInput
-              label="Price multiplier"
-              value={rodPriceMultiplier}
-              onChange={setRodPriceMultiplier}
-              min={0.1}
-              step={0.1}
-            />
-          </Flex>
-          {rodCount > 1 && (
-            <FunctionSelect
-              label="Rod purchase price curve (ROD_2+)"
-              value={rodPurchaseFn}
-              onChange={setRodPurchaseFn}
-            />
-          )}
-        </Flex>
-
-        <Flex direction="column" gap="2">
-          <Text size="1" weight="bold">
-            LURE
-          </Text>
-          <FunctionSelect
-            label="Price curve"
-            value={lureFn}
-            onChange={setLureFn}
-          />
-        </Flex>
-
-        <Flex direction="column" gap="2">
-          <Text size="1" weight="bold">
-            BAIT
-          </Text>
-          <FunctionSelect
-            label="Price curve"
-            value={baitFn}
-            onChange={setBaitFn}
-          />
-          <Flex gap="3" wrap="wrap" align="end">
-            <NumInput
-              label="Bait tiers"
-              value={baitCount}
-              onChange={setBaitCount}
-              min={1}
-            />
-          </Flex>
-        </Flex>
+        )}
       </Grid>
 
       {showPreview && (
@@ -1078,119 +1109,9 @@ function ShopGenerator({
         size="1"
         variant="soft"
         style={{ width: "fit-content" }}
-        onClick={() => {
-          const comment = [
-            `# ROD_ATTACK price curve: ${fnConfigStr(attackFn)} | Upgrades=${attackCount}`,
-            `# ROD_DEFENSE price curve: ${fnConfigStr(defenseFn)} | Upgrades=${defenseCount}`,
-            `# ROD_LINE_HP price curve: ${fnConfigStr(lineHpFn)} | Upgrades=${lineHpCount}`,
-            `# LURE price curve: ${fnConfigStr(lureFn)} | Lures=${lureCount}`,
-            `# BAIT price curve: ${fnConfigStr(baitFn)} | Tiers=${baitCount}`,
-            `# Rod price multiplier: ${rodPriceMultiplier}`,
-          ].join("\n");
-          downloadCsv(rows, "ShopGameplay.csv", comment);
-        }}
+        onClick={() => downloadCsv(rows, template.output, downloadComment())}
       >
-        Download ShopGameplay.csv
-      </Button>
-    </Flex>
-  );
-}
-
-const DREAM_SHOP_STORAGE_KEY = "csvgen_dream_shop";
-
-const DREAM_SHOP_DEFAULTS: {
-  incomeFn: FunctionConfig;
-  incomeVPL: number;
-  incomeCount: number;
-} = {
-  incomeFn: { type: "LINEAR", startValue: 2, scaleFactor: 1, growthRate: 0.8 },
-  incomeVPL: 10,
-  incomeCount: 5,
-};
-
-function DreamShopGenerator({
-  onChange,
-  showPreview,
-}: {
-  onChange?: (rows: string[][]) => void;
-  showPreview: boolean;
-}) {
-  const stored = loadStored(DREAM_SHOP_STORAGE_KEY, DREAM_SHOP_DEFAULTS);
-  const initialRef = useRef(stored);
-  const [incomeFn, setIncomeFn] = useState<FunctionConfig>(
-    () => stored.incomeFn,
-  );
-  const [incomeVPL, setIncomeVPL] = useState(() => stored.incomeVPL);
-  const [incomeCount, setIncomeCount] = useState(() => stored.incomeCount);
-
-  const rows = generateDreamShopRows(incomeFn, incomeVPL, incomeCount);
-
-  useEffect(() => {
-    localStorage.setItem(
-      DREAM_SHOP_STORAGE_KEY,
-      JSON.stringify({ incomeFn, incomeVPL, incomeCount }),
-    );
-    onChange?.(rows);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [incomeFn, incomeVPL, incomeCount]);
-
-  function undo() {
-    setIncomeFn(initialRef.current.incomeFn);
-    setIncomeVPL(initialRef.current.incomeVPL);
-    setIncomeCount(initialRef.current.incomeCount);
-  }
-
-  return (
-    <Flex direction="column" gap="3">
-      <Flex align="center" gap="3">
-        <Text size="2" weight="bold">
-          Dream Shop
-        </Text>
-        <Button size="1" variant="ghost" color="gray" onClick={undo}>
-          Undo
-        </Button>
-      </Flex>
-
-      <Flex direction="column" gap="2">
-        <Text size="1" weight="bold">
-          Improve Income
-        </Text>
-        <FunctionSelect
-          label="Price curve"
-          value={incomeFn}
-          onChange={setIncomeFn}
-        />
-        <Flex gap="3" wrap="wrap" align="end">
-          <NumInput
-            label="% per level"
-            value={incomeVPL}
-            onChange={setIncomeVPL}
-            min={1}
-          />
-          <NumInput
-            label="Tiers"
-            value={incomeCount}
-            onChange={setIncomeCount}
-            min={0}
-          />
-        </Flex>
-      </Flex>
-
-      {showPreview && (
-        <PreviewTable
-          rows={[["ID", "Price"], ...rows.slice(1).map((r) => [r[0], r[1]])]}
-        />
-      )}
-      <Button
-        size="1"
-        variant="soft"
-        style={{ width: "fit-content" }}
-        onClick={() => {
-          const comment = `# DREAM_INCOME price curve: ${fnConfigStr(incomeFn)} | %/level=${incomeVPL} | Tiers=${incomeCount}`;
-          downloadCsv(rows, "DreamShopGameplay.csv", comment);
-        }}
-      >
-        Download DreamShopGameplay.csv
+        Download {template.output}
       </Button>
     </Flex>
   );
@@ -1227,34 +1148,10 @@ export function getGeneratedShopRows(): string[][] {
     levels: 3,
     startingAD: 10,
   });
-  const {
-    attackFn,
-    attackCount,
-    defenseFn,
-    defenseCount,
-    lineHpFn,
-    lineHpCount,
-    lureFn,
-    baitFn,
-    baitCount,
-    rodCount,
-    rodPurchaseFn,
-    rodPriceMultiplier,
-  } = loadStored(SHOP_STORAGE_KEY, SHOP_DEFAULTS);
-  return generateShopRows(
-    attackFn,
-    attackCount,
-    defenseFn,
-    defenseCount,
-    lineHpFn,
-    lineHpCount,
-    lureFn,
+  return generateRowsFromTemplate(
+    SHOP_TEMPLATES.shop,
+    loadShopSettings("shop"),
     levels,
-    baitFn,
-    baitCount,
-    rodCount,
-    rodPurchaseFn,
-    rodPriceMultiplier,
   );
 }
 
@@ -1421,18 +1318,15 @@ export function CsvGeneratorPanel({
             </Flex>
             <Separator orientation="vertical" size="4" />
             <Flex direction="column" gap="3" style={{ flex: 1 }}>
-              <ShopGenerator
+              <TemplateShopGenerator
+                shopKey="shop"
                 onChange={(rows) => {
                   setShopRows(rows);
                   onShopRowsChange?.(rows);
                 }}
                 showPreview={showPreview}
-                lureCount={levels}
+                levels={levels}
               />
-            </Flex>
-            <Separator orientation="vertical" size="4" />
-            <Flex direction="column" gap="3" style={{ flex: 1 }}>
-              <DreamShopGenerator showPreview={showPreview} />
             </Flex>
           </Flex>
         </>

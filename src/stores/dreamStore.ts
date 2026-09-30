@@ -23,12 +23,6 @@ export function recordEarnings(amount: number) {
   });
 }
 
-export function deductDreamPoints(amount: number) {
-  useDreamStore.setState((s) => ({
-    dreamPoints: Math.max(0, s.dreamPoints - amount),
-  }));
-}
-
 usePlayer.subscribe(
   (s) => s.wallet,
   (wallet, prevWallet) => {

@@ -60,7 +60,7 @@ export function GraphsTab({
   const [minStat, setMinStat] = useState(baseAttack);
   const [maxStat, setMaxStat] = useState(baseAttack + 10);
   const [trialsPerFish, setTrialsPerFish] = useState(100);
-  const [inventorySize, setInventorySize] = useState(3);
+  const [fishPerRound, setFishPerRound] = useState(3);
   const [sweepData, setSweepData] = useState<object[]>([]);
   const [running, setRunning] = useState(false);
   const [runCount, setRunCount] = useState(0);
@@ -69,7 +69,7 @@ export function GraphsTab({
     activeShopData: [] as ShopUpgradeData[],
     locationData,
     lineHP,
-    inventorySize,
+    fishPerRound,
     minStat,
     maxStat,
     trialsPerFish,
@@ -140,7 +140,7 @@ export function GraphsTab({
       activeShopData,
       locationData,
       lineHP,
-      inventorySize,
+      fishPerRound,
       minStat,
       maxStat,
       trialsPerFish,
@@ -150,7 +150,7 @@ export function GraphsTab({
     activeShopData,
     locationData,
     lineHP,
-    inventorySize,
+    fishPerRound,
     minStat,
     maxStat,
     trialsPerFish,
@@ -175,7 +175,7 @@ export function GraphsTab({
       activeShopData,
       locationData,
       lineHP,
-      inventorySize,
+      fishPerRound,
       minStat,
       maxStat,
       trialsPerFish,
@@ -191,7 +191,7 @@ export function GraphsTab({
         const { rates, earnings, winRates, remainingHPs } = computeLureStats(
           activeFishData,
           locationData,
-          { inventorySize, incomeBoostPercent: 0 },
+          { fishPerRound, incomeBoostPercent: 0 },
           s,
           s,
           lineHP,
@@ -208,7 +208,7 @@ export function GraphsTab({
           rateEntries.length > 0
             ? rateEntries.reduce((a, b) => (b[1] > a[1] ? b : a))
             : ["", 0];
-        const bestTripIncome = (earnings[bestLureId] ?? 0) * inventorySize;
+        const bestTripIncome = (earnings[bestLureId] ?? 0) * fishPerRound;
         data.push({
           stat: s,
           ...rates,
@@ -302,8 +302,8 @@ export function GraphsTab({
         />
         <NumInput
           label="Fish/trip"
-          value={inventorySize}
-          onChange={setInventorySize}
+          value={fishPerRound}
+          onChange={setFishPerRound}
           min={1}
         />
         <NumInput

@@ -79,8 +79,7 @@ export interface EconomyRound {
   lureLevels: Record<string, number>; // lureId → current level after this round
   lureXp: Record<string, number>; // lureId → cumulative XP after this round
   cumulativeMoneyEarned: number; // lifetime gross income, never reset — drives dream points
-  dreamPoints: number; // spendable dream point balance
-  dreamUpgradesBought: string[];
+  dreamPoints: number; // dream point balance
 }
 
 // ── Helpers ──
@@ -588,6 +587,14 @@ export function computeLureStats(
   return { rates, earnings, winRates, remainingHPs };
 }
 
+// Stats whose effects the model doesn't simulate (fields/wind income isn't
+// modelled). They're dropped up front: buying them would burn simulated
+// money, and they'd never count toward the all-maxed stop condition.
+const UNMODELED_STATS = new Set<StatName>([
+  StatName.WIND_PARTICLES,
+  StatName.WIND_COOLDOWN,
+]);
+
 export function simulateEconomy(
   fishData: FishData[],
   shopData: ShopUpgradeData[],
@@ -598,15 +605,12 @@ export function simulateEconomy(
   strategy: UpgradeStrategy = DEFAULT_UPGRADE_STRATEGY,
   baitData: BaitData[] = [],
   rodData: RodData[] = [],
-  dreamShopData: ShopUpgradeData[] = [],
 ): EconomyRound[] {
+  shopData = shopData.filter((u) => !UNMODELED_STATS.has(u.stat));
   const maxTime = maxMinutes * 60;
   const player = { ...start };
   const levels: Record<string, number> = Object.fromEntries(
     shopData.map((u) => [u.id, 0]),
-  );
-  const dreamLevels: Record<string, number> = Object.fromEntries(
-    dreamShopData.map((u) => [u.id, 0]),
   );
   let wallet = 0;
   let cumulativeTime = 0;
@@ -710,12 +714,14 @@ export function simulateEconomy(
       ? 1
       : Math.max(castBiteProbability(effectiveCast, lureLevel), 0.001);
 
-    // Lure rod fills the entire inventory. Round time is based on the lure rod alone.
+    // A round is a shop checkpoint every fishPerRound catches. Caught fish are
+    // clicked to cash in (no cap, no expiry), so income isn't lost and the
+    // click isn't modelled as time. Round time is based on the lure rod alone.
     const catchTime = (1 / winRate) * (overhead / pBite + avgFightTime);
-    const roundTime = player.inventorySize * catchTime;
-    const lureIncome = player.inventorySize * (avgEarningsPerFight / winRate);
+    const roundTime = player.fishPerRound * catchTime;
+    const lureIncome = player.fishPerRound * (avgEarningsPerFight / winRate);
 
-    const lureFightsPerRound = player.inventorySize / winRate;
+    const lureFightsPerRound = player.fishPerRound / winRate;
     if (isBait) {
       baitStock[lureId] = (baitStock[lureId] ?? 0) - lureFightsPerRound;
     }
@@ -735,34 +741,8 @@ export function simulateEconomy(
       computeDreamPoints(cumulativeMoneyEarned) -
       computeDreamPoints(prevCumulativeMoneyEarned);
 
-    // Dream upgrades are purchased opportunistically each round, same as the
-    // regular shop upgrades below.
-    const dreamUpgradesBought: string[] = [];
-    let nextDreamUpgrade = cheapestUpgrade(
-      dreamShopData,
-      dreamLevels,
-      dreamPoints,
-      player,
-      baitStock,
-    );
-    while (nextDreamUpgrade !== null) {
-      const { upgrade, price } = nextDreamUpgrade;
-      dreamPoints -= price;
-      applyUpgrade(upgrade, player, ownedLures, dreamLevels, rods, baitStock);
-      dreamUpgradesBought.push(
-        `${upgrade.id} L${dreamLevels[upgrade.id] ?? 1}`,
-      );
-      nextDreamUpgrade = cheapestUpgrade(
-        dreamShopData,
-        dreamLevels,
-        dreamPoints,
-        player,
-        baitStock,
-      );
-    }
-
     if (lureId) {
-      const castsPerRound = player.inventorySize / (pBite * winRate);
+      const castsPerRound = player.fishPerRound / (pBite * winRate);
       let xpPerRound: number;
       if (isBait) {
         xpPerRound = castsPerRound * winRate * XP_WIN;
@@ -839,7 +819,6 @@ export function simulateEconomy(
       lureXp: { ...lureXpMap },
       cumulativeMoneyEarned,
       dreamPoints,
-      dreamUpgradesBought,
     });
 
     if (cumulativeTime >= maxTime) break;
