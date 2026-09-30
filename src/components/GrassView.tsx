@@ -17,12 +17,16 @@ const FLIGHT_MS = 1500;
 const FLIGHT_ARC_MAX = 0.5;
 // Point in the flight (0–1) at which the particle starts fading out.
 const FLIGHT_FADE_START = 0.7;
+// Point in the flight (0–1) by which a particle grabbed mid-fade-in reaches
+// full brightness, so it brightens smoothly instead of popping.
+const FLIGHT_BRIGHTEN_END = 0.2;
 
 interface Flyer {
   id: number;
   startX: number;
   startY: number;
   arc: number;
+  startOpacity: number;
 }
 
 export function GrassView() {
@@ -33,6 +37,11 @@ export function GrassView() {
     // Start the flight where the dot is drawn right now (mid-bob/drift).
     const dot = e.currentTarget.firstElementChild ?? e.currentTarget;
     const rect = dot.getBoundingClientRect();
+    // The hit area fades in while drifting and the dot fades out near the end
+    // of its life, so the drawn opacity is the product of both.
+    const startOpacity =
+      Number(getComputedStyle(e.currentTarget).opacity) *
+      Number(getComputedStyle(dot).opacity);
     if (!collectParticle(id)) return;
     setFlyers((f) => [
       ...f,
@@ -41,6 +50,7 @@ export function GrassView() {
         startX: rect.left + rect.width / 2,
         startY: rect.top + rect.height / 2,
         arc: (Math.random() * 2 - 1) * FLIGHT_ARC_MAX,
+        startOpacity,
       },
     ]);
   }
@@ -78,6 +88,7 @@ export function GrassView() {
           startX={f.startX}
           startY={f.startY}
           arc={f.arc}
+          startOpacity={f.startOpacity}
           onLand={() => {
             depositParticle();
             setFlyers((all) => all.filter((other) => other.id !== f.id));
@@ -92,11 +103,13 @@ function FlyingParticle({
   startX,
   startY,
   arc,
+  startOpacity,
   onLand,
 }: {
   startX: number;
   startY: number;
   arc: number;
+  startOpacity: number;
   onLand: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -115,7 +128,8 @@ function FlyingParticle({
       const endY = target ? target.top + target.height / 2 : startY;
 
       const t = Math.min(1, (now - startedAt) / FLIGHT_MS);
-      const eased = t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2;
+      // Ease-out: leaves at speed so a particle grabbed mid-drift doesn't stall.
+      const eased = 1 - (1 - t) ** 3;
 
       // Quadratic curve through a control point offset perpendicular to the
       // straight line, so the particle swoops rather than beelines.
@@ -127,10 +141,14 @@ function FlyingParticle({
       const x = u * u * startX + 2 * u * eased * ctrlX + eased * eased * endX;
       const y = u * u * startY + 2 * u * eased * ctrlY + eased * eased * endY;
 
-      const opacity =
+      const brighten =
+        startOpacity +
+        (1 - startOpacity) * Math.min(1, t / FLIGHT_BRIGHTEN_END);
+      const fade =
         t < FLIGHT_FADE_START
           ? 1
           : 1 - (t - FLIGHT_FADE_START) / (1 - FLIGHT_FADE_START);
+      const opacity = brighten * fade;
 
       if (ref.current) {
         ref.current.style.transform = `translate(${x}px, ${y}px)`;
@@ -141,14 +159,17 @@ function FlyingParticle({
     }
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [startX, startY, arc]);
+  }, [startX, startY, arc, startOpacity]);
 
   return (
     <div
       ref={ref}
       className="grass-particle-dot grass-particle-flyer"
-      // Place it before the first frame so it doesn't flash at the origin.
-      style={{ transform: `translate(${startX}px, ${startY}px)` }}
+      // Match the grabbed dot before the first frame so there's no pop.
+      style={{
+        transform: `translate(${startX}px, ${startY}px)`,
+        opacity: startOpacity,
+      }}
     />
   );
 }
