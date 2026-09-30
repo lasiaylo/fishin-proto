@@ -10,6 +10,9 @@ import {
 } from "../util/constants";
 import { AnimatedNumber } from "./AnimatedNumber";
 
+// Lets effects elsewhere (e.g. collected grass particles) aim at the wallet.
+export const CURRENCY_TARGET_ID = "currency-wallet";
+
 export function CurrencyView() {
   const wallet = usePlayer((s) => s.wallet);
   const cumulativeMoneyEarned = useDreamStore((s) => s.cumulativeMoneyEarned);
@@ -32,7 +35,7 @@ export function CurrencyView() {
 
   return (
     <Flex direction="row" align="center" gap="4">
-      <Box position="relative">
+      <Box position="relative" id={CURRENCY_TARGET_ID}>
         <Code size="2">
           {CURRENCY_SYMBOL} <AnimatedNumber value={wallet} />
         </Code>

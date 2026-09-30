@@ -34,6 +34,7 @@ import {
 import { loadFishDisplayMap, parseFishGameplayRows } from "./util/csvLoader";
 import { InventoryView } from "./components/InventoryView.tsx";
 import { CurrencyView } from "./components/CurrencyView.tsx";
+import { GrassView } from "./components/GrassView.tsx";
 
 function App() {
   const [showDebug, setShowDebug] = useState(
@@ -91,7 +92,7 @@ function App() {
     <Theme appearance={"dark"} accentColor={"gray"} grayColor={"mauve"}>
       <Flex
         direction="row"
-        height="650px"
+        height="700px"
         px="5"
         py="5"
         justify="between"
@@ -109,6 +110,9 @@ function App() {
           )}
           <InventoryView />
         </Flex>
+        <Box position="absolute" top="45px" left="237px">
+          <GrassView />
+        </Box>
         <Box
           position="absolute"
           top="5"

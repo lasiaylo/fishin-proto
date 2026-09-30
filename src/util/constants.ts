@@ -66,7 +66,11 @@ export const DREAM_POINT_MONEY_THRESHOLDS = Array(10)
 // FIELDS
 // ==========================================================================
 export const FIELDS_WIND_COOLDOWN_MS = 5000;
-export const FIELDS_WIND_REWARD = 10;
+export const FIELDS_WIND_PARTICLE_COUNT = 100;
+export const FIELDS_WIND_PARTICLE_VALUE = 2;
+export const FIELDS_PARTICLE_LIFETIME_MS = 20000;
+// Tail end of the lifetime over which an uncollected particle fades out.
+export const FIELDS_PARTICLE_FADE_MS = 3000;
 
 // ==========================================================================
 // BIRDS (sky)
