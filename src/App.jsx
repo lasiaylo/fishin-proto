@@ -31,7 +31,6 @@ import {
   getGeneratedShopRows,
 } from "./components/model/CsvGenerator";
 import { loadFishDisplayMap, parseFishGameplayRows } from "./util/csvLoader";
-import { TackleBoxView } from "./components/TackleBoxView.tsx";
 import { PondFishView } from "./components/PondFishView.tsx";
 import { CurrencyView } from "./components/CurrencyView.tsx";
 import { GrassParticles, GrassView } from "./components/GrassView.tsx";
@@ -97,7 +96,7 @@ function App() {
     <Theme appearance={"dark"} accentColor={"gray"} grayColor={"mauve"}>
       <Flex
         direction="row"
-        height="700px"
+        height="800px"
         px="5"
         py="5"
         justify="between"
@@ -107,14 +106,11 @@ function App() {
           <EventView />
           <ChatroomView />
         </Flex>
-        <Flex direction="row" gap="4" align="start">
-          {shopUnlocked && (
-            <Flex className={"fade-in"}>
-              <ShopView />
-            </Flex>
-          )}
-          <TackleBoxView />
-        </Flex>
+        {shopUnlocked && (
+          <Flex className={"fade-in"} align="start">
+            <ShopView />
+          </Flex>
+        )}
         <Box
           position="absolute"
           top={`${GRASS_POS.top}px`}
@@ -143,7 +139,7 @@ function App() {
         >
           <CurrencyView />
         </Box>
-        <Box position="absolute" bottom="5" left="5">
+        <Box position="absolute" bottom="0" left="5">
           <ActionsSection />
         </Box>
         <CollectableLayer>

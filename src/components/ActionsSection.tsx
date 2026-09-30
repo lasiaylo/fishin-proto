@@ -1,6 +1,6 @@
 import React from "react";
 import { Flex, Tabs } from "@radix-ui/themes";
-import { PondView } from "./PondView";
+import { PondView, TACKLE_BOX_GUTTER } from "./PondView";
 import { FieldsView } from "./FieldsView";
 import { SkyView } from "./SkyView";
 import { ActionTab, setActiveTab, useActiveTab } from "../stores/tabStore";
@@ -9,7 +9,13 @@ export function ActionsSection() {
   const tab = useActiveTab((s) => s.tab);
 
   return (
-    <Flex flexGrow="1" direction="column" width="50vw">
+    // Widened by the tackle box's gutter so the rod rows keep their full 50vw
+    // and the stat bars don't overflow into the pinned tackle box.
+    <Flex
+      flexGrow="1"
+      direction="column"
+      width={`calc(50vw + ${TACKLE_BOX_GUTTER})`}
+    >
       <Tabs.Root
         value={tab}
         onValueChange={(t) => setActiveTab(t as ActionTab)}

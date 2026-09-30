@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
-import { Flex, Progress, Select, Separator, Text } from "@radix-ui/themes";
+import { Box, Flex, Progress, Select, Separator, Text } from "@radix-ui/themes";
 import { useShallow } from "zustand/react/shallow";
 import { DelayButton } from "./DelayButton";
+import { TACKLE_BOX_WIDTH, TackleBoxView } from "./TackleBoxView";
 import { FishData, StatName } from "../util/csvLoader";
 import { avgZoneDistance, getBiteChance, getZones } from "../util/zones";
 import { useFish } from "../stores/fishStore";
@@ -677,17 +678,34 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
   );
 }
 
+// Space the rod rows reserve on their right for the pinned tackle box.
+export const TACKLE_BOX_GUTTER = `calc(${TACKLE_BOX_WIDTH}px + var(--space-6))`;
+
 export function PondView() {
   const rodCount = usePlayer((s) => s.rodSlotAssignments.length);
 
   return (
-    <Flex className="fade-in" width="100%" direction="column" gap="4" p="3">
-      {Array.from({ length: rodCount }).map((_, i) => (
-        <React.Fragment key={i}>
-          {i > 0 && <Separator size="4" />}
-          <RodRow slotIndex={i} />
-        </React.Fragment>
-      ))}
+    // The tackle box is pinned out of flow to the bottom-right corner so the
+    // rod rows growing (stat bars spawning in) never nudge it around; the
+    // rows reserve its width via right padding instead.
+    <Flex className="fade-in" width="100%" p="3" position="relative">
+      <Flex
+        direction="column"
+        gap="4"
+        flexGrow="1"
+        minWidth="0"
+        style={{ paddingRight: TACKLE_BOX_GUTTER }}
+      >
+        {Array.from({ length: rodCount }).map((_, i) => (
+          <React.Fragment key={i}>
+            {i > 0 && <Separator size="4" />}
+            <RodRow slotIndex={i} />
+          </React.Fragment>
+        ))}
+      </Flex>
+      <Box position="absolute" right="3" bottom="3">
+        <TackleBoxView />
+      </Box>
     </Flex>
   );
 }

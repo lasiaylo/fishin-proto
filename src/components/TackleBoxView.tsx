@@ -6,6 +6,8 @@ import { useShop } from "../stores/shopStore";
 import { StatName } from "../util/csvLoader";
 import { TipView } from "./TipView";
 
+export const TACKLE_BOX_WIDTH = 200;
+
 export function TackleBoxView() {
   const baitInventory = usePlayer((s) => s.baitInventory);
   const baitData = useBaitData((s) => s.baitData);
@@ -20,9 +22,8 @@ export function TackleBoxView() {
       position={"relative"}
       direction="column"
       flexShrink="0"
-      width="200px"
+      width={`${TACKLE_BOX_WIDTH}px`}
       gap={"6"}
-      pt="40px"
     >
       <Flex direction="column" gap="2">
         <Text size="1" color="gray" weight={"medium"}>
