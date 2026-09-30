@@ -20,8 +20,9 @@ pre {
 
 .sale-popup {
   position: absolute;
-  top: 13px;
-  left: 6px;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
   animation: float-fade 3s ease-in forwards;
   pointer-events: none;
   white-space: nowrap;

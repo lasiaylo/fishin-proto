@@ -8,7 +8,6 @@ export function EventView() {
   return (
     <Flex
       position={"relative"}
-      mt="6"
       direction="column"
       flexShrink="0"
       height="300px"

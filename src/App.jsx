@@ -33,6 +33,7 @@ import {
 } from "./components/model/CsvGenerator";
 import { loadFishDisplayMap, parseFishGameplayRows } from "./util/csvLoader";
 import { InventoryView } from "./components/InventoryView.tsx";
+import { CurrencyView } from "./components/CurrencyView.tsx";
 
 function App() {
   const [showDebug, setShowDebug] = useState(
@@ -108,6 +109,14 @@ function App() {
           )}
           <InventoryView />
         </Flex>
+        <Box
+          position="absolute"
+          top="5"
+          left="50%"
+          style={{ transform: "translateX(-50%)" }}
+        >
+          <CurrencyView />
+        </Box>
         <Box position="absolute" bottom="5" left="5">
           <ActionsSection />
         </Box>
