@@ -34,7 +34,13 @@ import { loadFishDisplayMap, parseFishGameplayRows } from "./util/csvLoader";
 import { TackleBoxView } from "./components/TackleBoxView.tsx";
 import { PondFishView } from "./components/PondFishView.tsx";
 import { CurrencyView } from "./components/CurrencyView.tsx";
-import { GrassView } from "./components/GrassView.tsx";
+import { GrassParticles, GrassView } from "./components/GrassView.tsx";
+import { CollectableLayer } from "./components/CollectableLayer.tsx";
+
+// Shared by each image and its collectables in the CollectableLayer, which
+// float above the rest of the layout.
+const GRASS_POS = { left: 237, top: 45 };
+const POND_POS = { left: 422, top: 167 };
 
 function App() {
   const [showDebug, setShowDebug] = useState(
@@ -109,10 +115,18 @@ function App() {
           )}
           <TackleBoxView />
         </Flex>
-        <Box position="absolute" top="45px" left="237px">
+        <Box
+          position="absolute"
+          top={`${GRASS_POS.top}px`}
+          left={`${GRASS_POS.left}px`}
+        >
           <GrassView />
         </Box>
-        <Box position="absolute" top="167px" left="422px">
+        <Box
+          position="absolute"
+          top={`${POND_POS.top}px`}
+          left={`${POND_POS.left}px`}
+        >
           <img
             src="/pond.jpg"
             alt=""
@@ -120,7 +134,6 @@ function App() {
             height={332}
             style={{ display: "block", objectFit: "cover" }}
           />
-          <PondFishView />
         </Box>
         <Box
           position="absolute"
@@ -133,6 +146,10 @@ function App() {
         <Box position="absolute" bottom="5" left="5">
           <ActionsSection />
         </Box>
+        <CollectableLayer>
+          <GrassParticles {...GRASS_POS} />
+          <PondFishView {...POND_POS} />
+        </CollectableLayer>
       </Flex>
       {showDebug && (
         <div

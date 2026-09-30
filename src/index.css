@@ -78,6 +78,26 @@ pre {
     particle-fade var(--fade-ms) ease-in var(--fade-delay) forwards;
 }
 
+/* Overlay above the whole layout that collectables (wind particles, pond
+   fish) are rendered into, so nothing covers them. Transparent to the mouse
+   except for the collectables themselves. */
+.collectable-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.collectable-group {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.collectable {
+  pointer-events: auto;
+}
+
 /* Something collected flying to the currency display (grass particles, pond
    fish). Position and opacity are set from JS each frame, so it sits at the
    viewport origin and is translated; its content is centered on that point. */

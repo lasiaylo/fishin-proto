@@ -90,13 +90,14 @@ export function removeParticle(id: number) {
   }));
 }
 
-// Takes a particle off the field. Returns false if it was already gone, so
-// the caller only starts one flight (and one payout) per particle. The money
-// is added by depositParticle once the collected particle reaches the wallet.
-export function collectParticle(id: number): boolean {
-  if (!useFields.getState().particles.some((p) => p.id === id)) return false;
-  removeParticle(id);
-  return true;
+// Takes a particle off the field and returns it, or undefined if it was
+// already gone, so the caller only starts one flight (and one payout) per
+// particle. The money is added by depositParticle once the collected particle
+// reaches the wallet.
+export function collectParticle(id: number): GrassParticle | undefined {
+  const particle = useFields.getState().particles.find((p) => p.id === id);
+  if (particle) removeParticle(id);
+  return particle;
 }
 
 export function depositParticle() {
