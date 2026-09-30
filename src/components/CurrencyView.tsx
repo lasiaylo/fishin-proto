@@ -29,7 +29,8 @@ export function CurrencyView() {
     const diff = wallet - prevWalletRef.current;
     prevWalletRef.current = wallet;
     if (diff > 0) {
-      setPopup({ amount: diff, key: Date.now() });
+      // Sum earnings while the popup is still up; a new key restarts the fade.
+      setPopup((p) => ({ amount: (p?.amount ?? 0) + diff, key: Date.now() }));
     }
   }, [wallet]);
 
