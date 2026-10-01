@@ -103,6 +103,28 @@
           "startValue": 15,
           "growthRate": 2
         }
+      },
+      {
+        "label": "UNLOCK POND",
+        "id": "UNLOCK_POND",
+        "stat": "UNLOCK_POND",
+        "kind": "levels",
+        "count": 1,
+        "curve": {
+          "type": "LINEAR",
+          "startValue": 50
+        }
+      },
+      {
+        "label": "UNLOCK SKY",
+        "id": "UNLOCK_SKY",
+        "stat": "UNLOCK_SKY",
+        "kind": "levels",
+        "count": 1,
+        "curve": {
+          "type": "LINEAR",
+          "startValue": 500
+        }
       }
     ]
   }

@@ -11,6 +11,7 @@ import {
 } from "./playerStore";
 import { useSessionLog } from "./sessionLogStore";
 import { setWindCooldownMs, setWindParticleCount } from "./fieldsStore";
+import { setAreaUnlocked } from "./unlockStore";
 import {
   FIELDS_WIND_COOLDOWN_MS,
   FIELDS_WIND_PARTICLE_COUNT,
@@ -70,6 +71,12 @@ function applyStatEffect(upgrade: UpgradeEntry, level: number, delta: number) {
       setWindCooldownMs(
         FIELDS_WIND_COOLDOWN_MS - level * upgrade.valuePerLevel,
       );
+      break;
+    case StatName.UNLOCK_POND:
+      setAreaUnlocked("pond", level > 0);
+      break;
+    case StatName.UNLOCK_SKY:
+      setAreaUnlocked("sky", level > 0);
       break;
   }
 }

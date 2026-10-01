@@ -8,7 +8,7 @@ export function FieldsView() {
   const cooldownMs = useFields((s) => s.cooldownMs);
 
   return (
-    <Flex direction="column" justify="end" gap="2" p="3" minHeight={"150px"}>
+    <Flex direction="column" justify="end" gap="2" py="3" minHeight={"150px"}>
       <CooldownButton
         readyAt={readyAt}
         cooldownMs={cooldownMs}

@@ -18,8 +18,8 @@ pre {
   }
 }
 
-/* Wind particles drifting off the grass. Drift lives on the hit area; bob and
-   fade live on the dot so their transform/opacity don't fight. */
+/* Drift in from the origin, then bob. Drift lives on the outer element and
+   bob on its content so their transforms don't fight. */
 @keyframes particle-drift {
   from {
     transform: translate(
@@ -43,44 +43,9 @@ pre {
   }
 }
 
-@keyframes particle-fade {
-  to {
-    opacity: 0;
-  }
-}
-
-.grass-particle {
-  position: absolute;
-  left: var(--x);
-  top: var(--y);
-  width: 48px;
-  height: 48px;
-  margin: -24px 0 0 -24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  animation: particle-drift 1.2s ease-out both;
-}
-
-.grass-particle-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #e8f5d0;
-  box-shadow: 0 0 6px 2px rgba(220, 255, 190, 0.6);
-}
-
-.grass-particle > .grass-particle-dot {
-  animation:
-    particle-bob 3s ease-in-out 1.2s infinite alternate,
-    particle-fade var(--fade-ms) ease-in var(--fade-delay) forwards;
-}
-
-/* Overlay above the whole layout that collectables (wind particles, pond
-   fish) are rendered into, so nothing covers them. Transparent to the mouse
-   except for the collectables themselves. */
+/* Overlay above the whole layout that collectables (pond fish) are rendered
+   into, so nothing covers them. Transparent to the mouse except for the
+   collectables themselves. */
 .collectable-layer {
   position: absolute;
   inset: 0;
@@ -98,8 +63,7 @@ pre {
   pointer-events: auto;
 }
 
-/* Something collected flying to the currency display (grass particles, pond
-   fish). Position and opacity are set from JS each frame, so it sits at the
+/* Something collected flying to the currency display (pond fish). Position and opacity are set from JS each frame, so it sits at the
    viewport origin and is translated; its content is centered on that point. */
 .wallet-flyer {
   position: fixed;
@@ -114,8 +78,7 @@ pre {
   transform: translate(-50%, -50%);
 }
 
-/* A caught fish blown out of the pond, floating until hovered. Drift (shared
-   with the wind particles) lives on the outer element, which is zero-size so
+/* A caught fish blown out of the pond, floating until hovered. Drift lives on the outer element, which is zero-size so
    its content centers on the spot without a transform; bob lives on the
    body so their transforms don't fight. */
 .pond-fish {
@@ -172,9 +135,9 @@ pre {
 
 .sale-popup {
   position: absolute;
-  top: 100%;
+  bottom: 100%;
   left: 0;
-  margin-top: 4px;
+  margin-bottom: 4px;
   animation: float-fade 3s ease-in forwards;
   pointer-events: none;
   white-space: nowrap;

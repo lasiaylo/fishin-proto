@@ -1,12 +1,19 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Flex, Tabs } from "@radix-ui/themes";
 import { PondView, TACKLE_BOX_GUTTER } from "./PondView";
 import { FieldsView } from "./FieldsView";
 import { SkyView } from "./SkyView";
 import { ActionTab, setActiveTab, useActiveTab } from "../stores/tabStore";
+import { useUnlocks } from "../stores/unlockStore";
 
 export function ActionsSection() {
   const tab = useActiveTab((s) => s.tab);
+  const unlocks = useUnlocks();
+
+  // Fall back to the fields if the open tab gets locked (e.g. a debug reset).
+  useEffect(() => {
+    if (tab !== "fields" && !unlocks[tab]) setActiveTab("fields");
+  }, [tab, unlocks]);
 
   return (
     // Widened by the tackle box's gutter so the rod rows keep their full 50vw
@@ -40,8 +47,8 @@ export function ActionsSection() {
         </Tabs.Content>
         <Tabs.List>
           <Tabs.Trigger value="fields">fields</Tabs.Trigger>
-          <Tabs.Trigger value="pond">pond</Tabs.Trigger>
-          <Tabs.Trigger value="sky">sky</Tabs.Trigger>
+          {unlocks.pond && <Tabs.Trigger value="pond">pond</Tabs.Trigger>}
+          {unlocks.sky && <Tabs.Trigger value="sky">sky</Tabs.Trigger>}
         </Tabs.List>
       </Tabs.Root>
     </Flex>

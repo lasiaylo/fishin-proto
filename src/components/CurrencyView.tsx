@@ -35,9 +35,9 @@ export function CurrencyView() {
   }, [wallet]);
 
   return (
-    <Flex direction="row" align="center" gap="4">
+    <Flex direction="row" align="center" gap="4" px="4">
       <Box position="relative" id={CURRENCY_TARGET_ID}>
-        <Code size="2">
+        <Code size="3">
           {CURRENCY_SYMBOL} <AnimatedNumber value={wallet} />
         </Code>
         {popup && (
@@ -53,7 +53,7 @@ export function CurrencyView() {
         )}
       </Box>
       <Flex direction="row" align="center" gap="2" width="140px">
-        <Text size="1" color="gray">
+        <Text size="2" color="gray">
           {`${DREAM_POINT_SYMBOL} ${lvl}`}
         </Text>
         <Progress radius="none" size="2" value={lvlProgressPct} />

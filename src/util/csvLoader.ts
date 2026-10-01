@@ -25,6 +25,8 @@ export enum StatName {
   INCOME = "INCOME",
   WIND_PARTICLES = "WIND_PARTICLES",
   WIND_COOLDOWN = "WIND_COOLDOWN",
+  UNLOCK_POND = "UNLOCK_POND",
+  UNLOCK_SKY = "UNLOCK_SKY",
 }
 
 export interface BaitData {

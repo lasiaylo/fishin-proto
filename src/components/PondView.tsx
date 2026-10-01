@@ -688,7 +688,7 @@ export function PondView() {
     // The tackle box is pinned out of flow to the bottom-right corner so the
     // rod rows growing (stat bars spawning in) never nudge it around; the
     // rows reserve its width via right padding instead.
-    <Flex className="fade-in" width="100%" p="3" position="relative">
+    <Flex className="fade-in" width="100%" py="3" position="relative">
       <Flex
         direction="column"
         gap="4"
@@ -703,7 +703,7 @@ export function PondView() {
           </React.Fragment>
         ))}
       </Flex>
-      <Box position="absolute" right="3" bottom="3">
+      <Box position="absolute" right="0" bottom="3">
         <TackleBoxView />
       </Box>
     </Flex>

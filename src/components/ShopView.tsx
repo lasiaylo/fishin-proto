@@ -1,5 +1,5 @@
 import React from "react";
-import { Flex, Text } from "@radix-ui/themes";
+import { Flex, Separator, Text } from "@radix-ui/themes";
 import {
   useShop,
   buyUpgrade,
@@ -10,6 +10,7 @@ import { useActiveTab } from "../stores/tabStore";
 import { usePlayer } from "../stores/playerStore";
 import { CURRENCY_SYMBOL } from "../util/constants";
 import { UpgradeCatalogGrid } from "./UpgradeCatalogGrid";
+import { CurrencyView } from "./CurrencyView";
 
 export function ShopView() {
   const tab = useActiveTab((s) => s.tab);
@@ -20,6 +21,8 @@ export function ShopView() {
 
   return (
     <Flex direction="column" gap="2">
+      <CurrencyView />
+      <Separator size="4" />
       {/* Keyed on the tab so switching remounts and replays the fade-in. */}
       <Flex key={tab} className={"fade-in"}>
         {tabUpgrades.length > 0 ? (

@@ -32,13 +32,13 @@ import {
 } from "./components/model/CsvGenerator";
 import { loadFishDisplayMap, parseFishGameplayRows } from "./util/csvLoader";
 import { PondFishView } from "./components/PondFishView.tsx";
-import { CurrencyView } from "./components/CurrencyView.tsx";
-import { GrassParticles, GrassView } from "./components/GrassView.tsx";
+import { GrassView } from "./components/GrassView.tsx";
 import { CollectableLayer } from "./components/CollectableLayer.tsx";
+import { useUnlocks } from "./stores/unlockStore";
 
 // Shared by each image and its collectables in the CollectableLayer, which
 // float above the rest of the layout.
-const GRASS_POS = { left: 237, top: 45 };
+const GRASS_POS = { left: 237, top: 90 };
 const POND_POS = { left: 422, top: 167 };
 
 function App() {
@@ -46,6 +46,7 @@ function App() {
     () => localStorage.getItem("debug_panel_open") === "true",
   );
   const shopUnlocked = useShopUnlocked();
+  const pondUnlocked = useUnlocks((s) => s.pond);
 
   useEffect(() => {
     clearEvents();
@@ -96,9 +97,10 @@ function App() {
     <Theme appearance={"dark"} accentColor={"gray"} grayColor={"mauve"}>
       <Flex
         direction="row"
-        height="800px"
+        height="500px"
+        width="1000px"
         px="5"
-        py="5"
+        py="6"
         justify="between"
         position="relative"
       >
@@ -118,32 +120,25 @@ function App() {
         >
           <GrassView />
         </Box>
-        <Box
-          position="absolute"
-          top={`${POND_POS.top}px`}
-          left={`${POND_POS.left}px`}
-        >
-          <img
-            src="/pond.jpg"
-            alt=""
-            width={332}
-            height={332}
-            style={{ display: "block", objectFit: "cover" }}
-          />
-        </Box>
-        <Box
-          position="absolute"
-          top="5"
-          left="50%"
-          style={{ transform: "translateX(-50%)" }}
-        >
-          <CurrencyView />
-        </Box>
+        {pondUnlocked && (
+          <Box
+            position="absolute"
+            top={`${POND_POS.top}px`}
+            left={`${POND_POS.left}px`}
+          >
+            <img
+              src="/pond.jpg"
+              alt=""
+              width={332}
+              height={332}
+              style={{ display: "block", objectFit: "cover" }}
+            />
+          </Box>
+        )}
         <Box position="absolute" bottom="0" left="5">
           <ActionsSection />
         </Box>
         <CollectableLayer>
-          <GrassParticles {...GRASS_POS} />
           <PondFishView {...POND_POS} />
         </CollectableLayer>
       </Flex>

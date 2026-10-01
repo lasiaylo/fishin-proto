@@ -12,6 +12,10 @@ export const BAIT_ID_PREFIX = "BAIT_";
 export const BAIT_MAX_STACK = 10;
 export const BAIT_START_COUNT = 10;
 export const SHOP_UNLOCK_FISH_CAUGHT = 4;
+// When set, the area's tab starts disabled until its UNLOCK_* shop upgrade is
+// bought. Clear a flag to have that area open from the start.
+export const POND_LOCKED = true;
+export const SKY_LOCKED = true;
 // Charge/cooldown fill on action buttons; matches the soft <Code> background.
 export const BUTTON_FILL_COLOR = "var(--accent-a5)";
 
@@ -81,9 +85,6 @@ export const DREAM_POINT_MONEY_THRESHOLDS = Array(10)
 export const FIELDS_WIND_COOLDOWN_MS = 5000;
 export const FIELDS_WIND_PARTICLE_COUNT = 100;
 export const FIELDS_WIND_PARTICLE_VALUE = 2;
-export const FIELDS_PARTICLE_LIFETIME_MS = 20000;
-// Tail end of the lifetime over which an uncollected particle fades out.
-export const FIELDS_PARTICLE_FADE_MS = 3000;
 
 // ==========================================================================
 // BIRDS (sky)

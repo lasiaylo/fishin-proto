@@ -5,7 +5,7 @@ import { BAIT_MAX_STACK } from "../util/constants";
 import { StatName } from "../util/csvLoader";
 import { UpgradeEntry } from "../stores/upgradeStoreFactory";
 
-const CATEGORY_ORDER = ["bait", "lures", "rods", "wind", "misc"];
+const CATEGORY_ORDER = ["bait", "lures", "rods", "wind", "unlocks", "misc"];
 
 function LevelPips({ level, maxLevel }: { level: number; maxLevel: number }) {
   if (maxLevel <= 1) return null;
@@ -70,7 +70,7 @@ export function UpgradeCatalogGrid({
   })).filter((g) => g.upgrades.length > 0);
 
   return (
-    <Flex p="4" direction={"column"} gap="4" align={"start"}>
+    <Flex px="4" direction={"column"} gap="4" align={"start"}>
       {groups.map(({ label, upgrades: group }) => {
         const bySubcategory = new Map<string, typeof group>();
         for (const u of group) {

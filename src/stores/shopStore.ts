@@ -7,6 +7,7 @@ import { deductMoney, getWallet } from "./playerStore";
 import { createUpgradeStore } from "./upgradeStoreFactory";
 import { useMetrics } from "./metricsStore";
 import { SHOP_UNLOCK_FISH_CAUGHT } from "../util/constants";
+import { useUnlocks } from "./unlockStore";
 
 const {
   useUpgradeStore: useShop,
@@ -50,5 +51,10 @@ export async function initShopFromRows(rows: string[][]) {
 export function useShopUnlocked(): boolean {
   const totalFishCaught = useMetrics((s) => s.totalFishCaught);
   const hasShopUpgrades = useShop((s) => s.upgrades.some((u) => u.level > 0));
-  return totalFishCaught >= SHOP_UNLOCK_FISH_CAUGHT || hasShopUpgrades;
+  // No fish can be caught until the pond is bought, so the shop has to be
+  // open from the start to sell it.
+  const pondLocked = !useUnlocks((s) => s.pond);
+  return (
+    totalFishCaught >= SHOP_UNLOCK_FISH_CAUGHT || hasShopUpgrades || pondLocked
+  );
 }

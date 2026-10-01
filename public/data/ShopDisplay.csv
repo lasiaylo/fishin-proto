@@ -15,3 +15,5 @@ BAIT_2, boilie ball, ,  bait,
 ROD_HOLDER, rod holder, allows for using multiple rods at the same time, misc,
 WIND_PARTICLES, gust, each wind scatters more seeds, wind, , fields
 WIND_COOLDOWN, breeze, the wind picks back up sooner, wind, , fields
+UNLOCK_POND, pond, open up the pond for fishing, unlocks, , fields
+UNLOCK_SKY, sky, open up the sky, unlocks, , pond
