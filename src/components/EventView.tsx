@@ -19,9 +19,8 @@ export function EventView() {
         {events.map((event, i) => (
           <Text
             key={event.id}
-            size="1"
-            className={i === 0 ? "fade-in" : undefined}
-            color="gray"
+            size="2"
+            className={i === 1 ? "fade-in" : undefined}
           >
             {event.msg}
             {event.colored && (

@@ -1,4 +1,4 @@
-import { Box, Code, Flex, Progress, Text } from "@radix-ui/themes";
+import { Box, Code, Flex, Progress, Separator, Text } from "@radix-ui/themes";
 import React, { useEffect, useRef, useState } from "react";
 import { usePlayer } from "../stores/playerStore";
 import { useDreamStore } from "../stores/dreamStore";
@@ -52,6 +52,7 @@ export function CurrencyView() {
           </Code>
         )}
       </Box>
+      <Separator orientation="vertical" size="2" />
       <Flex direction="row" align="center" gap="2" width="140px">
         <Text size="2" color="gray">
           {`${DREAM_POINT_SYMBOL} ${lvl}`}
