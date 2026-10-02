@@ -82,9 +82,8 @@ export const DREAM_POINT_MONEY_THRESHOLDS = Array(10)
 // ==========================================================================
 // FIELDS
 // ==========================================================================
-export const FIELDS_WIND_COOLDOWN_MS = 5000;
-export const FIELDS_WIND_PARTICLE_COUNT = 100;
-export const FIELDS_WIND_PARTICLE_VALUE = 2;
+export const FIELDS_WIND_COOLDOWN_MS = 10000;
+export const FIELDS_WIND_PAYOUT = 10;
 
 // ==========================================================================
 // BIRDS (sky)

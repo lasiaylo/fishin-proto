@@ -1,21 +1,17 @@
 import { create } from "zustand";
 import { addMoney } from "./playerStore";
-import {
-  FIELDS_WIND_COOLDOWN_MS,
-  FIELDS_WIND_PARTICLE_COUNT,
-  FIELDS_WIND_PARTICLE_VALUE,
-} from "../util/constants";
+import { FIELDS_WIND_COOLDOWN_MS, FIELDS_WIND_PAYOUT } from "../util/constants";
 
 interface FieldsState {
   readyAt: number;
   // Upgradable via the fields shop; start at the base constants.
-  particleCount: number;
+  payout: number;
   cooldownMs: number;
 }
 
 export const useFields = create<FieldsState>(() => ({
   readyAt: 0,
-  particleCount: FIELDS_WIND_PARTICLE_COUNT,
+  payout: FIELDS_WIND_PAYOUT,
   cooldownMs: FIELDS_WIND_COOLDOWN_MS,
 }));
 
@@ -25,16 +21,16 @@ export function canWind(): boolean {
   return Date.now() >= useFields.getState().readyAt;
 }
 
-// Each gust pays out its particles straight into the wallet.
+// Each gust pays its payout straight into the wallet.
 export function wind() {
   if (!canWind()) return;
-  const { particleCount, cooldownMs } = useFields.getState();
+  const { payout, cooldownMs } = useFields.getState();
   useFields.setState({ readyAt: Date.now() + cooldownMs });
-  addMoney(particleCount * FIELDS_WIND_PARTICLE_VALUE);
+  addMoney(payout);
 }
 
-export function setWindParticleCount(count: number) {
-  useFields.setState({ particleCount: Math.max(0, Math.round(count)) });
+export function setWindPayout(amount: number) {
+  useFields.setState({ payout: Math.max(0, Math.round(amount)) });
 }
 
 export function setWindCooldownMs(ms: number) {

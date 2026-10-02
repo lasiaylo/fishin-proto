@@ -10,11 +10,11 @@ import {
   removeLure,
 } from "./playerStore";
 import { useSessionLog } from "./sessionLogStore";
-import { setWindCooldownMs, setWindParticleCount } from "./fieldsStore";
+import { setWindCooldownMs, setWindPayout } from "./fieldsStore";
 import { setAreaUnlocked } from "./unlockStore";
 import {
   FIELDS_WIND_COOLDOWN_MS,
-  FIELDS_WIND_PARTICLE_COUNT,
+  FIELDS_WIND_PAYOUT,
   INITIAL_PLAYER_STATE,
 } from "../util/constants";
 
@@ -63,9 +63,7 @@ function applyStatEffect(upgrade: UpgradeEntry, level: number, delta: number) {
       break;
     }
     case StatName.WIND_PARTICLES:
-      setWindParticleCount(
-        FIELDS_WIND_PARTICLE_COUNT + level * upgrade.valuePerLevel,
-      );
+      setWindPayout(FIELDS_WIND_PAYOUT + level * upgrade.valuePerLevel);
       break;
     case StatName.WIND_COOLDOWN:
       setWindCooldownMs(
