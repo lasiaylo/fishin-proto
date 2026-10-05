@@ -35,11 +35,8 @@ import { PondFishView } from "./components/PondFishView.tsx";
 import { GrassView } from "./components/GrassView.tsx";
 import { CollectableLayer } from "./components/CollectableLayer.tsx";
 import { useUnlocks } from "./stores/unlockStore";
-
-// Shared by each image and its collectables in the CollectableLayer, which
-// float above the rest of the layout.
-const GRASS_POS = { left: 237, top: 90 };
-const POND_POS = { left: 422, top: 167 };
+import { GridCellBox } from "./components/WorldGrid.tsx";
+import { CELL_SIZE, cellPos, POND_CELL } from "./util/worldGrid";
 
 function App() {
   const [showDebug, setShowDebug] = useState(
@@ -98,7 +95,7 @@ function App() {
       <Flex
         direction="row"
         height="500px"
-        width="1000px"
+        width="1250px"
         px="5"
         py="6"
         justify="between"
@@ -113,33 +110,23 @@ function App() {
             <ShopView />
           </Flex>
         )}
-        <Box
-          position="absolute"
-          top={`${GRASS_POS.top}px`}
-          left={`${GRASS_POS.left}px`}
-        >
-          <GrassView />
-        </Box>
+        <GrassView />
         {pondUnlocked && (
-          <Box
-            position="absolute"
-            top={`${POND_POS.top}px`}
-            left={`${POND_POS.left}px`}
-          >
+          <GridCellBox cell={POND_CELL}>
             <img
               src="/pond.jpg"
               alt=""
-              width={332}
-              height={332}
+              width={CELL_SIZE}
+              height={CELL_SIZE}
               style={{ display: "block", objectFit: "cover" }}
             />
-          </Box>
+          </GridCellBox>
         )}
         <Box position="absolute" bottom="0" left="5">
           <ActionsSection />
         </Box>
         <CollectableLayer>
-          <PondFishView {...POND_POS} />
+          <PondFishView {...cellPos(POND_CELL)} />
         </CollectableLayer>
       </Flex>
       {showDebug && (

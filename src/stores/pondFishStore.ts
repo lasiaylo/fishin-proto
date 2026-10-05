@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { FishData } from "../util/csvLoader";
 import { Rarity, RARITY_COLOR } from "../util/constants";
+import { CELL_SIZE } from "../util/worldGrid";
 import { EventMsg } from "../util/eventMessages";
 import { addMoney, usePlayer } from "./playerStore";
 import { pushEvent } from "./eventLogStore";
@@ -29,12 +30,13 @@ export const usePondFish = create<PondFishState>(() => ({
   fish: [],
 }));
 
-const POND_CENTER = 332 / 2;
+// The pond image fills its grid cell; radii scale with its size.
+const POND_CENTER = CELL_SIZE / 2;
 // Fish surface within this radius of the pond's center…
-const ORIGIN_RADIUS_MAX = 60;
+const ORIGIN_RADIUS_MAX = CELL_SIZE * 0.18;
 // …and blow outward to land in a ring around the pond's edge.
-const LAND_RADIUS_MIN = 120;
-const LAND_RADIUS_MAX = 210;
+const LAND_RADIUS_MIN = CELL_SIZE * 0.36;
+const LAND_RADIUS_MAX = CELL_SIZE * 0.63;
 
 let nextPondFishId = 0;
 
