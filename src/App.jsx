@@ -18,6 +18,7 @@ import { initLocations } from "./stores/locationStore";
 import { initBaitData } from "./stores/baitStore";
 import { initRodData } from "./stores/rodStore";
 import { initTipData } from "./stores/tipStore";
+import { initStoryData } from "./stores/storyStore";
 import { npcLogin, openGiftRequest } from "./stores/friendStore";
 import { FRIEND_NPC_NAME } from "./util/constants";
 import { clearEvents, pushEvent } from "./stores/eventLogStore";
@@ -71,6 +72,7 @@ function App() {
     initBaitData();
     initRodData();
     initTipData();
+    initStoryData();
     pushEvent(EventMsg.WELCOME);
   }, []);
 

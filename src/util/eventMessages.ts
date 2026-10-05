@@ -16,8 +16,6 @@ export const EventMsg = {
   ],
   OBSERVED_NOTHING: "not a bird in sight",
 
-  STORY_DUMMY: "you feel something stir in the water...",
-
   NPC_LOGIN: (name: string) => `a ${name} comes by`,
   FRIEND_CASTS: "she settles her gear downstream and casts out a line",
   GIFT_ACCEPTED: (title: string) => ["received a tip: ", title],

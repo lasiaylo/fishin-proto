@@ -5,6 +5,7 @@ interface MetricsState {
   totalCasts: number;
   castsByItem: Record<string, number>;
   totalFishCaught: number;
+  totalSits: number;
 }
 
 export const useMetrics = create(
@@ -12,6 +13,7 @@ export const useMetrics = create(
     totalCasts: 0,
     castsByItem: {},
     totalFishCaught: 0,
+    totalSits: 0,
   })),
 );
 
@@ -27,4 +29,8 @@ export function incrementTotalCasts(itemId: string) {
 
 export function incrementTotalFishCaught() {
   useMetrics.setState((s) => ({ totalFishCaught: s.totalFishCaught + 1 }));
+}
+
+export function incrementTotalSits() {
+  useMetrics.setState((s) => ({ totalSits: s.totalSits + 1 }));
 }

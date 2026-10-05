@@ -123,6 +123,46 @@ export async function loadTipData(tipFile = "Tips.csv"): Promise<TipData[]> {
   }));
 }
 
+export interface StoryBeatData {
+  // 1-based spreadsheet row number, for writer-facing warnings.
+  row: number;
+  when: string;
+  text: string;
+  action: string;
+}
+
+export async function loadStoryData(
+  storyFile = "Story.csv",
+): Promise<StoryBeatData[]> {
+  const res = await fetch(`/data/${storyFile}`);
+  const lines = (await res.text()).replace(/\r/g, "").split("\n");
+  // Keep spreadsheet row numbers, so filter after numbering rather than via parseCSV.
+  const numbered = lines
+    .map((line, i) => ({ row: i + 1, line }))
+    .filter(({ line }) => line.trim() !== "" && !line.trim().startsWith("#"));
+  if (numbered.length === 0) return [];
+
+  const header = splitCSVLine(numbered[0].line).map((h) =>
+    h.trim().toLowerCase(),
+  );
+  const col = (name: string) => header.indexOf(name);
+  const [whenIdx, textIdx, actionIdx] = [
+    col("when"),
+    col("text"),
+    col("action"),
+  ];
+
+  return numbered.slice(1).map(({ row, line }) => {
+    const cells = splitCSVLine(line).map((c) => c.trim());
+    return {
+      row,
+      when: cells[whenIdx] ?? "",
+      text: cells[textIdx] ?? "",
+      action: cells[actionIdx] ?? "",
+    };
+  });
+}
+
 export interface LocationDisplayData {
   id: string;
   name: string;
@@ -156,7 +196,36 @@ function parseCSV(text: string): string[][] {
     .trim()
     .split("\n")
     .filter((line) => line.trim() !== "" && !line.trim().startsWith("#"))
-    .map((line) => line.split(",").map((cell) => cell.trim()));
+    .map((line) => splitCSVLine(line).map((cell) => cell.trim()));
+}
+
+// Splits one CSV line on commas, honouring "quoted, cells" and "" escapes.
+function splitCSVLine(line: string): string[] {
+  const cells: string[] = [];
+  let cell = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && line[i + 1] === '"') {
+        cell += '"';
+        i++;
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        cell += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ",") {
+      cells.push(cell);
+      cell = "";
+    } else {
+      cell += ch;
+    }
+  }
+  cells.push(cell);
+  return cells;
 }
 
 export async function loadFishData(

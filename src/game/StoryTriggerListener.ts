@@ -1,27 +1,37 @@
 import { useMetrics } from "../stores/metricsStore";
+import { usePlayer } from "../stores/playerStore";
 import { pushEvent } from "../stores/eventLogStore";
-import { EventMsg } from "../util/eventMessages";
-import { npcLogin } from "../stores/friendStore";
-import { FRIEND_NPC_NAME } from "../util/constants";
+import { markBeatFired, StorySnapshot, useStory } from "../stores/storyStore";
 
-const CAST_MILESTONE = 3;
-const FISH_MILESTONE = 3;
-
+// Fires each Story.csv beat once, the first time its "when" condition holds.
 export class StoryTriggerListener {
   constructor() {
-    // useMetrics.subscribe(
-    //   (s) => s.totalFishCaught,
-    //   (totalFishCaught) => {
-    //     if (totalFishCaught === FISH_MILESTONE) {
-    //       setTimeout(() => {
-    //         npcLogin(FRIEND_NPC_NAME);
-    //         setTimeout(() => {
-    //           pushEvent(EventMsg.FRIEND_CASTS);
-    //         }, 2000);
-    //       }, 1000);
-    //     }
-    //   },
-    // );
+    const check = () => this.evaluate();
+    useMetrics.subscribe((s) => s, check);
+    usePlayer.subscribe((s) => s.wallet, check);
+    useStory.subscribe((s) => s.beats, check);
+  }
+
+  private evaluate() {
+    const metrics = useMetrics.getState();
+    const snapshot: StorySnapshot = {
+      casts: metrics.totalCasts,
+      fish: metrics.totalFishCaught,
+      sits: metrics.totalSits,
+      money: usePlayer.getState().wallet,
+    };
+    for (const beat of useStory.getState().beats) {
+      // Re-read firedRows each time: an action can re-enter evaluate().
+      if (useStory.getState().firedRows.has(beat.row)) continue;
+      if (!beat.condition(snapshot)) continue;
+      markBeatFired(beat.row);
+      beat.action?.();
+      if (beat.variants.length > 0) {
+        pushEvent(
+          beat.variants[Math.floor(Math.random() * beat.variants.length)],
+        );
+      }
+    }
   }
 }
 
