@@ -10,11 +10,11 @@ import {
   removeLure,
 } from "./playerStore";
 import { useSessionLog } from "./sessionLogStore";
-import { setWindCooldownMs, setWindPayout } from "./fieldsStore";
+import { setSitCooldownMs, setSitPayout } from "./fieldsStore";
 import { setAreaUnlocked } from "./unlockStore";
 import {
-  FIELDS_WIND_COOLDOWN_MS,
-  FIELDS_WIND_PAYOUT,
+  FIELDS_SIT_COOLDOWN_MS,
+  FIELDS_SIT_PAYOUT,
   INITIAL_PLAYER_STATE,
 } from "../util/constants";
 
@@ -62,13 +62,11 @@ function applyStatEffect(upgrade: UpgradeEntry, level: number, delta: number) {
       setRodLevel(rodId, "lineHpLevel", level);
       break;
     }
-    case StatName.WIND_PARTICLES:
-      setWindPayout(FIELDS_WIND_PAYOUT + level * upgrade.valuePerLevel);
+    case StatName.SIT_PAYOUT:
+      setSitPayout(FIELDS_SIT_PAYOUT + level * upgrade.valuePerLevel);
       break;
-    case StatName.WIND_COOLDOWN:
-      setWindCooldownMs(
-        FIELDS_WIND_COOLDOWN_MS - level * upgrade.valuePerLevel,
-      );
+    case StatName.SIT_COOLDOWN:
+      setSitCooldownMs(FIELDS_SIT_COOLDOWN_MS - level * upgrade.valuePerLevel);
       break;
     case StatName.UNLOCK_POND:
       setAreaUnlocked("pond", level > 0);

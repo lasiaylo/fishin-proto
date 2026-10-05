@@ -587,12 +587,12 @@ export function computeLureStats(
   return { rates, earnings, winRates, remainingHPs };
 }
 
-// Stats whose effects the model doesn't simulate (fields/wind income isn't
+// Stats whose effects the model doesn't simulate (fields/sit income isn't
 // modelled, and the pond is assumed open from the start). They're dropped up front: buying them would burn simulated
 // money, and they'd never count toward the all-maxed stop condition.
 const UNMODELED_STATS = new Set<StatName>([
-  StatName.WIND_PARTICLES,
-  StatName.WIND_COOLDOWN,
+  StatName.SIT_PAYOUT,
+  StatName.SIT_COOLDOWN,
   StatName.UNLOCK_POND,
   StatName.UNLOCK_SKY,
 ]);

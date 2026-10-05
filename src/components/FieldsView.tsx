@@ -1,7 +1,7 @@
 import React from "react";
 import { Flex } from "@radix-ui/themes";
 import { CooldownButton } from "./CooldownButton";
-import { useFields, wind } from "../stores/fieldsStore";
+import { useFields, sit } from "../stores/fieldsStore";
 
 export function FieldsView() {
   const readyAt = useFields((s) => s.readyAt);
@@ -12,10 +12,10 @@ export function FieldsView() {
       <CooldownButton
         readyAt={readyAt}
         cooldownMs={cooldownMs}
-        onFire={wind}
+        onFire={sit}
         width={100}
       >
-        wind
+        sit
       </CooldownButton>
     </Flex>
   );

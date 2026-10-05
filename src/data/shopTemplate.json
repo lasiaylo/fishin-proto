@@ -77,9 +77,9 @@
         }
       },
       {
-        "label": "WIND PARTICLES",
-        "id": "WIND_PARTICLES",
-        "stat": "WIND_PARTICLES",
+        "label": "SIT PAYOUT",
+        "id": "SIT_PAYOUT",
+        "stat": "SIT_PAYOUT",
         "kind": "levels",
         "count": 5,
         "valuePerLevel": 20,
@@ -91,9 +91,9 @@
         }
       },
       {
-        "label": "WIND COOLDOWN",
-        "id": "WIND_COOLDOWN",
-        "stat": "WIND_COOLDOWN",
+        "label": "SIT COOLDOWN",
+        "id": "SIT_COOLDOWN",
+        "stat": "SIT_COOLDOWN",
         "kind": "levels",
         "count": 4,
         "valuePerLevel": 750,

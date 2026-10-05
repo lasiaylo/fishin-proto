@@ -5,7 +5,7 @@ import { BAIT_MAX_STACK } from "../util/constants";
 import { StatName } from "../util/csvLoader";
 import { UpgradeEntry } from "../stores/upgradeStoreFactory";
 
-const CATEGORY_ORDER = ["bait", "lures", "rods", "wind", "unlocks", "misc"];
+const CATEGORY_ORDER = ["bait", "lures", "rods", "sit", "unlocks", "misc"];
 
 function LevelPips({ level, maxLevel }: { level: number; maxLevel: number }) {
   if (maxLevel <= 1) return null;
