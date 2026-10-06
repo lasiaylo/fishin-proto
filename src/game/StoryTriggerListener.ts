@@ -6,10 +6,9 @@ import { markBeatFired, StorySnapshot, useStory } from "../stores/storyStore";
 // Fires each Story.csv beat once, the first time its "when" condition holds.
 export class StoryTriggerListener {
   constructor() {
-    const check = () => this.evaluate();
-    useMetrics.subscribe((s) => s, check);
-    usePlayer.subscribe((s) => s.wallet, check);
-    useStory.subscribe((s) => s.beats, check);
+    useMetrics.subscribe((s) => s, this.evaluate);
+    usePlayer.subscribe((s) => s.wallet, this.evaluate);
+    useStory.subscribe((s) => s.beats, this.evaluate);
   }
 
   private evaluate() {
