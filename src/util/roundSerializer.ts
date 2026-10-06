@@ -1,3 +1,4 @@
+import Papa from "papaparse";
 import { EconomyRound } from "../game/EconomyModel";
 import { CAST_MAX } from "../util/constants";
 
@@ -32,15 +33,8 @@ const HEADERS = [
   "dreamPoints",
 ] as const;
 
-function escapeCell(value: string): string {
-  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
-
 export function roundsToCSV(rounds: EconomyRound[]): string {
-  const rows: string[] = [HEADERS.join(",")];
+  const rows: string[][] = [[...HEADERS]];
   for (const r of rounds) {
     const cells = [
       r.round,
@@ -71,54 +65,21 @@ export function roundsToCSV(rounds: EconomyRound[]): string {
       JSON.stringify(r.lureLevels),
       r.cumulativeMoneyEarned.toFixed(4),
       r.dreamPoints.toFixed(4),
-    ].map((v) => escapeCell(String(v)));
-    rows.push(cells.join(","));
+    ].map(String);
+    rows.push(cells);
   }
-  return rows.join("\n");
-}
-
-function parseCSVRow(line: string): string[] {
-  const cells: string[] = [];
-  let i = 0;
-  while (i < line.length) {
-    if (line[i] === '"') {
-      let cell = "";
-      i++;
-      while (i < line.length) {
-        if (line[i] === '"' && line[i + 1] === '"') {
-          cell += '"';
-          i += 2;
-        } else if (line[i] === '"') {
-          i++;
-          break;
-        } else {
-          cell += line[i++];
-        }
-      }
-      cells.push(cell);
-      if (line[i] === ",") i++;
-    } else {
-      const end = line.indexOf(",", i);
-      if (end === -1) {
-        cells.push(line.slice(i));
-        break;
-      }
-      cells.push(line.slice(i, end));
-      i = end + 1;
-    }
-  }
-  return cells;
+  return Papa.unparse(rows, { newline: "\n" });
 }
 
 export function csvToRounds(csv: string): EconomyRound[] {
-  const lines = csv.trim().split("\n");
-  if (lines.length < 2) return [];
-  const header = parseCSVRow(lines[0]);
-  const idx = Object.fromEntries(header.map((h, i) => [h.trim(), i]));
+  const { data } = Papa.parse<Record<string, string>>(csv.trim(), {
+    header: true,
+    skipEmptyLines: true,
+    transformHeader: (h) => h.trim(),
+  });
 
-  return lines.slice(1).map((line) => {
-    const c = parseCSVRow(line);
-    const get = (key: string) => c[idx[key]] ?? "";
+  return data.map((row) => {
+    const get = (key: string) => row[key] ?? "";
     const arr = (key: string) => JSON.parse(get(key) || "[]");
     const obj = (key: string) => JSON.parse(get(key) || "{}");
     const rodAtk = Number(get("rodAtk"));

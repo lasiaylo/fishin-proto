@@ -1,3 +1,4 @@
+import Papa from "papaparse";
 import { Rarity, Zone } from "./constants";
 
 export interface FishData {
@@ -119,16 +120,13 @@ export async function loadStoryData(
   storyFile = "Story.csv",
 ): Promise<StoryBeatData[]> {
   const res = await fetch(`/data/${storyFile}`);
-  const lines = (await res.text()).replace(/\r/g, "").split("\n");
-  // Keep spreadsheet row numbers, so filter after numbering rather than via parseCSV.
-  const numbered = lines
-    .map((line, i) => ({ row: i + 1, line }))
-    .filter(({ line }) => line.trim() !== "" && !line.trim().startsWith("#"));
+  // Keep spreadsheet row numbers, so number records before dropping skipped rows.
+  const numbered = Papa.parse<string[]>(await res.text())
+    .data.map((cells, i) => ({ row: i + 1, cells: cells.map((c) => c.trim()) }))
+    .filter(({ cells }) => !isSkippedRow(cells));
   if (numbered.length === 0) return [];
 
-  const header = splitCSVLine(numbered[0].line).map((h) =>
-    h.trim().toLowerCase(),
-  );
+  const header = numbered[0].cells.map((h) => h.toLowerCase());
   const col = (name: string) => header.indexOf(name);
   const [whenIdx, textIdx, actionIdx] = [
     col("when"),
@@ -136,15 +134,12 @@ export async function loadStoryData(
     col("action"),
   ];
 
-  return numbered.slice(1).map(({ row, line }) => {
-    const cells = splitCSVLine(line).map((c) => c.trim());
-    return {
-      row,
-      when: cells[whenIdx] ?? "",
-      text: cells[textIdx] ?? "",
-      action: cells[actionIdx] ?? "",
-    };
-  });
+  return numbered.slice(1).map(({ row, cells }) => ({
+    row,
+    when: cells[whenIdx] ?? "",
+    text: cells[textIdx] ?? "",
+    action: cells[actionIdx] ?? "",
+  }));
 }
 
 export interface LocationDisplayData {
@@ -176,40 +171,14 @@ export interface ShopUpgradeData {
 }
 
 function parseCSV(text: string): string[][] {
-  return text
-    .trim()
-    .split("\n")
-    .filter((line) => line.trim() !== "" && !line.trim().startsWith("#"))
-    .map((line) => splitCSVLine(line).map((cell) => cell.trim()));
+  return Papa.parse<string[]>(text)
+    .data.map((cells) => cells.map((cell) => cell.trim()))
+    .filter((cells) => !isSkippedRow(cells));
 }
 
-// Splits one CSV line on commas, honouring "quoted, cells" and "" escapes.
-function splitCSVLine(line: string): string[] {
-  const cells: string[] = [];
-  let cell = "";
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (inQuotes) {
-      if (ch === '"' && line[i + 1] === '"') {
-        cell += '"';
-        i++;
-      } else if (ch === '"') {
-        inQuotes = false;
-      } else {
-        cell += ch;
-      }
-    } else if (ch === '"') {
-      inQuotes = true;
-    } else if (ch === ",") {
-      cells.push(cell);
-      cell = "";
-    } else {
-      cell += ch;
-    }
-  }
-  cells.push(cell);
-  return cells;
+// Blank rows and rows starting with "#" are ignored.
+function isSkippedRow(cells: string[]): boolean {
+  return cells.every((c) => c === "") || cells[0].startsWith("#");
 }
 
 export async function loadFishData(
