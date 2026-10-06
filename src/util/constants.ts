@@ -2,8 +2,6 @@ import { PlayerState } from "../stores/playerStore";
 
 export const CURRENCY_SYMBOL = "࿔";
 export const DREAM_POINT_SYMBOL = "✦";
-export const FRIEND_NPC_NAME = "big ghost";
-export const NPC_ACTIVITY_DUMMY = "watching their line";
 export const BASE_FISH_ID = "FISH_B_0";
 export const BASE_LURE_NAME = "Worm";
 export const BASE_BAIT_ID = "BAIT_0";

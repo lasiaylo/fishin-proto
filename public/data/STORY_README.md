@@ -20,8 +20,6 @@ Comparisons: `>=`, `<=`, `>`, `<`, `=`
 
 ## Actions
 
-- `npc friend` — the friend shows up in the chatroom
-- `gift` — the friend offers a tip
 - `unlock pond` — opens the pond tab
 - `unlock sky` — opens the sky tab
 

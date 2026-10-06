@@ -3,7 +3,6 @@ import "../global.css";
 import { Box, Flex, Theme } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
 import { EventView } from "./components/EventView.tsx";
-import { ChatroomView } from "./components/ChatroomView.tsx";
 import { ActionsSection } from "./components/ActionsSection";
 import { ShopView } from "./components/ShopView.tsx";
 import { Debug } from "./components/debug";
@@ -17,10 +16,7 @@ import { restorePersistedRodSlots } from "./stores/playerStore";
 import { initLocations } from "./stores/locationStore";
 import { initBaitData } from "./stores/baitStore";
 import { initRodData } from "./stores/rodStore";
-import { initTipData } from "./stores/tipStore";
 import { initStoryData } from "./stores/storyStore";
-import { npcLogin, openGiftRequest } from "./stores/friendStore";
-import { FRIEND_NPC_NAME } from "./util/constants";
 import { clearEvents, pushEvent } from "./stores/eventLogStore";
 import { EventMsg } from "./util/eventMessages";
 import "./game/StoryTriggerListener";
@@ -71,7 +67,6 @@ function App() {
     initLocations();
     initBaitData();
     initRodData();
-    initTipData();
     initStoryData();
     pushEvent(EventMsg.WELCOME);
   }, []);
@@ -85,8 +80,6 @@ function App() {
           localStorage.setItem("debug_panel_open", next);
           return next;
         });
-      if (e.key === "n") npcLogin(FRIEND_NPC_NAME);
-      if (e.key === "m") openGiftRequest();
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
@@ -103,10 +96,7 @@ function App() {
         justify="between"
         position="relative"
       >
-        <Flex direction="column" gap="4">
-          <EventView />
-          <ChatroomView />
-        </Flex>
+        <EventView />
         {shopUnlocked && (
           <Flex className={"fade-in"} align="start">
             <ShopView />

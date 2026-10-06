@@ -4,7 +4,6 @@ import { usePlayer } from "../stores/playerStore";
 import { useBaitData } from "../stores/baitStore";
 import { useShop } from "../stores/shopStore";
 import { StatName } from "../util/csvLoader";
-import { TipView } from "./TipView";
 
 export const TACKLE_BOX_WIDTH = 200;
 
@@ -60,8 +59,6 @@ export function TackleBoxView() {
           </Flex>
         )}
       </Flex>
-
-      <TipView />
     </Flex>
   );
 }

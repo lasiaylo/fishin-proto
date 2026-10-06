@@ -15,8 +15,4 @@ export const EventMsg = {
     `${birdCount} birds +${payout}`,
   ],
   OBSERVED_NOTHING: "not a bird in sight",
-
-  NPC_LOGIN: (name: string) => `a ${name} comes by`,
-  FRIEND_CASTS: "she settles her gear downstream and casts out a line",
-  GIFT_ACCEPTED: (title: string) => ["received a tip: ", title],
 } as const;

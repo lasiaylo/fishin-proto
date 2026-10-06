@@ -1,8 +1,6 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { loadStoryData } from "../util/csvLoader";
-import { FRIEND_NPC_NAME } from "../util/constants";
-import { npcLogin, openGiftRequest } from "./friendStore";
 import { setAreaUnlocked } from "./unlockStore";
 
 // Stats a writer can reference in Story.csv's "when" column.
@@ -15,8 +13,6 @@ export interface StorySnapshot {
 
 // Actions a writer can name in Story.csv's "action" column.
 const STORY_ACTIONS: Record<string, () => void> = {
-  "npc friend": () => npcLogin(FRIEND_NPC_NAME),
-  gift: () => openGiftRequest(),
   "unlock pond": () => setAreaUnlocked("pond", true),
   "unlock sky": () => setAreaUnlocked("sky", true),
 };
