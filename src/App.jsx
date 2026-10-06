@@ -17,9 +17,8 @@ import { initLocations } from "./stores/locationStore";
 import { initBaitData } from "./stores/baitStore";
 import { initRodData } from "./stores/rodStore";
 import { initStoryData } from "./stores/storyStore";
-import { clearEvents, pushEvent } from "./stores/eventLogStore";
-import { EventMsg } from "./util/eventMessages";
-import "./game/StoryTriggerListener";
+import { clearEvents } from "./stores/eventLogStore";
+import { tellStory } from "./game/StoryTriggerListener";
 import { useCsvConfig } from "./stores/csvConfigStore";
 import {
   GENERATED_FISH_CSV,
@@ -67,8 +66,7 @@ function App() {
     initLocations();
     initBaitData();
     initRodData();
-    initStoryData();
-    pushEvent(EventMsg.WELCOME);
+    initStoryData().then(() => tellStory("start"));
   }, []);
 
   useEffect(() => {

@@ -3,8 +3,7 @@ import { Box, Flex } from "@radix-ui/themes";
 import { CooldownButton } from "./CooldownButton";
 import { birdsLandedAt, observe, useBirds } from "../stores/birdStore";
 import { OBSERVE_COOLDOWN_MS } from "../util/constants";
-import { pushEvent } from "../stores/eventLogStore";
-import { EventMsg } from "../util/eventMessages";
+import { tellStory } from "../game/StoryTriggerListener";
 
 function Bird({ landed }: { landed: boolean }) {
   return (
@@ -39,10 +38,9 @@ export function SkyView() {
   function handleObserve() {
     const { birdCount, payout } = observe();
     if (birdCount > 0) {
-      const msg = EventMsg.OBSERVED_BIRDS(birdCount, payout);
-      pushEvent(msg[0], msg[1]);
+      tellStory("birds", { birds: birdCount, payout });
     } else {
-      pushEvent(EventMsg.OBSERVED_NOTHING);
+      tellStory("nobirds");
     }
   }
 

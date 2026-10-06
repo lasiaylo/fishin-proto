@@ -2,11 +2,11 @@ import { create } from "zustand";
 import { FishData } from "../util/csvLoader";
 import { Rarity, RARITY_COLOR } from "../util/constants";
 import { CELL_SIZE } from "../util/worldGrid";
-import { EventMsg } from "../util/eventMessages";
 import { addMoney, usePlayer } from "./playerStore";
-import { pushEvent } from "./eventLogStore";
 import { incrementTotalFishCaught } from "./metricsStore";
 import { useSessionLog } from "./sessionLogStore";
+import { tellStory } from "../game/StoryTriggerListener";
+import { StoryEvent } from "./storyStore";
 
 // Coordinates are px relative to the pond image box. A caught fish blows out
 // of the pond from origin to (x, y), where it floats until the player hovers
@@ -58,13 +58,15 @@ function blowOutPath() {
   };
 }
 
-function rarityEvent(msg: string[], rarity: Rarity | undefined) {
-  pushEvent(
-    msg[0],
-    msg[1],
-    rarity ? RARITY_COLOR[rarity] : undefined,
-    rarity === Rarity.LEGENDARY,
-  );
+function rarityEvent(
+  event: StoryEvent,
+  vars: Record<string, string | number>,
+  rarity: Rarity | undefined,
+) {
+  tellStory(event, vars, {
+    color: rarity ? RARITY_COLOR[rarity] : undefined,
+    legendary: rarity === Rarity.LEGENDARY,
+  });
 }
 
 export function spawnPondFish(fish: FishData, effectivePrice: number) {
@@ -81,8 +83,8 @@ export function spawnPondFish(fish: FishData, effectivePrice: number) {
       },
     ],
   }));
-  rarityEvent(EventMsg.CAUGHT(fish.name), fish.rarity);
   incrementTotalFishCaught();
+  rarityEvent("catch", { fish: fish.name }, fish.rarity);
 }
 
 // Removes the fish from the pond; returns it, or undefined if it was already
@@ -103,7 +105,8 @@ export function depositPondFish(item: PondFish) {
   }
   addMoney(item.effectivePrice);
   rarityEvent(
-    EventMsg.SOLD_FISH(item.fish.name, item.effectivePrice),
+    "sell",
+    { fish: item.fish.name, price: item.effectivePrice },
     item.rarity,
   );
 }

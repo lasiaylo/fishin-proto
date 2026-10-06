@@ -14,9 +14,8 @@ import {
   setSlotItem,
   usePlayer,
 } from "../stores/playerStore";
-import { pushEvent } from "../stores/eventLogStore";
 import { spawnPondFish } from "../stores/pondFishStore";
-import { EventMsg } from "../util/eventMessages";
+import { tellStory } from "../game/StoryTriggerListener";
 import { incrementTotalCasts } from "../stores/metricsStore";
 import { FightEngine, FightState, Outcome } from "../game/FightEngine";
 import { useSessionLog } from "../stores/sessionLogStore";
@@ -224,7 +223,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
           castDistanceRef.current = luringDistanceRef.current;
           caughtFishRef.current = fish;
           castLocationRef.current = locationId;
-          pushEvent(EventMsg.BITING);
+          tellStory("bite");
           startFight();
         }
       }
@@ -248,7 +247,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     if (!fish) return false;
     emptyReelCountRef.current = 0;
     caughtFishRef.current = fish;
-    pushEvent(EventMsg.BITING);
+    tellStory("bite");
     startFight();
     return true;
   }
@@ -335,7 +334,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
           );
           if (fish) {
             caughtFishRef.current = fish;
-            pushEvent(EventMsg.BITING);
+            tellStory("bite");
             startFight();
             return;
           }
@@ -391,7 +390,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
       lastTimeRef.current = timestamp;
 
       const state = fightRef.current!.tick(dt, reelRef.current);
-      if (state.crit && !prevCritRef.current) pushEvent(EventMsg.CRIT);
+      if (state.crit && !prevCritRef.current) tellStory("crit");
       prevCritRef.current = state.crit;
       setFightState({ ...state });
       if (state.outcome !== null) {
@@ -437,7 +436,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     if (result === Outcome.WIN) {
       spawnPondFish(fish, effectivePrice);
     } else {
-      pushEvent(EventMsg.ESCAPED);
+      tellStory("escape");
     }
 
     setFading(true);

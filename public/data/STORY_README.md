@@ -1,7 +1,7 @@
 # Writing story beats (Story.csv)
 
 Each row in `Story.csv` is one story beat. A beat happens **once**, the first
-time its condition becomes true.
+time its condition becomes true — unless it's a recurring beat (see below).
 
 | column   | what to put there                                                                                                                                  |
 | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -17,6 +17,32 @@ time its condition becomes true.
 - `money` — current wallet
 
 Comparisons: `>=`, `<=`, `>`, `<`, `=`
+
+## Recurring beats
+
+Start `when` with `on <event>` and the beat happens **every time** that event
+does, e.g. `on catch` or `on catch and fish >= 50`. These rows write the game's
+everyday log lines.
+
+| event     | when it happens               | placeholders          |
+| --------- | ----------------------------- | --------------------- |
+| `start`   | the game loads                |                       |
+| `bite`    | a fish bites                  |                       |
+| `crit`    | a critical hit during a fight |                       |
+| `catch`   | a fish is caught              | `{fish}`              |
+| `escape`  | a fish gets away              |                       |
+| `sell`    | a fish is sold                | `{fish}`, `{price}`   |
+| `birds`   | birds are observed            | `{birds}`, `{payout}` |
+| `nobirds` | observing finds no birds      |                       |
+
+- Placeholders like `{fish}` are filled in by the game: `caught a {fish}`.
+- Wrap part of the line in `[square brackets]` to highlight it (caught/sold
+  fish are coloured by rarity): `caught a [{fish}]`.
+- If several rows match the same event, the **lowest one in the file wins** —
+  put the everyday line first and special cases below it.
+- Stats in the condition already count the event itself: on the first catch,
+  `fish` is 1.
+- If no row matches, nothing is logged.
 
 ## Actions
 

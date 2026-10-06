@@ -1,3 +1,11 @@
 when,text,action
+on start,the water is calm,
+on bite,something bites!,
+on crit,crit!,
+on catch,caught a [{fish}],
+on escape,it got away...,
+on sell,sold [{fish} +{price}],
+on birds,observed [{birds} birds +{payout}],
+on nobirds,not a bird in sight,
 sits >= 3,you feel something stir in the water...,
 # fish >= 3,she settles her gear downstream and casts out a line,
