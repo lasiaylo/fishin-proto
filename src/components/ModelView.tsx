@@ -39,7 +39,8 @@ export function ModelView() {
     null,
   );
   const [fishSource, setFishSource] = useState<"csv" | "generated">(
-    () => (localStorage.getItem("debugFishSource") as "csv" | "generated") ?? "csv",
+    () =>
+      (localStorage.getItem("debugFishSource") as "csv" | "generated") ?? "csv",
   );
 
   useEffect(() => {
@@ -74,6 +75,8 @@ export function ModelView() {
       grayColor="mauve"
       style={
         {
+          // Opt out of the game's gradient from global.css.
+          background: "var(--color-background)",
           "--default-font-family":
             "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
         } as React.CSSProperties
@@ -92,7 +95,9 @@ export function ModelView() {
             Model
           </Text>
           <Flex align="center" gap="2">
-            <Text size="2" color="gray">Fish source:</Text>
+            <Text size="2" color="gray">
+              Fish source:
+            </Text>
             <Select.Root
               value={fishSource}
               onValueChange={(v) => {
