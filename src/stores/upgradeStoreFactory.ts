@@ -12,6 +12,7 @@ import {
 import { useSessionLog } from "./sessionLogStore";
 import { setSitCooldownMs, setSitPayout } from "./fieldsStore";
 import { setAreaUnlocked } from "./unlockStore";
+import { setPassiveSource } from "./passiveIncomeStore";
 import {
   FIELDS_SIT_COOLDOWN_MS,
   FIELDS_SIT_PAYOUT,
@@ -73,6 +74,9 @@ function applyStatEffect(upgrade: UpgradeEntry, level: number, delta: number) {
       break;
     case StatName.UNLOCK_SKY:
       setAreaUnlocked("sky", level > 0);
+      break;
+    case StatName.WIND:
+      setPassiveSource("money", upgrade.id, level * upgrade.valuePerLevel);
       break;
   }
 }

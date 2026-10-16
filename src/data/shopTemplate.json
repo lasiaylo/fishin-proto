@@ -77,6 +77,20 @@
         }
       },
       {
+        "label": "SIT COOLDOWN",
+        "id": "SIT_COOLDOWN",
+        "stat": "SIT_COOLDOWN",
+        "kind": "levels",
+        "count": 4,
+        "valuePerLevel": 750,
+        "editValue": true,
+        "curve": {
+          "type": "EXPONENTIAL",
+          "startValue": 15,
+          "growthRate": 2
+        }
+      },
+      {
         "label": "SIT PAYOUT",
         "id": "SIT_PAYOUT",
         "stat": "SIT_PAYOUT",
@@ -91,16 +105,16 @@
         }
       },
       {
-        "label": "SIT COOLDOWN",
-        "id": "SIT_COOLDOWN",
-        "stat": "SIT_COOLDOWN",
+        "label": "WIND",
+        "id": "WIND",
+        "stat": "WIND",
         "kind": "levels",
-        "count": 4,
-        "valuePerLevel": 750,
+        "count": 5,
+        "valuePerLevel": 1,
         "editValue": true,
         "curve": {
           "type": "EXPONENTIAL",
-          "startValue": 15,
+          "startValue": 100,
           "growthRate": 2
         }
       },

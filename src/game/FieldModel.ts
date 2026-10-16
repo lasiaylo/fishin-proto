@@ -11,13 +11,15 @@ import {
 
 // Offline model of the fields section: the player sits every time the
 // cooldown is ready, and spends the payouts on the fields shop. Mirrors
-// `sit` in fieldsStore.ts and the SIT_* cases of `applyStatEffect` in
-// upgradeStoreFactory.ts — keep them in sync.
+// `sit` in fieldsStore.ts, the passive ticker in passiveIncomeStore.ts, and
+// the SIT_* / WIND cases of `applyStatEffect` in upgradeStoreFactory.ts —
+// keep them in sync.
 
 const FIELD_STATS = new Set<StatName>([
   StatName.SIT_PAYOUT,
   StatName.SIT_COOLDOWN,
   StatName.UNLOCK_POND,
+  StatName.WIND,
 ]);
 
 export interface FieldOptions {
@@ -40,6 +42,7 @@ export interface FieldSample {
   totalEarned: number;
   payout: number;
   cooldownMs: number;
+  windPerS: number;
   incomePerMin: number;
 }
 
@@ -88,7 +91,15 @@ function sitCooldownMs(
   return Math.max(MIN_SIT_COOLDOWN_MS, cooldown);
 }
 
-// Money per second while sitting back-to-back.
+// Passive money per second from WIND upgrades.
+function windRate(upgrades: ShopUpgradeData[], levels: Record<string, number>) {
+  let rate = 0;
+  for (const u of upgrades)
+    if (u.stat === StatName.WIND) rate += (levels[u.id] ?? 0) * u.valuePerLevel;
+  return rate;
+}
+
+// Money per second while sitting back-to-back, plus passive wind income.
 function incomeRate(
   upgrades: ShopUpgradeData[],
   levels: Record<string, number>,
@@ -96,7 +107,8 @@ function incomeRate(
 ) {
   const period =
     sitCooldownMs(upgrades, levels) / 1000 + Math.max(0, reactionDelayS);
-  return period > 0 ? sitPayout(upgrades, levels) / period : 0;
+  const sitRate = period > 0 ? sitPayout(upgrades, levels) / period : 0;
+  return sitRate + windRate(upgrades, levels);
 }
 
 function nextPrice(u: ShopUpgradeData, levels: Record<string, number>) {
@@ -194,6 +206,7 @@ export function simulateField(
       totalEarned,
       payout: sitPayout(upgrades, state.levels),
       cooldownMs: sitCooldownMs(upgrades, state.levels),
+      windPerS: windRate(upgrades, state.levels),
       incomePerMin: incomeRate(upgrades, state.levels, reactionDelayS) * 60,
     });
   };
@@ -201,6 +214,11 @@ export function simulateField(
   sample(0, true);
 
   while (nextSitAt <= maxTime) {
+    // Wind accrues continuously, but is credited (and spent) only at sits —
+    // close enough with cooldowns of a few seconds.
+    const wind = windRate(upgrades, state.levels) * (nextSitAt - time);
+    state.money += wind;
+    totalEarned += wind;
     time = nextSitAt;
     // The cooldown starts from the sit, so a cooldown upgrade bought with
     // this payout only shortens the following wait.

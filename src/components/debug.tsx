@@ -30,6 +30,16 @@ import {
   useDebugSettings,
   setPersistRodSlots,
 } from "../stores/debugSettingsStore";
+import {
+  CURRENCIES,
+  grantPassiveSeconds,
+  setPassiveMultiplier,
+  setPassiveOverride,
+  setPassivePaused,
+  usePassiveIncome,
+  usePassiveRate,
+  type Currency,
+} from "../stores/passiveIncomeStore";
 
 export function Debug() {
   return (
@@ -42,6 +52,7 @@ export function Debug() {
       <ShopUpgradeSection />
       <Flex direction="column" gap="4">
         <MoneySection />
+        <PassiveIncomeSection />
         <BaitSection />
         <EventLogSection />
       </Flex>
@@ -163,6 +174,89 @@ function MoneySection() {
           </Button>
         </Flex>
       </form>
+    </Flex>
+  );
+}
+
+function PassiveIncomeSection() {
+  return (
+    <Flex direction="column" gap="2">
+      <Text weight="bold">Passive Income</Text>
+      <Separator size="4" />
+      {CURRENCIES.map((c) => (
+        <PassiveIncomeRow key={c} currency={c} />
+      ))}
+    </Flex>
+  );
+}
+
+function PassiveIncomeRow({ currency }: { currency: Currency }) {
+  const income = usePassiveIncome((s) => s[currency]);
+  const rate = usePassiveRate(currency);
+  const sources = Object.entries(income.sources);
+
+  return (
+    <Flex direction="column" gap="1">
+      <Text size="1">
+        {currency}: {rate}/s
+      </Text>
+      <Text size="1" color="gray">
+        {sources.length === 0
+          ? "no sources"
+          : sources.map(([id, r]) => `${id} ${r}/s`).join(", ")}
+      </Text>
+      <Flex gap="2" align="center">
+        <Text size="1" color="gray" style={{ width: "60px" }}>
+          multiplier
+        </Text>
+        <input
+          type="number"
+          min={0}
+          step={0.5}
+          value={income.multiplier}
+          onChange={(e) =>
+            setPassiveMultiplier(currency, Number(e.target.value))
+          }
+          style={{ width: "50px" }}
+        />
+      </Flex>
+      <Flex gap="2" align="center">
+        <Text size="1" color="gray" style={{ width: "60px" }}>
+          override
+        </Text>
+        <input
+          type="number"
+          min={0}
+          placeholder="off"
+          value={income.override ?? ""}
+          onChange={(e) =>
+            setPassiveOverride(
+              currency,
+              e.target.value === "" ? null : Number(e.target.value),
+            )
+          }
+          style={{ width: "50px" }}
+        />
+      </Flex>
+      <Flex align="center" gap="1">
+        <input
+          id={`passive-paused-${currency}`}
+          type="checkbox"
+          checked={income.paused}
+          onChange={(e) => setPassivePaused(currency, e.target.checked)}
+        />
+        <label htmlFor={`passive-paused-${currency}`}>
+          <Text size="1">Paused</Text>
+        </label>
+      </Flex>
+      <Flex gap="2">
+        <Button size="1" onClick={() => grantPassiveSeconds(currency, 60)}>
+          +60s
+        </Button>
+        <Button size="1" onClick={() => grantPassiveSeconds(currency, 600)}>
+          +10m
+        </Button>
+      </Flex>
     </Flex>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Flex, Text, Table, Switch, Card } from "@radix-ui/themes";
-import { Line } from "recharts";
+import { Bar, Line } from "recharts";
 import {
   loadShopGameplayData,
   parseShopGameplayRows,
@@ -10,6 +10,7 @@ import {
   DEFAULT_FIELD_OPTIONS,
   simulateField,
   type FieldOptions,
+  type FieldSample,
 } from "../../game/FieldModel";
 import {
   ChartGrid,
@@ -97,6 +98,22 @@ export function FieldTab({
     () => simulateField(shopData, options),
     [shopData, options],
   );
+
+  // Seconds waited before each purchase, measured from the previous one
+  // (the first from the start of the run).
+  const gapData = useMemo(
+    () =>
+      result.purchases.map((p, i) => ({
+        index: i + 1,
+        label: `${p.id} L${p.level}`,
+        gap: p.time - (i > 0 ? result.purchases[i - 1].time : 0),
+      })),
+    [result],
+  );
+  const gapTickStep = Math.max(1, Math.ceil(gapData.length / 20));
+  const gapTicks = gapData
+    .map((d) => d.index)
+    .filter((i) => i % gapTickStep === 0 || i === 1);
 
   // Round the axis up to a whole tick so the last 5-minute mark is shown.
   const maxTime = Math.max(
@@ -213,6 +230,13 @@ export function FieldTab({
             stroke={COLORS[2]}
             {...lineProps}
           />
+          <Line
+            type="stepAfter"
+            dataKey={(d: FieldSample) => d.windPerS * 60}
+            name="Wind $/min"
+            stroke={COLORS[6]}
+            {...lineProps}
+          />
         </EconomyChart>
         <EconomyChart
           title="Sit Payout ($) / Cooldown (ms)"
@@ -239,6 +263,29 @@ export function FieldTab({
             {...lineProps}
           />
         </EconomyChart>
+        {gapData.length > 0 && (
+          <EconomyChart
+            title="Time Between Upgrades"
+            data={gapData}
+            xDataKey="index"
+            xDomain={[0.5, gapData.length + 0.5]}
+            xTicks={gapTicks}
+            xTickFormatter={(v) => String(v)}
+            xLabel="Purchase #"
+            integerXAxis
+            yTickFormatter={formatTime}
+            tooltipFormatter={(v) => formatTime(v)}
+            tooltipLabelFormatter={(_, payload) => payload?.[0]?.payload.label}
+            syncId="fieldGaps"
+          >
+            <Bar
+              dataKey="gap"
+              name="Since prev"
+              fill={COLORS[6]}
+              isAnimationActive={false}
+            />
+          </EconomyChart>
+        )}
       </ChartGrid>
 
       <Flex direction="column" gap="2">

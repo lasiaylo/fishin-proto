@@ -3,6 +3,10 @@ import React, { useEffect, useRef, useState } from "react";
 import { usePlayer } from "../stores/playerStore";
 import { useDreamStore } from "../stores/dreamStore";
 import {
+  getPassivePaidTotal,
+  usePassiveRate,
+} from "../stores/passiveIncomeStore";
+import {
   computeDreamPoints,
   computeDreamPointsProgress,
   CURRENCY_SYMBOL,
@@ -15,19 +19,25 @@ export const CURRENCY_TARGET_ID = "currency-wallet";
 
 export function CurrencyView() {
   const wallet = usePlayer((s) => s.wallet);
+  const passiveRate = usePassiveRate("money");
   const cumulativeMoneyEarned = useDreamStore((s) => s.cumulativeMoneyEarned);
   const lvl = computeDreamPoints(cumulativeMoneyEarned);
   const lvlProgress = computeDreamPointsProgress(cumulativeMoneyEarned);
   const lvlProgressPct = Math.round(lvlProgress.fraction * 100);
 
   const prevWalletRef = useRef(wallet);
+  const prevPassiveRef = useRef(getPassivePaidTotal("money"));
   const [popup, setPopup] = useState<{ amount: number; key: number } | null>(
     null,
   );
 
   useEffect(() => {
-    const diff = wallet - prevWalletRef.current;
+    // Passive income ticks constantly, so leave it out of the popup.
+    const passivePaid = getPassivePaidTotal("money");
+    const diff =
+      wallet - prevWalletRef.current - (passivePaid - prevPassiveRef.current);
     prevWalletRef.current = wallet;
+    prevPassiveRef.current = passivePaid;
     if (diff > 0) {
       // Sum earnings while the popup is still up; a new key restarts the fade.
       setPopup((p) => ({ amount: (p?.amount ?? 0) + diff, key: Date.now() }));
@@ -52,6 +62,11 @@ export function CurrencyView() {
           </Code>
         )}
       </Box>
+      {passiveRate > 0 && (
+        <Text size="1" color="gray">
+          +{passiveRate}/s
+        </Text>
+      )}
       <Separator orientation="vertical" size="2" />
       <Flex direction="row" align="center" gap="2" width="140px">
         <Text size="2" color="gray">

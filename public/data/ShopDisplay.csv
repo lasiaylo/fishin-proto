@@ -13,7 +13,8 @@ BAIT_0, bread, , bait,
 BAIT_1, worm, ,  bait,
 BAIT_2, boilie ball, ,  bait,
 ROD_HOLDER, rod holder, allows for using multiple rods at the same time, misc,
+SIT_COOLDOWN, vigor, decreases sit cooldown, sit, , fields
 SIT_PAYOUT, linger, each sit pays out more, sit, , fields
-SIT_COOLDOWN, restless, sit back down sooner, sit, , fields
+WIND, wind, earn money passively over time, wind, , fields
 UNLOCK_POND, pond, open up the pond for fishing, unlocks, , fields
 UNLOCK_SKY, sky, open up the sky, unlocks, , pond
