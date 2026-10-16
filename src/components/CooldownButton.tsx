@@ -50,7 +50,7 @@ export function CooldownButton({
   }, [readyAt, cooldownMs]);
 
   return (
-    <Box flexGrow={"0"}>
+    <Box flexGrow={"0"} className="float-button" data-ready={ready}>
       <Button
         radius="none"
         variant="outline"
