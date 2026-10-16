@@ -154,7 +154,7 @@ export interface LocationFishEntry {
   percent: number;
 }
 
-const DEFAULT_SHOP_TAB = "pond";
+export const DEFAULT_SHOP_TAB = "pond";
 
 export interface ShopUpgradeData {
   id: string;

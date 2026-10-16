@@ -2,9 +2,11 @@ import React, { useEffect, useRef, useState } from "react";
 import { Flex, Grid, Text, Table, Button, Separator } from "@radix-ui/themes";
 import { NumInput } from "./shared";
 import {
+  DEFAULT_SHOP_TAB,
   levelStat,
   loadRodData,
   loadLocationGameplayData,
+  loadShopDisplayMap,
   type RodData,
 } from "../../util/csvLoader";
 import {
@@ -277,6 +279,53 @@ function substituteId(id: string, vars: Record<string, number>): string {
   return id.replace(/\{(\w+)\}/g, (match, key) =>
     key in vars ? String(vars[key]) : match,
   );
+}
+
+// A text heading that expands/collapses the content below it.
+function CollapseToggle({
+  open,
+  onToggle,
+  children,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      style={{
+        background: "none",
+        border: "none",
+        cursor: "pointer",
+        padding: 0,
+        textAlign: "left",
+      }}
+    >
+      {open ? "▾" : "▸"} {children}
+    </button>
+  );
+}
+
+// Action tabs in the order the game shows them; the generator's shop sections
+// follow it, with any other tab named in ShopDisplay.csv after.
+const TAB_ORDER = ["fields", "pond", "sky"];
+
+function groupByTab<T>(
+  entries: T[],
+  tabOf: (entry: T) => string,
+): [string, T[]][] {
+  const groups = new Map<string, T[]>();
+  for (const entry of entries) {
+    const tab = tabOf(entry);
+    if (!groups.has(tab)) groups.set(tab, []);
+    groups.get(tab)!.push(entry);
+  }
+  const rank = (tab: string) => {
+    const i = TAB_ORDER.indexOf(tab);
+    return i === -1 ? TAB_ORDER.length : i;
+  };
+  return [...groups.entries()].sort(([a], [b]) => rank(a) - rank(b));
 }
 
 function templateItemRows(
@@ -766,11 +815,15 @@ function FishGenerator({
   showPreview,
   levels,
   locationPercents,
+  open,
+  onToggle,
 }: {
   onChange?: (rows: string[][]) => void;
   showPreview: boolean;
   levels: number;
   locationPercents: Map<string, number>;
+  open: boolean;
+  onToggle: () => void;
 }) {
   const stored = loadStored(FISH_STORAGE_KEY, FISH_DEFAULTS);
   const initialRef = useRef(stored);
@@ -843,111 +896,125 @@ function FishGenerator({
   return (
     <Flex direction="column" gap="3">
       <Flex align="center" gap="3">
-        <Text size="2" weight="bold">
-          Fish
-        </Text>
+        <CollapseToggle open={open} onToggle={onToggle}>
+          <Text size="2" weight="bold">
+            Fish
+          </Text>
+        </CollapseToggle>
         <Button size="1" variant="ghost" color="gray" onClick={undo}>
           Undo
         </Button>
       </Flex>
 
-      <Grid columns="2" gap="4">
-        <Flex direction="column" gap="2">
-          <Text size="1" weight="bold">
-            BAIT FISH
-          </Text>
-          <FunctionSelect
-            label="ATK curve"
-            value={baitAttackFn}
-            onChange={setBaitAttackFn}
-          />
-          <FunctionSelect
-            label="DEF curve"
-            value={baitDefenseFn}
-            onChange={setBaitDefenseFn}
-          />
-          <FunctionSelect
-            label="Base Price curve"
-            value={baitPriceFn}
-            onChange={setBaitPriceFn}
-          />
-        </Flex>
+      {open && (
+        <>
+          <Grid columns="2" gap="4">
+            <Flex direction="column" gap="2">
+              <Text size="1" weight="bold">
+                BAIT FISH
+              </Text>
+              <FunctionSelect
+                label="ATK curve"
+                value={baitAttackFn}
+                onChange={setBaitAttackFn}
+              />
+              <FunctionSelect
+                label="DEF curve"
+                value={baitDefenseFn}
+                onChange={setBaitDefenseFn}
+              />
+              <FunctionSelect
+                label="Base Price curve"
+                value={baitPriceFn}
+                onChange={setBaitPriceFn}
+              />
+            </Flex>
 
-        <Flex direction="column" gap="2">
-          <Text size="1" weight="bold">
-            LURE FISH
-          </Text>
-          <FunctionSelect
-            label="ATK curve"
-            value={attackFn}
-            onChange={setAttackFn}
-          />
-          <FunctionSelect
-            label="DEF curve"
-            value={defenseFn}
-            onChange={setDefenseFn}
-          />
-          <FunctionSelect
-            label="Base Price curve"
-            value={priceFn}
-            onChange={setPriceFn}
-          />
-        </Flex>
-      </Grid>
+            <Flex direction="column" gap="2">
+              <Text size="1" weight="bold">
+                LURE FISH
+              </Text>
+              <FunctionSelect
+                label="ATK curve"
+                value={attackFn}
+                onChange={setAttackFn}
+              />
+              <FunctionSelect
+                label="DEF curve"
+                value={defenseFn}
+                onChange={setDefenseFn}
+              />
+              <FunctionSelect
+                label="Base Price curve"
+                value={priceFn}
+                onChange={setPriceFn}
+              />
+            </Flex>
+          </Grid>
 
-      <Flex gap="3" wrap="wrap" align="end">
-        <NumInput
-          label="Variance"
-          value={variance}
-          onChange={setVariance}
-          min={0}
-          max={1}
-          step={0.01}
-        />
-      </Flex>
-
-      {showPreview && (
-        <Grid columns="2" gap="4">
-          <Flex direction="column" gap="1">
-            <Text size="1" color="gray">
-              Bait fish
-            </Text>
-            <PreviewTable
-              rows={[
-                ["ID", "ATK", "DEF", "BP", "EP"],
-                ...aggregateByTackle(rows.slice(1), "BAIT_", locationPercents),
-              ]}
+          <Flex gap="3" wrap="wrap" align="end">
+            <NumInput
+              label="Variance"
+              value={variance}
+              onChange={setVariance}
+              min={0}
+              max={1}
+              step={0.01}
             />
           </Flex>
-          <Flex direction="column" gap="1">
-            <Text size="1" color="gray">
-              Lure fish
-            </Text>
-            <PreviewTable
-              rows={[
-                ["ID", "ATK", "DEF", "BP", "EP"],
-                ...aggregateByTackle(rows.slice(1), "LURE_", locationPercents),
-              ]}
-            />
-          </Flex>
-        </Grid>
+
+          {showPreview && (
+            <Grid columns="2" gap="4">
+              <Flex direction="column" gap="1">
+                <Text size="1" color="gray">
+                  Bait fish
+                </Text>
+                <PreviewTable
+                  rows={[
+                    ["ID", "ATK", "DEF", "BP", "EP"],
+                    ...aggregateByTackle(
+                      rows.slice(1),
+                      "BAIT_",
+                      locationPercents,
+                    ),
+                  ]}
+                />
+              </Flex>
+              <Flex direction="column" gap="1">
+                <Text size="1" color="gray">
+                  Lure fish
+                </Text>
+                <PreviewTable
+                  rows={[
+                    ["ID", "ATK", "DEF", "BP", "EP"],
+                    ...aggregateByTackle(
+                      rows.slice(1),
+                      "LURE_",
+                      locationPercents,
+                    ),
+                  ]}
+                />
+              </Flex>
+            </Grid>
+          )}
+          <Button
+            size="1"
+            variant="soft"
+            style={{ width: "fit-content" }}
+            onClick={() => {
+              const comment = [
+                `# Attack curve: ${fnConfigStr(attackFn)}`,
+                `# Defense curve: ${fnConfigStr(defenseFn)}`,
+                `# Base Price curve: ${fnConfigStr(priceFn)}`,
+                `# Variance: ${variance} | Levels: ${levels}`,
+              ].join("\n");
+              downloadCsv(rows, "FishGameplay.csv", comment);
+            }}
+          >
+            Download FishGameplay.csv
+          </Button>
+        </>
       )}
-      <Button
-        size="1"
-        variant="soft"
-        style={{ width: "fit-content" }}
-        onClick={() => {
-          const comment = [
-            `# Attack curve: ${fnConfigStr(attackFn)}`,
-            `# Defense curve: ${fnConfigStr(defenseFn)}`,
-            `# Base Price curve: ${fnConfigStr(priceFn)}`,
-            `# Variance: ${variance} | Levels: ${levels}`,
-          ].join("\n");
-          downloadCsv(rows, "FishGameplay.csv", comment);
-        }}
-      >
-        Download FishGameplay.csv
-      </Button>
     </Flex>
   );
 }
@@ -957,17 +1024,52 @@ function TemplateShopGenerator({
   levels,
   onChange,
   showPreview,
+  defaultOpenTab,
+  open,
+  onToggle,
 }: {
   shopKey: ShopKey;
   levels: number;
   onChange?: (rows: string[][]) => void;
   showPreview: boolean;
+  defaultOpenTab: string;
+  open: boolean;
+  onToggle: () => void;
 }) {
   const template = SHOP_TEMPLATES[shopKey];
+  const [openTabs, setOpenTabs] = useState<Set<string>>(
+    () => new Set([defaultOpenTab]),
+  );
+
+  function toggleTab(tab: string) {
+    setOpenTabs((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(tab)) next.add(tab);
+      return next;
+    });
+  }
   const [settings, setSettings] = useState<ShopSettings>(() =>
     loadShopSettings(shopKey),
   );
   const initialRef = useRef(settings);
+  // Shop ID → action tab, from ShopDisplay.csv like the in-game shop.
+  const [displayTabs, setDisplayTabs] = useState<Map<string, string>>(
+    new Map(),
+  );
+
+  useEffect(() => {
+    loadShopDisplayMap()
+      .then((map) =>
+        setDisplayTabs(new Map([...map].map(([id, entry]) => [id, entry.tab]))),
+      )
+      .catch(() => setDisplayTabs(new Map()));
+  }, []);
+
+  const tabOf = (id: string) => displayTabs.get(id) ?? DEFAULT_SHOP_TAB;
+  // Templated IDs are looked up by their first expansion (ROD_1_ATTACK,
+  // LURE_0), and rods by the first purchasable one.
+  const itemTab = (item: ShopTemplateItem) =>
+    tabOf(substituteId(item.id, { rod: 1, i: 0 }));
 
   const rows = generateRowsFromTemplate(template, settings, levels);
 
@@ -1005,12 +1107,101 @@ function TemplateShopGenerator({
     return lines.join("\n");
   }
 
+  const cards: { key: string; tab: string; node: React.ReactNode }[] = [
+    ...template.items.map((item) => {
+      const itemSettings = settings.items[item.id];
+      return {
+        key: item.id,
+        tab: itemTab(item),
+        node: (
+          <Flex direction="column" gap="2">
+            <Text size="1" weight="bold">
+              {item.label}
+            </Text>
+            <FunctionSelect
+              label="Price curve"
+              value={itemSettings.curve}
+              onChange={(curve) => setItem(item.id, { curve })}
+            />
+            {(item.count !== "levels" || item.editValue) && (
+              <Flex gap="3" wrap="wrap" align="end">
+                {item.count !== "levels" && (
+                  <NumInput
+                    label={item.kind === "series" ? "Tiers" : "Upgrades"}
+                    value={itemSettings.count}
+                    onChange={(count) => setItem(item.id, { count })}
+                    min={0}
+                  />
+                )}
+                {item.editValue && (
+                  <NumInput
+                    label="Value per level"
+                    value={itemSettings.valuePerLevel}
+                    onChange={(valuePerLevel) =>
+                      setItem(item.id, { valuePerLevel })
+                    }
+                    min={-99999}
+                    max={99999}
+                  />
+                )}
+              </Flex>
+            )}
+          </Flex>
+        ),
+      };
+    }),
+  ];
+  if (template.rods) {
+    cards.push({
+      key: "RODS",
+      tab: tabOf("ROD_2"),
+      node: (
+        <Flex direction="column" gap="2">
+          <Text size="1" weight="bold">
+            RODS
+          </Text>
+          <Flex gap="3" wrap="wrap" align="end">
+            <NumInput
+              label="Rod count"
+              value={settings.rods.count}
+              onChange={(count) => setRods({ count })}
+              min={1}
+            />
+            <NumInput
+              label="Price multiplier"
+              value={settings.rods.priceMultiplier}
+              onChange={(priceMultiplier) => setRods({ priceMultiplier })}
+              min={0.1}
+              step={0.1}
+            />
+          </Flex>
+          {settings.rods.count > 1 && (
+            <FunctionSelect
+              label="Rod purchase price curve (ROD_2+)"
+              value={settings.rods.purchaseCurve}
+              onChange={(purchaseCurve) => setRods({ purchaseCurve })}
+            />
+          )}
+        </Flex>
+      ),
+    });
+  }
+
+  const cardsByTab = new Map(groupByTab(cards, (c) => c.tab));
+  const rowsByTab = new Map(groupByTab(rows.slice(1), (r) => tabOf(r[0])));
+  const tabs = groupByTab(
+    [...cardsByTab.keys(), ...rowsByTab.keys()],
+    (tab) => tab,
+  ).map(([tab]) => tab);
+
   return (
     <Flex direction="column" gap="3">
       <Flex align="center" gap="3">
-        <Text size="2" weight="bold">
-          {template.title}
-        </Text>
+        <CollapseToggle open={open} onToggle={onToggle}>
+          <Text size="2" weight="bold">
+            {template.title}
+          </Text>
+        </CollapseToggle>
         <Button
           size="1"
           variant="ghost"
@@ -1029,90 +1220,52 @@ function TemplateShopGenerator({
         </Button>
       </Flex>
 
-      <Grid columns="2" gap="4">
-        {template.items.map((item) => {
-          const itemSettings = settings.items[item.id];
-          return (
-            <Flex key={item.id} direction="column" gap="2">
-              <Text size="1" weight="bold">
-                {item.label}
-              </Text>
-              <FunctionSelect
-                label="Price curve"
-                value={itemSettings.curve}
-                onChange={(curve) => setItem(item.id, { curve })}
-              />
-              {(item.count !== "levels" || item.editValue) && (
-                <Flex gap="3" wrap="wrap" align="end">
-                  {item.count !== "levels" && (
-                    <NumInput
-                      label={item.kind === "series" ? "Tiers" : "Upgrades"}
-                      value={itemSettings.count}
-                      onChange={(count) => setItem(item.id, { count })}
-                      min={0}
+      {open && (
+        <>
+          {tabs.map((tab) => (
+            <Flex key={tab} direction="column" gap="3">
+              <Separator size="4" />
+              <CollapseToggle
+                open={openTabs.has(tab)}
+                onToggle={() => toggleTab(tab)}
+              >
+                <Text size="1" weight="bold" color="gray">
+                  {tab.toUpperCase()} TAB
+                </Text>
+              </CollapseToggle>
+              {openTabs.has(tab) && (
+                <>
+                  <Grid columns="2" gap="4">
+                    {(cardsByTab.get(tab) ?? []).map((card) => (
+                      <React.Fragment key={card.key}>
+                        {card.node}
+                      </React.Fragment>
+                    ))}
+                  </Grid>
+                  {showPreview && (
+                    <PreviewTable
+                      rows={[
+                        ["ID", "Price"],
+                        ...(rowsByTab.get(tab) ?? []).map((r) => [r[0], r[1]]),
+                      ]}
                     />
                   )}
-                  {item.editValue && (
-                    <NumInput
-                      label="Value per level"
-                      value={itemSettings.valuePerLevel}
-                      onChange={(valuePerLevel) =>
-                        setItem(item.id, { valuePerLevel })
-                      }
-                      min={-99999}
-                      max={99999}
-                    />
-                  )}
-                </Flex>
+                </>
               )}
             </Flex>
-          );
-        })}
-
-        {template.rods && (
-          <Flex direction="column" gap="2">
-            <Text size="1" weight="bold">
-              RODS
-            </Text>
-            <Flex gap="3" wrap="wrap" align="end">
-              <NumInput
-                label="Rod count"
-                value={settings.rods.count}
-                onChange={(count) => setRods({ count })}
-                min={1}
-              />
-              <NumInput
-                label="Price multiplier"
-                value={settings.rods.priceMultiplier}
-                onChange={(priceMultiplier) => setRods({ priceMultiplier })}
-                min={0.1}
-                step={0.1}
-              />
-            </Flex>
-            {settings.rods.count > 1 && (
-              <FunctionSelect
-                label="Rod purchase price curve (ROD_2+)"
-                value={settings.rods.purchaseCurve}
-                onChange={(purchaseCurve) => setRods({ purchaseCurve })}
-              />
-            )}
-          </Flex>
-        )}
-      </Grid>
-
-      {showPreview && (
-        <PreviewTable
-          rows={[["ID", "Price"], ...rows.slice(1).map((r) => [r[0], r[1]])]}
-        />
+          ))}
+          <Button
+            size="1"
+            variant="soft"
+            style={{ width: "fit-content" }}
+            onClick={() =>
+              downloadCsv(rows, template.output, downloadComment())
+            }
+          >
+            Download {template.output}
+          </Button>
+        </>
       )}
-      <Button
-        size="1"
-        variant="soft"
-        style={{ width: "fit-content" }}
-        onClick={() => downloadCsv(rows, template.output, downloadComment())}
-      >
-        Download {template.output}
-      </Button>
     </Flex>
   );
 }
@@ -1181,13 +1334,21 @@ export function CsvGeneratorPanel({
   onFishRowsChange,
   onShopRowsChange,
   onOpenChange,
+  shopTab = DEFAULT_SHOP_TAB,
+  fishOpen: defaultFishOpen = true,
 }: {
   onFishRowsChange?: (rows: string[][]) => void;
   onShopRowsChange?: (rows: string[][]) => void;
   onOpenChange?: (open: boolean) => void;
+  // The game tab this page models; its shop section starts expanded.
+  shopTab?: string;
+  // Whether the Fish column starts expanded.
+  fishOpen?: boolean;
 }) {
   const [open, setOpen] = useState(true);
   const [showPreview, setShowPreview] = useState(true);
+  const [shopOpen, setShopOpen] = useState(true);
+  const [fishOpen, setFishOpen] = useState(defaultFishOpen);
   const [fishRows, setFishRows] = useState<string[][]>([]);
   const [shopRows, setShopRows] = useState<string[][]>([]);
   const [rodData, setRodData] = useState<RodData[]>([]);
@@ -1295,8 +1456,29 @@ export function CsvGeneratorPanel({
       </Flex>
       {open && (
         <>
-          <Flex direction="row" gap="6" align="start">
-            <Flex direction="column" gap="3" style={{ flex: 1 }}>
+          {/* Fixed halves (minmax(0, …) so wide tables can't stretch one), so
+              collapsing either side leaves the other's width unchanged. */}
+          <Grid
+            columns="minmax(0, 1fr) auto minmax(0, 1fr)"
+            gap="6"
+            align="start"
+          >
+            <Flex direction="column" gap="3">
+              <TemplateShopGenerator
+                shopKey="shop"
+                onChange={(rows) => {
+                  setShopRows(rows);
+                  onShopRowsChange?.(rows);
+                }}
+                showPreview={showPreview}
+                levels={levels}
+                defaultOpenTab={shopTab}
+                open={shopOpen}
+                onToggle={() => setShopOpen((o) => !o)}
+              />
+            </Flex>
+            <Separator orientation="vertical" size="4" />
+            <Flex direction="column" gap="3">
               <FishGenerator
                 onChange={(rows) => {
                   setFishRows(rows);
@@ -1305,8 +1487,10 @@ export function CsvGeneratorPanel({
                 showPreview={showPreview}
                 levels={levels}
                 locationPercents={locationPercents}
+                open={fishOpen}
+                onToggle={() => setFishOpen((o) => !o)}
               />
-              {showPreview && (
+              {fishOpen && showPreview && (
                 <LureCostTable
                   fishRows={fishRows}
                   shopRows={shopRows}
@@ -1316,19 +1500,7 @@ export function CsvGeneratorPanel({
                 />
               )}
             </Flex>
-            <Separator orientation="vertical" size="4" />
-            <Flex direction="column" gap="3" style={{ flex: 1 }}>
-              <TemplateShopGenerator
-                shopKey="shop"
-                onChange={(rows) => {
-                  setShopRows(rows);
-                  onShopRowsChange?.(rows);
-                }}
-                showPreview={showPreview}
-                levels={levels}
-              />
-            </Flex>
-          </Flex>
+          </Grid>
         </>
       )}
     </Flex>
