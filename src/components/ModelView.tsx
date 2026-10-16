@@ -18,6 +18,7 @@ import { FightTraceTab } from "./model/FightTraceTab";
 import { ParamSweepTab } from "./model/ParamSweepTab";
 import { EconomyTab } from "./model/EconomyTab";
 import { GraphsTab } from "./model/GraphsTab";
+import { FieldTab } from "./model/FieldTab";
 import {
   getGeneratedFishRows,
   getGeneratedShopRows,
@@ -29,6 +30,9 @@ export function ModelView() {
   const [locationData, setLocationData] = useState<LocationFishEntry[]>([]);
   const [rodData, setRodData] = useState<RodData[]>([]);
   const [baitData, setBaitData] = useState<BaitData[]>([]);
+  const [section, setSection] = useState(
+    () => localStorage.getItem("modelSection") ?? "fish",
+  );
   const [activeTab, setActiveTab] = useState(
     () => localStorage.getItem("debugTab") ?? "fight",
   );
@@ -90,75 +94,106 @@ export function ModelView() {
           minHeight: "100vh",
         }}
       >
-        <Flex align="center" gap="4">
-          <Text size="6" weight="bold">
-            Model
-          </Text>
-          <Flex align="center" gap="2">
-            <Text size="2" color="gray">
-              Fish source:
-            </Text>
-            <Select.Root
-              value={fishSource}
-              onValueChange={(v) => {
-                const src = v as "csv" | "generated";
-                setFishSource(src);
-                localStorage.setItem("debugFishSource", src);
-              }}
-            >
-              <Select.Trigger />
-              <Select.Content>
-                <Select.Item value="csv">FishGameplay.csv</Select.Item>
-                <Select.Item value="generated" disabled={!generatedFishRows}>
-                  Generated{!generatedFishRows ? " (none yet)" : ""}
-                </Select.Item>
-              </Select.Content>
-            </Select.Root>
-          </Flex>
-        </Flex>
+        <Text size="6" weight="bold">
+          Model
+        </Text>
         {fishData.length === 0 ? (
           <Text color="gray">Loading data…</Text>
         ) : (
           <Tabs.Root
-            value={activeTab}
+            value={section}
             onValueChange={(v) => {
-              setActiveTab(v);
-              localStorage.setItem("debugTab", v);
+              setSection(v);
+              localStorage.setItem("modelSection", v);
             }}
           >
-            <Tabs.List>
-              <Tabs.Trigger value="fight">Fight Trace</Tabs.Trigger>
-              <Tabs.Trigger value="sweep">Parameter Sweep</Tabs.Trigger>
-              <Tabs.Trigger value="economy">Economy</Tabs.Trigger>
-              <Tabs.Trigger value="graphs">Graphs</Tabs.Trigger>
+            <Tabs.List size="2">
+              <Tabs.Trigger value="field">Field</Tabs.Trigger>
+              <Tabs.Trigger value="fish">Fish</Tabs.Trigger>
             </Tabs.List>
-            <Tabs.Content value="fight">
-              <FightTraceTab fishData={activeFishData} rodData={rodData} />
-            </Tabs.Content>
-            <Tabs.Content value="sweep">
-              <ParamSweepTab fishData={activeFishData} rodData={rodData} />
-            </Tabs.Content>
-            <Tabs.Content value="economy">
-              <EconomyTab
-                locationData={locationData}
-                rodData={rodData}
-                baitData={baitData}
-                generatedFishRows={generatedFishRows}
+            <Tabs.Content value="field">
+              <FieldTab
+                shopData={shopData}
                 generatedShopRows={generatedShopRows}
                 onFishRowsChange={setGeneratedFishRows}
                 onShopRowsChange={setGeneratedShopRows}
               />
             </Tabs.Content>
-            <Tabs.Content value="graphs">
-              <GraphsTab
-                fishData={fishData}
-                locationData={locationData}
-                rodData={rodData}
-                generatedFishRows={generatedFishRows}
-                generatedShopRows={generatedShopRows}
-                onFishRowsChange={setGeneratedFishRows}
-                onShopRowsChange={setGeneratedShopRows}
-              />
+            <Tabs.Content value="fish">
+              <Flex direction="column" gap="3" pt="3">
+                <Flex align="center" gap="2">
+                  <Text size="2" color="gray">
+                    Fish source:
+                  </Text>
+                  <Select.Root
+                    value={fishSource}
+                    onValueChange={(v) => {
+                      const src = v as "csv" | "generated";
+                      setFishSource(src);
+                      localStorage.setItem("debugFishSource", src);
+                    }}
+                  >
+                    <Select.Trigger />
+                    <Select.Content>
+                      <Select.Item value="csv">FishGameplay.csv</Select.Item>
+                      <Select.Item
+                        value="generated"
+                        disabled={!generatedFishRows}
+                      >
+                        Generated{!generatedFishRows ? " (none yet)" : ""}
+                      </Select.Item>
+                    </Select.Content>
+                  </Select.Root>
+                </Flex>
+                <Tabs.Root
+                  value={activeTab}
+                  onValueChange={(v) => {
+                    setActiveTab(v);
+                    localStorage.setItem("debugTab", v);
+                  }}
+                >
+                  <Tabs.List>
+                    <Tabs.Trigger value="fight">Fight Trace</Tabs.Trigger>
+                    <Tabs.Trigger value="sweep">Parameter Sweep</Tabs.Trigger>
+                    <Tabs.Trigger value="economy">Economy</Tabs.Trigger>
+                    <Tabs.Trigger value="graphs">Graphs</Tabs.Trigger>
+                  </Tabs.List>
+                  <Tabs.Content value="fight">
+                    <FightTraceTab
+                      fishData={activeFishData}
+                      rodData={rodData}
+                    />
+                  </Tabs.Content>
+                  <Tabs.Content value="sweep">
+                    <ParamSweepTab
+                      fishData={activeFishData}
+                      rodData={rodData}
+                    />
+                  </Tabs.Content>
+                  <Tabs.Content value="economy">
+                    <EconomyTab
+                      locationData={locationData}
+                      rodData={rodData}
+                      baitData={baitData}
+                      generatedFishRows={generatedFishRows}
+                      generatedShopRows={generatedShopRows}
+                      onFishRowsChange={setGeneratedFishRows}
+                      onShopRowsChange={setGeneratedShopRows}
+                    />
+                  </Tabs.Content>
+                  <Tabs.Content value="graphs">
+                    <GraphsTab
+                      fishData={fishData}
+                      locationData={locationData}
+                      rodData={rodData}
+                      generatedFishRows={generatedFishRows}
+                      generatedShopRows={generatedShopRows}
+                      onFishRowsChange={setGeneratedFishRows}
+                      onShopRowsChange={setGeneratedShopRows}
+                    />
+                  </Tabs.Content>
+                </Tabs.Root>
+              </Flex>
             </Tabs.Content>
           </Tabs.Root>
         )}

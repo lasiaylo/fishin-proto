@@ -14,7 +14,10 @@ Fishin2Model is a React game with a built-in balancing tool.
 npm run dev
 ```
 
-Visit `localhost:5173/model` for the Model view (`src/components/ModelView.tsx`, tabs in `src/components/model/`) — Fight Trace, Parameter Sweep, Economy, and Graphs tabs powered by `src/game/FightEngine.ts` and `src/game/EconomyModel.ts`.
+Visit `localhost:5173/model` for the Model view (`src/components/ModelView.tsx`, tabs in `src/components/model/`). It has two parent tabs:
+
+- **Field** — sit income and the fields shop (`FieldTab.tsx`), powered by `src/game/FieldModel.ts`.
+- **Fish** — Fight Trace, Parameter Sweep, Economy, and Graphs tabs powered by `src/game/FightEngine.ts` and `src/game/EconomyModel.ts`.
 
 ### Other scripts
 
@@ -50,6 +53,7 @@ An offline simulation used for balancing. It runs hundreds of rounds analyticall
 - **New mechanic timing** (e.g. a wait phase, a new animation): add a corresponding expected-time term to `perCastOverhead` in `EconomyModel.ts`.
 - **Bite probability changes** (e.g. per-check probability, escalation logic, pBite formula): update `castBiteProbability`, `expectedLuringTime`, or `expectedWaitTime` (bait).
 - **XP gain changes**: update the XP-per-round block in `simulateEconomy` (lure XP goes through `applyLureXp` / `computeLureLevel`).
+- **Fields changes** (sit payout/cooldown, `SIT_*` / `UNLOCK_POND` upgrade effects in `src/stores/fieldsStore.ts` or `applyStatEffect` in `src/stores/upgradeStoreFactory.ts`): mirror them in `src/game/FieldModel.ts`, which `EconomyModel.ts` deliberately skips.
 - **New tackle behaviour** (e.g. a mechanic that differs between bait and lures): branch on `getTackleType(lureId) === TackleType.BAIT` in any affected economy function.
 
 ## Background jobs: no automatic PRs

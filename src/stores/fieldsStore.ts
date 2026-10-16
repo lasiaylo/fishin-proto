@@ -1,7 +1,11 @@
 import { create } from "zustand";
 import { addMoney } from "./playerStore";
 import { incrementTotalSits } from "./metricsStore";
-import { FIELDS_SIT_COOLDOWN_MS, FIELDS_SIT_PAYOUT } from "../util/constants";
+import {
+  FIELDS_SIT_COOLDOWN_MS,
+  FIELDS_SIT_PAYOUT,
+  MIN_SIT_COOLDOWN_MS,
+} from "../util/constants";
 
 interface FieldsState {
   readyAt: number;
@@ -15,8 +19,6 @@ export const useFields = create<FieldsState>(() => ({
   payout: FIELDS_SIT_PAYOUT,
   cooldownMs: FIELDS_SIT_COOLDOWN_MS,
 }));
-
-const MIN_SIT_COOLDOWN_MS = 500;
 
 export function canSit(): boolean {
   return Date.now() >= useFields.getState().readyAt;

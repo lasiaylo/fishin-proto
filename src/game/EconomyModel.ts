@@ -587,8 +587,8 @@ export function computeLureStats(
   return { rates, earnings, winRates, remainingHPs };
 }
 
-// Stats whose effects the model doesn't simulate (fields/sit income isn't
-// modelled, and the pond is assumed open from the start). They're dropped up front: buying them would burn simulated
+// Stats whose effects the model doesn't simulate (fields/sit income is
+// modelled separately in FieldModel.ts, and the pond is assumed open from the start). They're dropped up front: buying them would burn simulated
 // money, and they'd never count toward the all-maxed stop condition.
 const UNMODELED_STATS = new Set<StatName>([
   StatName.SIT_PAYOUT,

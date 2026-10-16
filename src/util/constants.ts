@@ -82,6 +82,8 @@ export const DREAM_POINT_MONEY_THRESHOLDS = Array(10)
 // ==========================================================================
 export const FIELDS_SIT_COOLDOWN_MS = 10000;
 export const FIELDS_SIT_PAYOUT = 10;
+// Floor the SIT_COOLDOWN upgrade can't push the cooldown below.
+export const MIN_SIT_COOLDOWN_MS = 500;
 
 // ==========================================================================
 // BIRDS (sky)
