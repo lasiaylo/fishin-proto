@@ -10,6 +10,7 @@ import {
   DEFAULT_FIELD_OPTIONS,
   simulateField,
   type FieldOptions,
+  type FieldStrategy,
   type FieldSample,
 } from "../../game/FieldModel";
 import {
@@ -154,14 +155,20 @@ export function FieldTab({
           max={600}
           onChange={(v) => update({ maxMinutes: v })}
         />
-        <NumInput
-          label="Reaction delay (s)"
-          value={options.reactionDelayS}
-          min={0}
-          max={60}
-          step={0.1}
-          onChange={(v) => update({ reactionDelayS: v })}
-        />
+        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <Text size="1" color="gray">
+            Upgrade choice
+          </Text>
+          <select
+            value={options.strategy}
+            onChange={(e) =>
+              update({ strategy: e.target.value as FieldStrategy })
+            }
+          >
+            <option value="efficient">Most efficient</option>
+            <option value="cheapest">Cheapest</option>
+          </select>
+        </label>
         <Text as="label" size="1" color="gray">
           <Flex gap="2" align="center">
             <Switch

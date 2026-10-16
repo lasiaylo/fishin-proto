@@ -22,18 +22,21 @@ const FIELD_STATS = new Set<StatName>([
   StatName.WIND,
 ]);
 
+// How the model picks what to buy next: the best income gain per cost, or
+// simply whatever is cheapest.
+export type FieldStrategy = "efficient" | "cheapest";
+
 export interface FieldOptions {
   maxMinutes: number;
-  // Seconds between the cooldown finishing and the player pressing sit.
-  reactionDelayS: number;
   // End the run as soon as the pond is bought.
   stopAtPond: boolean;
+  strategy: FieldStrategy;
 }
 
 export const DEFAULT_FIELD_OPTIONS: FieldOptions = {
   maxMinutes: 10,
-  reactionDelayS: 0,
   stopAtPond: false,
+  strategy: "efficient",
 };
 
 export interface FieldSample {
@@ -103,10 +106,8 @@ function windRate(upgrades: ShopUpgradeData[], levels: Record<string, number>) {
 function incomeRate(
   upgrades: ShopUpgradeData[],
   levels: Record<string, number>,
-  reactionDelayS: number,
 ) {
-  const period =
-    sitCooldownMs(upgrades, levels) / 1000 + Math.max(0, reactionDelayS);
+  const period = sitCooldownMs(upgrades, levels) / 1000;
   const sitRate = period > 0 ? sitPayout(upgrades, levels) / period : 0;
   return sitRate + windRate(upgrades, levels);
 }
@@ -139,10 +140,20 @@ function available(
 function pickTarget(
   upgrades: ShopUpgradeData[],
   state: FieldState,
-  reactionDelayS: number,
+  strategy: FieldStrategy,
 ): ShopUpgradeData | null {
   const options = available(upgrades, state.levels);
-  const rate = incomeRate(upgrades, state.levels, reactionDelayS);
+  if (strategy === "cheapest") {
+    let cheapest: ShopUpgradeData | null = null;
+    for (const u of options)
+      if (
+        !cheapest ||
+        nextPrice(u, state.levels)! < nextPrice(cheapest, state.levels)!
+      )
+        cheapest = u;
+    return cheapest;
+  }
+  const rate = incomeRate(upgrades, state.levels);
 
   let best: ShopUpgradeData | null = null;
   let bestRoi = 0;
@@ -150,8 +161,7 @@ function pickTarget(
     if (u.stat === StatName.UNLOCK_POND) continue;
     const gained = { ...state.levels, [u.id]: (state.levels[u.id] ?? 0) + 1 };
     const roi =
-      (incomeRate(upgrades, gained, reactionDelayS) - rate) /
-      nextPrice(u, state.levels)!;
+      (incomeRate(upgrades, gained) - rate) / nextPrice(u, state.levels)!;
     if (roi > bestRoi) {
       bestRoi = roi;
       best = u;
@@ -164,11 +174,10 @@ function pickTarget(
 
   const pondPrice = nextPrice(pond, state.levels)!;
   const bestPrice = nextPrice(best, state.levels)!;
-  const newRate = incomeRate(
-    upgrades,
-    { ...state.levels, [best.id]: (state.levels[best.id] ?? 0) + 1 },
-    reactionDelayS,
-  );
+  const newRate = incomeRate(upgrades, {
+    ...state.levels,
+    [best.id]: (state.levels[best.id] ?? 0) + 1,
+  });
   const direct = Math.max(0, pondPrice - state.money) / rate;
   const viaUpgrade =
     Math.max(0, bestPrice - state.money) / rate +
@@ -183,7 +192,6 @@ export function simulateField(
   options: FieldOptions = DEFAULT_FIELD_OPTIONS,
 ): FieldResult {
   const upgrades = shopData.filter((u) => FIELD_STATS.has(u.stat));
-  const reactionDelayS = Math.max(0, options.reactionDelayS);
   const maxTime = Math.max(0, options.maxMinutes) * 60;
   const sampleStep = maxTime / MAX_SAMPLES;
 
@@ -207,7 +215,7 @@ export function simulateField(
       payout: sitPayout(upgrades, state.levels),
       cooldownMs: sitCooldownMs(upgrades, state.levels),
       windPerS: windRate(upgrades, state.levels),
-      incomePerMin: incomeRate(upgrades, state.levels, reactionDelayS) * 60,
+      incomePerMin: incomeRate(upgrades, state.levels) * 60,
     });
   };
 
@@ -223,15 +231,14 @@ export function simulateField(
     // The cooldown starts from the sit, so a cooldown upgrade bought with
     // this payout only shortens the following wait.
     const payout = sitPayout(upgrades, state.levels);
-    nextSitAt =
-      time + sitCooldownMs(upgrades, state.levels) / 1000 + reactionDelayS;
+    nextSitAt = time + sitCooldownMs(upgrades, state.levels) / 1000;
     state.money += payout;
     totalEarned += payout;
     totalSits++;
 
     let bought = false;
     for (;;) {
-      const target = pickTarget(upgrades, state, reactionDelayS);
+      const target = pickTarget(upgrades, state, options.strategy);
       if (!target) break;
       const price = nextPrice(target, state.levels)!;
       if (state.money < price) break;
@@ -262,6 +269,6 @@ export function simulateField(
     totalEarned,
     pondUnlockedAt,
     endTime: time,
-    finalIncomePerMin: incomeRate(upgrades, state.levels, reactionDelayS) * 60,
+    finalIncomePerMin: incomeRate(upgrades, state.levels) * 60,
   };
 }
