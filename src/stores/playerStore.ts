@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import {
   BAIT_MAX_STACK,
+  WALLET_CAPACITY,
   getTackleType,
   INITIAL_PLAYER_STATE,
   Rod,
@@ -32,8 +33,12 @@ export const usePlayer = create(
 
 export const getWallet = () => usePlayer.getState().wallet;
 
-export function addMoney(amount: number) {
-  usePlayer.setState((s) => ({ wallet: s.wallet + amount }));
+// Returns how much was actually added once the wallet's capacity is applied.
+export function addMoney(amount: number): number {
+  const before = usePlayer.getState().wallet;
+  const wallet = Math.min(WALLET_CAPACITY, before + amount);
+  usePlayer.setState({ wallet });
+  return Math.max(0, wallet - before);
 }
 
 export function setMoney(amount: number) {

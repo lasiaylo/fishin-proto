@@ -15,7 +15,7 @@ export function EventView() {
       width="200px"
       gap={"5"}
     >
-      <Flex overflow="hidden" direction="column" gap="3">
+      <Flex overflow="hidden" direction="column" gap="3" pr="5">
         {events.map((event, i) => (
           <Text
             key={event.id}

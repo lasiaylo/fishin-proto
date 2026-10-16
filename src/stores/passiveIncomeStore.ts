@@ -5,7 +5,7 @@ import { addMoney } from "./playerStore";
 // it a passive-income slot and a row in the debug panel.
 export const CURRENCY_SINKS = {
   money: addMoney,
-} satisfies Record<string, (amount: number) => void>;
+} satisfies Record<string, (amount: number) => number>;
 
 export type Currency = keyof typeof CURRENCY_SINKS;
 
@@ -101,8 +101,7 @@ function credit(currency: Currency, amount: number) {
   const whole = Math.floor(total);
   remainders[currency] = total - whole;
   if (whole <= 0) return;
-  paidTotals[currency] += whole;
-  CURRENCY_SINKS[currency](whole);
+  paidTotals[currency] += CURRENCY_SINKS[currency](whole);
 }
 
 // Debug fast-forward: pays `seconds` worth of the current rate at once.

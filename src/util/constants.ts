@@ -1,5 +1,7 @@
 import { PlayerState } from "../stores/playerStore";
 
+// Most money the wallet can hold; earnings past it are lost.
+export const WALLET_CAPACITY = 200;
 export const CURRENCY_SYMBOL = "࿔";
 export const DREAM_POINT_SYMBOL = "✦";
 export const BASE_FISH_ID = "FISH_B_0";
