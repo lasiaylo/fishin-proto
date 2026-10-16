@@ -3,10 +3,12 @@ import { Flex, Grid, Text, Table, Button, Separator } from "@radix-ui/themes";
 import { NumInput } from "./shared";
 import {
   DEFAULT_SHOP_TAB,
+  formatRequirement,
   levelStat,
   loadRodData,
   loadLocationGameplayData,
   loadShopDisplayMap,
+  type Requirement,
   type RodData,
 } from "../../util/csvLoader";
 import {
@@ -206,6 +208,9 @@ interface ShopTemplateItem {
   perRod?: boolean;
   // Series only: row i requires row i−n.
   requiresPrevious?: number;
+  // Default extra requirements, applied to every row the item generates. No
+  // level means the required upgrade must be maxed. Editable in the UI.
+  requires?: { id: string; level?: number }[];
   curve: CurveTemplate;
 }
 
@@ -229,6 +234,7 @@ interface ItemSettings {
   curve: FunctionConfig;
   count: number;
   valuePerLevel: number;
+  requires: Requirement[];
 }
 
 interface RodSettings {
@@ -269,6 +275,10 @@ function templateSettings(template: ShopTemplate): ShopSettings {
           curve: curveFromTemplate(item.curve),
           count: typeof item.count === "number" ? item.count : 0,
           valuePerLevel: item.valuePerLevel ?? 1,
+          requires: (item.requires ?? []).map((r) => ({
+            id: r.id,
+            level: r.level ?? null,
+          })),
         },
       ]),
     ),
@@ -278,6 +288,92 @@ function templateSettings(template: ShopTemplate): ShopSettings {
 function substituteId(id: string, vars: Record<string, number>): string {
   return id.replace(/\{(\w+)\}/g, (match, key) =>
     key in vars ? String(vars[key]) : match,
+  );
+}
+
+// Whether a generated row ID came from a template ID like ROD_{rod}_ATTACK.
+function matchesTemplateId(templateId: string, rowId: string): boolean {
+  const pattern = templateId
+    .split(/\{\w+\}/)
+    .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("\\d+");
+  return new RegExp(`^${pattern}$`).test(rowId);
+}
+
+// Editable list of extra requirements: an ID from the generated rows, plus a
+// level or "max" (the required upgrade must be maxed).
+function RequirementsEditor({
+  value,
+  options,
+  onChange,
+}: {
+  value: Requirement[];
+  options: string[];
+  onChange: (v: Requirement[]) => void;
+}) {
+  const update = (i: number, patch: Partial<Requirement>) =>
+    onChange(value.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  return (
+    <Flex direction="column" gap="1">
+      <Text size="1" color="gray">
+        Requires
+      </Text>
+      {value.map((req, i) => (
+        <Flex key={i} gap="2" align="end" wrap="wrap">
+          <select
+            value={req.id}
+            onChange={(e) => update(i, { id: e.target.value })}
+          >
+            {!options.includes(req.id) && (
+              <option value={req.id}>{req.id} (missing)</option>
+            )}
+            {options.map((id) => (
+              <option key={id} value={id}>
+                {id}
+              </option>
+            ))}
+          </select>
+          <label style={{ display: "flex", gap: 4, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={req.level === null}
+              onChange={(e) =>
+                update(i, { level: e.target.checked ? null : 1 })
+              }
+            />
+            <Text size="1" color="gray">
+              max
+            </Text>
+          </label>
+          {req.level !== null && (
+            <NumInput
+              label="Level"
+              value={req.level}
+              onChange={(level) => update(i, { level: Math.max(1, level) })}
+              min={1}
+            />
+          )}
+          <Button
+            size="1"
+            variant="soft"
+            color="gray"
+            onClick={() => onChange(value.filter((_, j) => j !== i))}
+          >
+            ✕
+          </Button>
+        </Flex>
+      ))}
+      <Flex>
+        <Button
+          size="1"
+          variant="soft"
+          disabled={options.length === 0}
+          onClick={() => onChange([...value, { id: options[0], level: null }])}
+        >
+          + requirement
+        </Button>
+      </Flex>
+    </Flex>
   );
 }
 
@@ -338,6 +434,13 @@ function templateItemRows(
 ): string[][] {
   const count = item.count === "levels" ? levels : settings.count;
   const vpl = String(settings.valuePerLevel);
+  const requirementCell = (...builtIn: string[]) =>
+    [
+      ...new Set([
+        ...builtIn.filter(Boolean),
+        ...(settings.requires ?? []).map(formatRequirement),
+      ]),
+    ].join(" ");
   if (item.kind === "levels") {
     if (count <= 0) return [];
     return [
@@ -346,7 +449,7 @@ function templateItemRows(
         priceList(settings.curve, count, priceMult),
         item.stat,
         vpl,
-        rodRequirement,
+        requirementCell(rodRequirement),
       ],
     ];
   }
@@ -363,7 +466,7 @@ function templateItemRows(
       String(Math.ceil(evalFn(curve, i))),
       item.stat,
       vpl,
-      [rodRequirement, previous].filter(Boolean).join(" "),
+      requirementCell(rodRequirement, previous),
     ];
   });
 }
@@ -1072,6 +1175,7 @@ function TemplateShopGenerator({
     tabOf(substituteId(item.id, { rod: 1, i: 0 }));
 
   const rows = generateRowsFromTemplate(template, settings, levels);
+  const rowIds = rows.slice(1).map((r) => r[0]);
 
   useEffect(() => {
     localStorage.setItem(shopStorageKey(shopKey), JSON.stringify(settings));
@@ -1092,11 +1196,15 @@ function TemplateShopGenerator({
 
   function downloadComment(): string {
     const lines = template.items.map((item) => {
-      const { curve, count, valuePerLevel } = settings.items[item.id];
+      const { curve, count, valuePerLevel, requires } = settings.items[item.id];
       const countStr =
         item.count === "levels" ? `count=${levels} (levels)` : `count=${count}`;
       const vplStr = item.editValue ? ` | valuePerLevel=${valuePerLevel}` : "";
-      return `# ${item.id} price curve: ${fnConfigStr(curve)} | ${countStr}${vplStr}`;
+      const requiresStr =
+        requires.length > 0
+          ? ` | requires=${requires.map(formatRequirement).join(" ")}`
+          : "";
+      return `# ${item.id} price curve: ${fnConfigStr(curve)} | ${countStr}${vplStr}${requiresStr}`;
     });
     if (template.rods) {
       const { count, priceMultiplier, purchaseCurve } = settings.rods;
@@ -1146,6 +1254,11 @@ function TemplateShopGenerator({
                 )}
               </Flex>
             )}
+            <RequirementsEditor
+              value={itemSettings.requires}
+              options={rowIds.filter((id) => !matchesTemplateId(item.id, id))}
+              onChange={(requires) => setItem(item.id, { requires })}
+            />
           </Flex>
         ),
       };

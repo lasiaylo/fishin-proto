@@ -49,9 +49,10 @@ export function UpgradeCatalogGrid({
   const upgradeById = new Map(allUpgrades.map((u) => [u.id, u]));
   const meetsRequirements = (u: UpgradeEntry) =>
     u.requirements.length === 0 ||
-    u.requirements.every((id) => {
+    u.requirements.every(({ id, level }) => {
       const req = upgradeById.get(id);
-      return req ? isMaxed(req) : true;
+      if (!req) return true;
+      return level === null ? isMaxed(req) : req.level >= level;
     });
 
   const isAttackOrDefense = (u: UpgradeEntry) =>

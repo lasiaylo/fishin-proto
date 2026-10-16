@@ -1,4 +1,8 @@
-import { StatName, type ShopUpgradeData } from "../util/csvLoader";
+import {
+  StatName,
+  type Requirement,
+  type ShopUpgradeData,
+} from "../util/csvLoader";
 import {
   FIELDS_SIT_COOLDOWN_MS,
   FIELDS_SIT_PAYOUT,
@@ -104,10 +108,16 @@ function available(
   upgrades: ShopUpgradeData[],
   levels: Record<string, number>,
 ): ShopUpgradeData[] {
+  const byId = new Map(upgrades.map((u) => [u.id, u]));
+  // Mirrors the shop's meetsRequirements: a bare ID needs that upgrade maxed,
+  // ID:N needs level N, and IDs with no upgrade row count as met.
+  const meets = ({ id, level }: Requirement) => {
+    const req = byId.get(id);
+    if (!req) return true;
+    return (levels[id] ?? 0) >= (level ?? req.prices.length);
+  };
   return upgrades.filter(
-    (u) =>
-      nextPrice(u, levels) !== null &&
-      u.requirements.every((req) => (levels[req] ?? 0) > 0),
+    (u) => nextPrice(u, levels) !== null && u.requirements.every(meets),
   );
 }
 

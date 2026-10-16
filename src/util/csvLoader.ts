@@ -165,9 +165,31 @@ export interface ShopUpgradeData {
   prices: number[];
   stat: StatName;
   valuePerLevel: number;
-  requirements: string[];
+  requirements: Requirement[];
   // Which action tab's shop lists this item: "fields" | "pond" | "sky".
   tab: string;
+}
+
+// A shop Requirement cell is space-separated `ID` or `ID:N` tokens: `ID` needs
+// that upgrade maxed, `ID:N` needs it at level N or higher.
+export interface Requirement {
+  id: string;
+  // null means maxed.
+  level: number | null;
+}
+
+export function parseRequirements(cell: string | undefined): Requirement[] {
+  return (cell ?? "")
+    .split(" ")
+    .filter(Boolean)
+    .map((token) => {
+      const [id, level] = token.split(":");
+      return { id, level: level ? Number(level) : null };
+    });
+}
+
+export function formatRequirement(r: Requirement): string {
+  return r.level === null ? r.id : `${r.id}:${r.level}`;
 }
 
 function parseCSV(text: string): string[][] {
@@ -239,7 +261,7 @@ export async function loadShopGameplayData(
     prices: row[1].split(" ").map(Number),
     stat: parseStatName(row[2]),
     valuePerLevel: Number(row[3]),
-    requirements: row[4] ? row[4].split(" ").filter(Boolean) : [],
+    requirements: parseRequirements(row[4]),
     tab: DEFAULT_SHOP_TAB,
   }));
 }
@@ -331,7 +353,7 @@ export function parseShopGameplayRows(
       prices: row[1].split(" ").map(Number),
       stat,
       valuePerLevel: Number(row[3]),
-      requirements: row[4] ? row[4].split(" ").filter(Boolean) : [],
+      requirements: parseRequirements(row[4]),
       tab: display?.tab ?? DEFAULT_SHOP_TAB,
     };
   });
@@ -364,7 +386,7 @@ export async function loadShopData(
       prices: row[1].split(" ").map(Number),
       stat: parseStatName(row[2]),
       valuePerLevel: Number(row[3]),
-      requirements: row[4] ? row[4].split(" ").filter(Boolean) : [],
+      requirements: parseRequirements(row[4]),
       tab: display?.tab ?? DEFAULT_SHOP_TAB,
     };
   });
