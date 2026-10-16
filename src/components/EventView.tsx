@@ -20,7 +20,7 @@ export function EventView() {
           <Text
             key={event.id}
             size="2"
-            className={i === 1 ? "fade-in" : undefined}
+            className={i === 0 ? "fade-in" : undefined}
           >
             {event.msg}
             {event.colored && (
