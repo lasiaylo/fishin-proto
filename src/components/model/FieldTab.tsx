@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Flex, Text, Table, Switch, Card } from "@radix-ui/themes";
-import { Bar, Line } from "recharts";
+import { Line } from "recharts";
 import {
   loadShopGameplayData,
   parseShopGameplayRows,
@@ -59,6 +59,36 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+function SeriesLegend({
+  items,
+  hidden,
+  onToggle,
+}: {
+  items: { key: string; label: string; color: string }[];
+  hidden: Set<string>;
+  onToggle: (key: string) => void;
+}) {
+  return (
+    <Flex gap="3" wrap="wrap">
+      {items.map(({ key, label, color }) => (
+        <Text
+          key={key}
+          size="1"
+          onClick={() => onToggle(key)}
+          style={{
+            color,
+            cursor: "pointer",
+            opacity: hidden.has(key) ? 0.35 : 1,
+            textDecoration: hidden.has(key) ? "line-through" : undefined,
+          }}
+        >
+          ● {label}
+        </Text>
+      ))}
+    </Flex>
+  );
+}
+
 export function FieldTab({
   shopData: defaultShopData,
   generatedShopRows,
@@ -88,6 +118,13 @@ export function FieldTab({
     }
   }, [selectedShopCSV, generatedShopRows]);
   const [gridLayout, setGridLayout] = useState(true);
+  const [hiddenSeries, setHiddenSeries] = useState<Set<string>>(new Set());
+  const toggleSeries = (key: string) =>
+    setHiddenSeries((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
 
   const update = (patch: Partial<FieldOptions>) => {
     const next = { ...options, ...patch };
@@ -100,9 +137,27 @@ export function FieldTab({
     [shopData, options],
   );
 
-  // Seconds waited before each purchase, measured from the previous one
-  // (the first from the start of the run).
-  const gapData = useMemo(
+  // Seconds waited before each purchase (measured from the previous one, the
+  // first from the start of the run), one row per upgrade level with a column
+  // per upgrade.
+  const { gapData, gapIds, gapMaxLevel } = useMemo(() => {
+    const ids: string[] = [];
+    const rows = new Map<number, Record<string, number>>();
+    result.purchases.forEach((p, i) => {
+      if (!ids.includes(p.id)) ids.push(p.id);
+      const row = rows.get(p.level) ?? { level: p.level };
+      row[p.id] = p.time - (i > 0 ? result.purchases[i - 1].time : 0);
+      rows.set(p.level, row);
+    });
+    const data = [...rows.values()].sort((x, y) => x.level - y.level);
+    return {
+      gapData: data,
+      gapIds: ids,
+      gapMaxLevel: data.length ? data[data.length - 1].level : 1,
+    };
+  }, [result]);
+  // Same gaps, but one row per purchase across every upgrade.
+  const anyGapData = useMemo(
     () =>
       result.purchases.map((p, i) => ({
         index: i + 1,
@@ -111,10 +166,14 @@ export function FieldTab({
       })),
     [result],
   );
-  const gapTickStep = Math.max(1, Math.ceil(gapData.length / 20));
-  const gapTicks = gapData
+  const anyGapTickStep = Math.max(1, Math.ceil(anyGapData.length / 20));
+  const anyGapTicks = anyGapData
     .map((d) => d.index)
-    .filter((i) => i % gapTickStep === 0 || i === 1);
+    .filter((i) => i % anyGapTickStep === 0 || i === 1);
+  const gapTickStep = Math.max(1, Math.ceil(gapMaxLevel / 20));
+  const gapTicks = Array.from({ length: gapMaxLevel }, (_, i) => i + 1).filter(
+    (l) => l % gapTickStep === 0 || l === 1,
+  );
 
   // Round the axis up to a whole tick so the last 5-minute mark is shown.
   const maxTime = Math.max(
@@ -207,6 +266,20 @@ export function FieldTab({
           data={result.samples}
           integerYAxis
           tooltipLabelFormatter={(v) => formatTime(v)}
+          header={
+            <SeriesLegend
+              items={[
+                {
+                  key: "money:totalEarned",
+                  label: "Total earned",
+                  color: COLORS[0],
+                },
+                { key: "money:wallet", label: "Wallet", color: COLORS[3] },
+              ]}
+              hidden={hiddenSeries}
+              onToggle={toggleSeries}
+            />
+          }
           {...chartProps}
         >
           <Line
@@ -214,6 +287,7 @@ export function FieldTab({
             dataKey="totalEarned"
             name="Total earned"
             stroke={COLORS[0]}
+            hide={hiddenSeries.has("money:totalEarned")}
             {...lineProps}
           />
           <Line
@@ -221,6 +295,7 @@ export function FieldTab({
             dataKey="money"
             name="Wallet"
             stroke={COLORS[3]}
+            hide={hiddenSeries.has("money:wallet")}
             {...lineProps}
           />
         </EconomyChart>
@@ -245,51 +320,68 @@ export function FieldTab({
             {...lineProps}
           />
         </EconomyChart>
-        <EconomyChart
-          title="Sit Payout ($) / Cooldown (ms)"
-          data={result.samples}
-          integerYAxis
-          integerRightYAxis
-          tooltipLabelFormatter={(v) => formatTime(v)}
-          {...chartProps}
-        >
-          <Line
-            yAxisId="left"
-            type="stepAfter"
-            dataKey="payout"
-            name="Payout"
-            stroke={COLORS[4]}
-            {...lineProps}
-          />
-          <Line
-            yAxisId="right"
-            type="stepAfter"
-            dataKey="cooldownMs"
-            name="Cooldown (ms)"
-            stroke={COLORS[1]}
-            {...lineProps}
-          />
-        </EconomyChart>
         {gapData.length > 0 && (
           <EconomyChart
             title="Time Between Upgrades"
             data={gapData}
-            xDataKey="index"
-            xDomain={[0.5, gapData.length + 0.5]}
+            xDataKey="level"
+            xDomain={[1, Math.max(2, gapMaxLevel)]}
             xTicks={gapTicks}
+            xTickFormatter={(v) => String(v)}
+            xLabel="Upgrade level"
+            integerXAxis
+            yTickFormatter={formatTime}
+            tooltipFormatter={(v) => formatTime(v)}
+            tooltipLabelFormatter={(v) => `Level ${v}`}
+            syncId="fieldGaps"
+            header={
+              <SeriesLegend
+                items={gapIds.map((id, i) => ({
+                  key: `gap:${id}`,
+                  label: id,
+                  color: COLORS[i % COLORS.length],
+                }))}
+                hidden={hiddenSeries}
+                onToggle={toggleSeries}
+              />
+            }
+          >
+            {gapIds.map((id, i) => (
+              <Line
+                key={id}
+                type="monotone"
+                dataKey={id}
+                name={id}
+                stroke={COLORS[i % COLORS.length]}
+                connectNulls
+                hide={hiddenSeries.has(`gap:${id}`)}
+                {...lineProps}
+                dot
+              />
+            ))}
+          </EconomyChart>
+        )}
+        {anyGapData.length > 0 && (
+          <EconomyChart
+            title="Time Between Upgrades (Any Upgrade)"
+            data={anyGapData}
+            xDataKey="index"
+            xDomain={[1, Math.max(2, anyGapData.length)]}
+            xTicks={anyGapTicks}
             xTickFormatter={(v) => String(v)}
             xLabel="Purchase #"
             integerXAxis
             yTickFormatter={formatTime}
             tooltipFormatter={(v) => formatTime(v)}
             tooltipLabelFormatter={(_, payload) => payload?.[0]?.payload.label}
-            syncId="fieldGaps"
+            syncId="fieldAnyGaps"
           >
-            <Bar
+            <Line
+              type="monotone"
               dataKey="gap"
               name="Since prev"
-              fill={COLORS[6]}
-              isAnimationActive={false}
+              stroke={COLORS[6]}
+              {...lineProps}
             />
           </EconomyChart>
         )}
