@@ -66,7 +66,14 @@ function App() {
     initLocations();
     initBaitData();
     initRodData();
-    initStoryData().then(() => tellStory("start"));
+    // Skip the welcome if StrictMode unmounted us before the CSV loaded.
+    let cancelled = false;
+    initStoryData().then(() => {
+      if (!cancelled) tellStory("start");
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
