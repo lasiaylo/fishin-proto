@@ -14,7 +14,22 @@ Fishin2Model is a React game with a built-in balancing tool.
 npm run dev
 ```
 
-Visit `localhost:5173/debug` for the Model view — fight trace, parameter sweep, and economy simulation charts powered by `src/game/FightEngine.ts` and `src/game/EconomyModel.ts`.
+Visit `localhost:5173/model` for the Model view (`src/components/ModelView.tsx`, tabs in `src/components/model/`) — Fight Trace, Parameter Sweep, Economy, and Graphs tabs powered by `src/game/FightEngine.ts` and `src/game/EconomyModel.ts`.
+
+### Other scripts
+
+```bash
+npm run build   # production build
+npm run lint    # eslint
+```
+
+A husky pre-commit hook runs Prettier on staged files via lint-staged.
+
+## Game data
+
+Gameplay data lives in CSVs under `public/data/` (fish, bait, rods, shop, locations, story), loaded with Papa Parse in `src/util/csvLoader.ts`. Game state lives in zustand stores under `src/stores/`.
+
+Story beats are driven by `public/data/Story.csv` and fired by `src/game/StoryTriggerListener.ts`; see `public/data/STORY_README.md` for the row format and the metrics a `when` condition can check.
 
 ## Architecture: In-Game Engine vs. Economy Model
 
@@ -33,9 +48,9 @@ An offline simulation used for balancing. It runs hundreds of rounds analyticall
 **Any gameplay change that affects timing, bite probability, XP gain, or fight outcomes must be reflected in the economy model.** The model is not automatically derived from the game code — it is a parallel, analytical approximation. Specific things to audit when making a gameplay change:
 
 - **New mechanic timing** (e.g. a wait phase, a new animation): add a corresponding expected-time term to `perCastOverhead` in `EconomyModel.ts`.
-- **Bite probability changes** (e.g. per-check probability, escalation logic, pBite formula): update `castBiteProbability`, `expectedLuringTime`, or add a parallel `expectedWaitTime` function.
-- **XP gain changes**: update the XP-per-round block in `simulateEconomy`.
-- **New lure behaviour** (e.g. a new mechanic gated by lure type): branch on `getLureType(lureId)` in any affected economy function.
+- **Bite probability changes** (e.g. per-check probability, escalation logic, pBite formula): update `castBiteProbability`, `expectedLuringTime`, or `expectedWaitTime` (bait).
+- **XP gain changes**: update the XP-per-round block in `simulateEconomy` (lure XP goes through `applyLureXp` / `computeLureLevel`).
+- **New tackle behaviour** (e.g. a mechanic that differs between bait and lures): branch on `getTackleType(lureId) === TackleType.BAIT` in any affected economy function.
 
 ## Background jobs: no automatic PRs
 
@@ -43,4 +58,4 @@ When running as a background job in this repo, do not open a pull request when f
 
 ## Recaps
 
-When recapping, don't mention any actions around commits or PRs. The recap should only be able the actual changes to the code that were made. 
+When recapping, don't mention any actions around commits or PRs. The recap should only be able the actual changes to the code that were made.
