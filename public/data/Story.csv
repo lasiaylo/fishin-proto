@@ -1,5 +1,7 @@
 when,text,action
-on start,the water is calm,
+# Metrics for "when": casts (total casts) / fish (total fish caught) / sits (total times sat in the fields) / money (current wallet)
+# Compare with >= <= > < = and join with "and" - e.g. sits >= 2 and money >= 50
+on start,the world is a blur.,
 on bite,something bites!,
 on crit,crit!,
 on catch,caught a [{fish}],
@@ -7,5 +9,8 @@ on escape,it got away...,
 on sell,sold [{fish} +{price}],
 on birds,observed [{birds} birds +{payout}],
 on nobirds,not a bird in sight,
-sits >= 3,you feel something stir in the water...,
+sits = 1, you sit down. the world starts to come into view.,
+sits = 3, the air is warm. the wind is gently blowing through the grass,
+sits = 4, it's summertime.,
+sits = 5, 
 # fish >= 3,she settles her gear downstream and casts out a line,
