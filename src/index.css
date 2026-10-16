@@ -5,6 +5,12 @@ pre {
   font-size: 12px;
 }
 
+/* Match the selected action tab's text (Radix's active tab color). Left off
+   while disabled so the cooldown still reads as dimmed. */
+.action-button:not(:disabled) {
+  color: var(--gray-12);
+}
+
 .action-button:active {
   background-color: var(--gray-5);
 }

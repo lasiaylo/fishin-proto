@@ -45,6 +45,7 @@ export function DelayButton({
       <Button
         radius="none"
         variant="outline"
+        className="action-button"
         disabled={disabled}
         onClick={startDelay}
         style={{

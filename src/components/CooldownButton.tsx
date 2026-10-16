@@ -54,6 +54,7 @@ export function CooldownButton({
       <Button
         radius="none"
         variant="outline"
+        className="action-button"
         disabled={!ready}
         onClick={onFire}
         style={{

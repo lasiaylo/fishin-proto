@@ -11,6 +11,7 @@ export function MyButton({
   children,
   minWidth,
   style,
+  className,
 }: {
   children: ReactNode;
   onClick?: () => void;
@@ -20,6 +21,7 @@ export function MyButton({
   description?: string;
   minWidth?: number;
   style?: React.CSSProperties;
+  className?: string;
 }) {
   const button = (
     <Box flexGrow={"0"}>
@@ -27,6 +29,7 @@ export function MyButton({
         radius={"none"}
         disabled={disabled}
         variant="outline"
+        className={className}
         onClick={onClick ?? (() => {})}
         onMouseDown={onMouseDown}
         onMouseUp={onMouseUp}

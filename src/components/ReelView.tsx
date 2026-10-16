@@ -41,7 +41,11 @@ export function ReelButton({ onReelStart, onReelEnd }: ReelButtonProps) {
         }
       }}
     >
-      <MyButton disabled={!onReelStart} minWidth={100}>
+      <MyButton
+        disabled={!onReelStart}
+        minWidth={100}
+        className="action-button"
+      >
         reel
       </MyButton>
     </div>
