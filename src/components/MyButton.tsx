@@ -1,6 +1,5 @@
-import { ReactNode } from "react";
+import React, { ReactNode } from "react";
 import { Box, Button, Text, Tooltip } from "@radix-ui/themes";
-import React from "react";
 
 export function MyButton({
   onClick,

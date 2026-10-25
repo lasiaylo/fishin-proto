@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { addMoney } from "./playerStore";
 import { incrementTotalSits } from "./metricsStore";
+import { playSound } from "../audio/SoundEngine";
+import { SoundEvent } from "../audio/soundEvents";
 import {
   FIELDS_SIT_COOLDOWN_MS,
   FIELDS_SIT_PAYOUT,
@@ -31,6 +33,7 @@ export function sit() {
   useFields.setState({ readyAt: Date.now() + cooldownMs });
   addMoney(payout);
   incrementTotalSits();
+  playSound(SoundEvent.SIT);
 }
 
 export function setSitPayout(amount: number) {

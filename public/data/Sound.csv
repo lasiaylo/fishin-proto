@@ -1,0 +1,9 @@
+event,files,volume
+# files: paths relative to public/, e.g. sounds/pop.webm. Join several with | and one is picked at random. Empty = silent.
+# volume: 1 is full.
+cast,,1
+fight_win,,1
+fight_lose,,1
+buy,,1
+unlock,,1
+sit,,1

@@ -117,6 +117,38 @@ export interface StoryBeatData {
   action: string;
 }
 
+export interface SoundRowData {
+  event: string;
+  // Paths relative to public/; one is picked at random per play.
+  files: string[];
+  volume: number;
+}
+
+export async function loadSoundData(
+  soundFile = "Sound.csv",
+): Promise<SoundRowData[]> {
+  const res = await fetch(`/data/${soundFile}`);
+  const rows = parseCSV(await res.text());
+  if (rows.length === 0) return [];
+
+  const header = rows[0].map((h) => h.toLowerCase());
+  const col = (name: string) => header.indexOf(name);
+  const [eventIdx, filesIdx, volumeIdx] = [
+    col("event"),
+    col("files"),
+    col("volume"),
+  ];
+
+  return rows.slice(1).map((cells) => ({
+    event: cells[eventIdx] ?? "",
+    files: (cells[filesIdx] ?? "")
+      .split("|")
+      .map((f) => f.trim())
+      .filter(Boolean),
+    volume: cells[volumeIdx] ? Number(cells[volumeIdx]) : 1,
+  }));
+}
+
 export async function loadStoryData(
   storyFile = "Story.csv",
 ): Promise<StoryBeatData[]> {

@@ -13,6 +13,8 @@ import { useSessionLog } from "./sessionLogStore";
 import { setSitCooldownMs, setSitPayout } from "./fieldsStore";
 import { setAreaUnlocked } from "./unlockStore";
 import { setPassiveSource } from "./passiveIncomeStore";
+import { playSound } from "../audio/SoundEngine";
+import { SoundEvent } from "../audio/soundEvents";
 import {
   FIELDS_SIT_COOLDOWN_MS,
   FIELDS_SIT_PAYOUT,
@@ -147,6 +149,12 @@ export function createUpgradeStore({
     if (getCurrency() < price) return;
 
     deductCurrency(price);
+    playSound(
+      upgrade.stat === StatName.UNLOCK_POND ||
+        upgrade.stat === StatName.UNLOCK_SKY
+        ? SoundEvent.UNLOCK
+        : SoundEvent.BUY,
+    );
 
     // BAIT: consume the purchase but don't increment level
     if (upgrade.stat === StatName.BAIT) {

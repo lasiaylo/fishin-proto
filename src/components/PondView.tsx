@@ -46,6 +46,8 @@ import {
   Zone,
 } from "../util/constants";
 import { ReelBars, ReelButton } from "./ReelView";
+import { playSound } from "../audio/SoundEngine";
+import { SoundEvent } from "../audio/soundEvents";
 
 enum GameState {
   Idle = "idle",
@@ -434,8 +436,10 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     }
 
     if (result === Outcome.WIN) {
+      playSound(SoundEvent.FIGHT_WIN);
       spawnPondFish(fish, effectivePrice);
     } else {
+      playSound(SoundEvent.FIGHT_LOSE);
       tellStory("escape");
     }
 
@@ -450,6 +454,7 @@ function RodRow({ slotIndex }: { slotIndex: number }) {
     const { rodSlotItems: castItems } = usePlayer.getState();
     const castItem = castItems[slotIndex] ?? BASE_BAIT_ID;
     incrementTotalCasts(castItem);
+    playSound(SoundEvent.CAST);
     const locationId = Object.keys(locations)[0];
     const t = chargePercent / 100;
     const assignedRod = ownedRods.find((r) => r.id === assignment);
