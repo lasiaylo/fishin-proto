@@ -2,6 +2,9 @@ import { loadSoundData, SoundRowData } from "../util/csvLoader";
 import { useSoundSettings } from "../stores/soundSettingsStore";
 import type { SoundEvent } from "./soundEvents";
 
+// Folder under public/ that Sound.csv file names are relative to.
+const SOUND_DIR = "walk sounds";
+
 // Plays one-shot sounds mapped to game events in public/data/Sound.csv.
 // Inert until enable() is called, so pages that reuse the game's stores
 // without being the game (the /model view) stay silent.
@@ -89,9 +92,13 @@ class SoundEngine {
     if (this.buffers.has(file)) return Promise.resolve();
     let pending = this.loading.get(file);
     if (!pending) {
-      pending = fetch(encodeURI(`/${file}`))
+      pending = fetch(encodeURI(`/${SOUND_DIR}/${file}`))
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          // The dev server answers unknown paths with index.html and a 200.
+          if (res.headers.get("content-type")?.includes("text/html")) {
+            throw new Error("not found under public/ (check the path)");
+          }
           return res.arrayBuffer();
         })
         .then((data) =>
