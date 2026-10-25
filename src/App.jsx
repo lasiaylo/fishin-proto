@@ -32,7 +32,6 @@ import { GrassView } from "./components/GrassView.tsx";
 import { CollectableLayer } from "./components/CollectableLayer.tsx";
 import { useUnlocks } from "./stores/unlockStore";
 import { GridCellBox } from "./components/WorldGrid.tsx";
-import { SoundControls } from "./components/SoundControls.tsx";
 import { soundEngine } from "./audio/SoundEngine";
 import { CELL_SIZE, cellPos, POND_CELL } from "./util/worldGrid";
 
@@ -130,7 +129,6 @@ function App() {
           <PondFishView {...cellPos(POND_CELL)} />
         </CollectableLayer>
       </Flex>
-      <SoundControls />
       {showDebug && (
         <div
           style={{
